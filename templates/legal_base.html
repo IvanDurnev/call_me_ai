@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ title }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='call.css', v='20260410legal') }}">
+  </head>
+  <body class="legal-page">
+    <main class="legal-shell">
+      <section class="legal-card">
+        <div class="legal-head">
+          <p class="eyebrow">Юридическая информация</p>
+          <h1>{{ title }}</h1>
+          <p class="legal-meta">
+            Оператор сервиса: {{ business.business_name }} · ИНН {{ business.inn }} · ОГРНИП {{ business.ogrnip }}.
+          </p>
+          <p class="legal-meta">
+            Контакты: {{ business.phone }} · {{ business.email }}
+          </p>
+          <div class="legal-links">
+            <a href="{{ url_for('main.index') }}">На главную</a>
+            <a href="{{ url_for('main.public_offer') }}">Оферта</a>
+            <a href="{{ url_for('main.privacy_policy') }}">Политика конфиденциальности</a>
+            <a href="{{ url_for('main.user_agreement') }}">Пользовательское соглашение</a>
+            <a href="{{ url_for('main.personal_data_consent') }}">Согласие на обработку персональных данных</a>
+          </div>
+        </div>
+      </section>
+      {% block legal_content %}{% endblock %}
+    </main>
+  </body>
+</html>

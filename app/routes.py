@@ -54,6 +54,13 @@ ADMIN_SESSION_KEY = "admin_user_id"
 APP_USER_SESSION_KEY = "app_user_id"
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 PRICING_PLAN_KINDS = {"call_package", "unlimited"}
+LEGAL_BUSINESS_DETAILS = {
+    "business_name": "ИП Дурнев И.В.",
+    "inn": "281601583789",
+    "ogrnip": "311282717200033",
+    "phone": "89240254453",
+    "email": "info@itd.dev",
+}
 
 
 def _current_admin() -> AdminUser | None:
@@ -374,6 +381,23 @@ def _cloudpayments_ready() -> bool:
     return cloudpayments_enabled()
 
 
+def _request_client_ip() -> str:
+    forwarded_for = (request.headers.get("X-Forwarded-For") or "").strip()
+    if forwarded_for:
+        return forwarded_for.split(",")[0].strip()
+    return (request.remote_addr or "").strip()
+
+
+def _legal_pricing_context() -> dict:
+    pricing_plans = [_serialize_pricing_plan(plan) for plan in _list_pricing_plans(include_inactive=False)]
+    subscription_plans = [plan for plan in pricing_plans if plan["kind"] == "unlimited"]
+    return {
+        "business": dict(LEGAL_BUSINESS_DETAILS),
+        "pricing_plans": pricing_plans,
+        "subscription_plans": subscription_plans,
+    }
+
+
 def _pricing_plan_kind_options() -> list[dict[str, str]]:
     return [
         {"value": "call_package", "label": "Пакет минут"},
@@ -523,6 +547,26 @@ def max_index():
 @main_bp.get("/health")
 def health():
     return jsonify({"status": "ok"})
+
+
+@main_bp.get("/offer")
+def public_offer():
+    return render_template("offer.html", **_legal_pricing_context())
+
+
+@main_bp.get("/privacy-policy")
+def privacy_policy():
+    return render_template("privacy_policy.html", **_legal_pricing_context())
+
+
+@main_bp.get("/user-agreement")
+def user_agreement():
+    return render_template("user_agreement.html", **_legal_pricing_context())
+
+
+@main_bp.get("/personal-data-consent")
+def personal_data_consent():
+    return render_template("personal_data_consent.html", **_legal_pricing_context())
 
 
 @main_bp.route("/admin/login", methods=["GET", "POST"])
@@ -1005,6 +1049,28 @@ def subscription_checkout():
     if not plan or not plan.is_active:
         return jsonify({"ok": False, "error": "Тариф не найден или выключен."}), 404
 
+    recurring_consent_required = plan.kind == "unlimited"
+    recurring_consent_accepted = bool(payload.get("recurring_consent"))
+    if recurring_consent_required and not recurring_consent_accepted:
+        return jsonify({"ok": False, "error": "Для подписки нужно согласиться на автоматические списания по оферте."}), 400
+
+    offer_url = _absolute_url(current_app.config["PUBLIC_BASE_URL"], url_for("main.public_offer"))
+    consent_snapshot = {
+        "required": recurring_consent_required,
+        "accepted": recurring_consent_accepted,
+        "accepted_at": datetime.utcnow().isoformat() if recurring_consent_accepted else None,
+        "ip_address": _request_client_ip(),
+        "user_agent": (request.headers.get("User-Agent") or "")[:500],
+        "text": "Я согласен на автоматические списания согласно условиям оферты",
+        "offer_url": offer_url,
+        "plan_code": plan.code,
+        "plan_name": plan.name,
+        "plan_kind": plan.kind,
+        "period_days": plan.period_days,
+        "amount": float(plan.price or 0),
+        "currency": plan.currency,
+    }
+
     invoice_id = f"sub-{user.id}-{uuid.uuid4().hex[:12]}"
     purchase = SubscriptionPurchase(
         app_user_id=user.id,
@@ -1018,6 +1084,8 @@ def subscription_checkout():
             "kind": "cloudpayments_widget",
             "created_at": datetime.utcnow().isoformat(),
             "pricing_plan": _serialize_pricing_plan(plan),
+            "autopay_consent": consent_snapshot,
+            "autopay_consent_history": [consent_snapshot] if recurring_consent_accepted else [],
         },
     )
     db.session.add(purchase)

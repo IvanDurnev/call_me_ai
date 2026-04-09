@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Личный кабинет</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='call.css', v='20260409minutes') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='call.css', v='20260410legal') }}">
   </head>
   <body
     class="miniapp-page account-page"
@@ -114,6 +114,12 @@
                 <p class="voice-meta">Если позже захочешь, можно будет добавить продление или смену тарифа отдельным действием.</p>
               </div>
             {% endif %}
+            <div class="account-legal-links">
+              <a href="{{ url_for('main.public_offer') }}" target="_blank" rel="noreferrer">Публичная оферта</a>
+              <a href="{{ url_for('main.privacy_policy') }}" target="_blank" rel="noreferrer">Политика конфиденциальности</a>
+              <a href="{{ url_for('main.user_agreement') }}" target="_blank" rel="noreferrer">Пользовательское соглашение</a>
+              <a href="{{ url_for('main.personal_data_consent') }}" target="_blank" rel="noreferrer">Согласие на обработку персональных данных</a>
+            </div>
 
             <div class="account-history-toggle">
               <button class="call-btn call-btn-secondary" id="payment-history-toggle" type="button">
@@ -143,7 +149,7 @@
                   <div class="voice-card-head">
                     <div>
                       <h2>Покупок пока нет</h2>
-                      <p>После тестовой оплаты здесь появится история платежей.</p>
+                      <p>После первой оплаты здесь появится история платежей.</p>
                     </div>
                   </div>
                 </article>
@@ -198,14 +204,24 @@
           <div class="voice-card-head">
             <div>
               <h2>Выберите тариф</h2>
-              <p>После выбора откроется тестовая форма оплаты CloudPayments.</p>
+              <p>После выбора откроется форма оплаты CloudPayments.</p>
             </div>
             <button class="modal-close" id="plan-modal-close" type="button" aria-label="Закрыть">×</button>
           </div>
           <div class="plan-modal-list" id="plan-modal-list">
             {% for plan in pricing_plans %}
               <label class="plan-option">
-                <input type="radio" name="pricing_plan" value="{{ plan.code }}" {% if loop.first %}checked{% endif %}>
+                <input
+                  type="radio"
+                  name="pricing_plan"
+                  value="{{ plan.code }}"
+                  data-plan-kind="{{ plan.kind }}"
+                  data-plan-name="{{ plan.name }}"
+                  data-plan-price="{{ '%.2f'|format(plan.price) }}"
+                  data-plan-currency="{{ plan.currency }}"
+                  data-plan-period-days="{{ plan.period_days or '' }}"
+                  {% if loop.first %}checked{% endif %}
+                >
                 <span class="plan-option-card">
                   <strong>{{ plan.name }}</strong>
                   <span>{{ plan.description or ('Пакет минут' if plan.kind == 'call_package' else 'Безлимитный доступ') }}</span>
@@ -223,6 +239,20 @@
               <p class="voice-meta">Доступных тарифов пока нет.</p>
             {% endfor %}
           </div>
+          <div class="payment-terms-card" id="payment-terms-card">
+            <p class="payment-terms-title">Условия оплаты</p>
+            <p class="voice-meta" id="payment-frequency-text">Выберите тариф, чтобы увидеть условия списаний.</p>
+            <label class="consent-check" id="recurring-consent-block" hidden>
+              <input id="recurring-consent-checkbox" type="checkbox">
+              <span>
+                Я согласен на автоматические списания согласно условиям
+                <a href="{{ url_for('main.public_offer') }}" target="_blank" rel="noreferrer">оферты</a>
+              </span>
+            </label>
+            <p class="voice-meta" id="recurring-consent-hint">
+              Для тарифов с автопродлением следующее списание выполняется по выбранному периоду, если подписка не отменена заранее.
+            </p>
+          </div>
           <div class="modal-actions">
             <button class="call-btn call-btn-secondary" id="plan-modal-cancel" type="button">Отмена</button>
             <button class="call-btn call-btn-primary" id="plan-modal-submit" type="button" {% if not pricing_plans %}disabled{% endif %}>Перейти к оплате</button>
@@ -231,6 +261,6 @@
       </div>
     {% endif %}
     <script src="https://widget.cloudpayments.ru/bundles/cloudpayments"></script>
-    <script src="{{ url_for('static', filename='account.js', v='20260409minutes') }}"></script>
+    <script src="{{ url_for('static', filename='account.js', v='20260410legal') }}"></script>
   </body>
 </html>

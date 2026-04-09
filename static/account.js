@@ -8,9 +8,74 @@ const planModalCancelButton = document.getElementById("plan-modal-cancel");
 const planModalSubmitButton = document.getElementById("plan-modal-submit");
 const paymentHistoryToggle = document.getElementById("payment-history-toggle");
 const paymentHistoryList = document.getElementById("payment-history-list");
+const recurringConsentBlock = document.getElementById("recurring-consent-block");
+const recurringConsentCheckbox = document.getElementById("recurring-consent-checkbox");
+const recurringConsentHint = document.getElementById("recurring-consent-hint");
+const paymentFrequencyText = document.getElementById("payment-frequency-text");
+
+function selectedPlanInput() {
+  return document.querySelector('input[name="pricing_plan"]:checked');
+}
 
 function selectedPlanCode() {
-  return document.querySelector('input[name="pricing_plan"]:checked')?.value || "";
+  return selectedPlanInput()?.value || "";
+}
+
+function selectedPlanMeta() {
+  const input = selectedPlanInput();
+  if (!input) {
+    return null;
+  }
+
+  const periodDaysValue = Number.parseInt(input.dataset.planPeriodDays || "", 10);
+  return {
+    code: input.value || "",
+    kind: input.dataset.planKind || "",
+    name: input.dataset.planName || "",
+    price: input.dataset.planPrice || "",
+    currency: input.dataset.planCurrency || "",
+    periodDays: Number.isFinite(periodDaysValue) ? periodDaysValue : 0,
+  };
+}
+
+function planRequiresRecurringConsent(plan) {
+  return Boolean(plan && plan.kind === "unlimited");
+}
+
+function formatRecurringTerms(plan) {
+  if (!plan) {
+    return "Выберите тариф, чтобы увидеть условия списаний.";
+  }
+
+  if (!planRequiresRecurringConsent(plan)) {
+    return `Тариф «${plan.name}» оплачивается разово без автоматических списаний.`;
+  }
+
+  const periodLabel = plan.periodDays > 0 ? `каждые ${plan.periodDays} дн.` : "по периоду выбранного тарифа";
+  return `Подписка «${plan.name}»: ${plan.price} ${plan.currency}, автосписание ${periodLabel}. Повторное списание выполняется в дату продления с 00:00 до 23:59 по Москве.`;
+}
+
+function syncPlanPaymentTerms() {
+  const plan = selectedPlanMeta();
+  const requiresConsent = planRequiresRecurringConsent(plan);
+
+  if (paymentFrequencyText) {
+    paymentFrequencyText.textContent = formatRecurringTerms(plan);
+  }
+  if (recurringConsentBlock) {
+    recurringConsentBlock.hidden = !requiresConsent;
+  }
+  if (recurringConsentHint) {
+    recurringConsentHint.textContent = requiresConsent
+      ? "Отменить автопродление можно по запросу на info@itd.dev или по телефону 89240254453 до следующего периода списания."
+      : "Для разовых пакетов минут автоматические списания не применяются.";
+  }
+  if (!requiresConsent && recurringConsentCheckbox) {
+    recurringConsentCheckbox.checked = false;
+  }
+  if (planModalSubmitButton) {
+    planModalSubmitButton.disabled = !plan || (requiresConsent && !recurringConsentCheckbox?.checked);
+  }
 }
 
 function setPaymentStatus(text, tone = "muted") {
@@ -75,6 +140,8 @@ async function confirmSubscriptionPayment(invoiceId) {
 }
 
 async function startSubscriptionCheckout(planCode) {
+  const plan = selectedPlanMeta();
+
   if (!cloudpaymentsEnabled) {
     setPaymentStatus("CloudPayments пока не настроен.", "danger");
     return;
@@ -82,6 +149,11 @@ async function startSubscriptionCheckout(planCode) {
 
   if (!planCode) {
     setPaymentStatus("Сначала выберите тариф.", "danger");
+    return;
+  }
+
+  if (planRequiresRecurringConsent(plan) && !recurringConsentCheckbox?.checked) {
+    setPaymentStatus("Подтвердите согласие на автоматические списания по оферте.", "danger");
     return;
   }
 
@@ -99,7 +171,10 @@ async function startSubscriptionCheckout(planCode) {
   setPaymentStatus("Готовим форму оплаты…");
 
   try {
-    const data = await postJson("/api/account/subscription/checkout", { plan_code: planCode });
+    const data = await postJson("/api/account/subscription/checkout", {
+      plan_code: planCode,
+      recurring_consent: Boolean(recurringConsentCheckbox?.checked),
+    });
     const checkout = data.checkout || {};
     const widget = new window.cp.CloudPayments({ language: "ru-RU" });
     closePlanModal();
@@ -161,6 +236,12 @@ planModalSubmitButton?.addEventListener("click", () => {
   void startSubscriptionCheckout(selectedPlanCode());
 });
 
+document.querySelectorAll('input[name="pricing_plan"]').forEach((input) => {
+  input.addEventListener("change", syncPlanPaymentTerms);
+});
+
+recurringConsentCheckbox?.addEventListener("change", syncPlanPaymentTerms);
+
 paymentHistoryToggle?.addEventListener("click", () => {
   if (!paymentHistoryList) {
     return;
@@ -170,3 +251,4 @@ paymentHistoryToggle?.addEventListener("click", () => {
 });
 
 syncPaymentHistoryToggle();
+syncPlanPaymentTerms();

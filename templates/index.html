@@ -8,7 +8,7 @@
       name="description"
       content="Детский сервис, где малыш может позвонить любимым сказочным героям, послушать сказку, поделиться радостью и получить поддержку."
     >
-    <link rel="stylesheet" href="{{ url_for('static', filename='call.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='call.css', v='20260410legal') }}">
   </head>
   <body class="landing-page">
     <div class="landing-bg" aria-hidden="true"></div>
@@ -109,6 +109,12 @@
           </div>
         </aside>
       </section>
+      <footer class="landing-footer">
+        <a href="{{ url_for('main.public_offer') }}" target="_blank" rel="noreferrer">Публичная оферта</a>
+        <a href="{{ url_for('main.privacy_policy') }}" target="_blank" rel="noreferrer">Политика конфиденциальности</a>
+        <a href="{{ url_for('main.user_agreement') }}" target="_blank" rel="noreferrer">Пользовательское соглашение</a>
+        <a href="{{ url_for('main.personal_data_consent') }}" target="_blank" rel="noreferrer">Согласие на обработку персональных данных</a>
+      </footer>
     </main>
   </body>
 </html>
