@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Подключаем аккаунт</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='call.css', v='20260409maxauth') }}">
+  </head>
+  <body
+    class="miniapp-page account-page"
+    data-max-auth-url="{{ max_auth_url }}"
+    data-max-auth-mode="redirect"
+    data-max-next-url="{{ next_url }}"
+  >
+    <main class="call-shell account-shell">
+      <section class="phone-frame">
+        <div class="phone-screen account-screen">
+          <div class="voices-header">
+            <p class="eyebrow">Max</p>
+            <h1>Подключаем аккаунт</h1>
+            <p class="lead" id="max-auth-status">Проверяем ваш профиль в MAX и открываем звонок…</p>
+          </div>
+        </div>
+      </section>
+    </main>
+    <script src="https://st.max.ru/js/max-web-app.js"></script>
+    <script src="{{ url_for('static', filename='max-auth.js', v='20260409maxauth') }}"></script>
+  </body>
+</html>

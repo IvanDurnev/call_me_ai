@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Личный кабинет</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='call.css', v='20260409minutes') }}">
+  </head>
+  <body
+    class="miniapp-page account-page"
+    data-cloudpayments-enabled="{{ 'true' if cloudpayments_enabled else 'false' }}"
+    data-cloudpayments-public-id="{{ cloudpayments_public_id }}"
+  >
+    <main class="call-shell account-shell">
+      <section class="phone-frame">
+        <div class="phone-screen account-screen">
+          <div class="voices-header account-header">
+            <div>
+              <p class="eyebrow">Личный кабинет</p>
+              <h1>{{ current_user.name }}</h1>
+              <p class="lead">{{ current_user.email }} · {{ current_user.phone }}</p>
+            </div>
+            <form method="post" action="{{ url_for('main.account_logout') }}">
+              <button class="call-btn call-btn-secondary" type="submit">Выйти</button>
+            </form>
+          </div>
+
+          <div class="account-summary">
+            <div class="voice-card">
+              <h2>Пробное время</h2>
+              <p class="voice-meta">
+                {% if has_trial_available %}
+                  У вас осталось {{ remaining_trial_minutes }} из {{ trial_calls_limit }} тестовых минут.
+                {% else %}
+                  Тестовые минуты исчерпаны.
+                {% endif %}
+              </p>
+            </div>
+            <div class="voice-card account-connections-card">
+              <h2>Подключённые каналы</h2>
+              <p class="voice-meta">
+                Telegram:
+                {% if current_user.telegram_user_id %}
+                  подключён{% if current_user.telegram_username %} · @{{ current_user.telegram_username }}{% endif %}
+                {% else %}
+                  не подключён
+                {% endif %}
+              </p>
+              <p class="voice-meta">
+                Max:
+                {% if current_user.max_user_id %}
+                  подключён
+                {% else %}
+                  не подключён
+                {% endif %}
+              </p>
+            </div>
+            <a class="call-btn call-btn-primary call-link-btn" href="{{ url_for('main.index') }}">На главную</a>
+          </div>
+
+          <article class="voice-card account-subscription-card">
+            <div class="voice-card-head">
+              <div>
+                <h2>{% if current_subscription %}Текущая подписка{% else %}Подписка{% endif %}</h2>
+                {% if current_subscription %}
+                  <p>Здесь отображается активный тариф пользователя.</p>
+                {% endif %}
+              </div>
+              <span class="voice-badge">{% if current_subscription %}Активна{% else %}Нет подписки{% endif %}</span>
+            </div>
+            <div class="account-subscription-grid">
+              {% if current_subscription %}
+                <div class="subscription-offer">
+                  <p class="subscription-name">{{ current_subscription.plan_name }}</p>
+                  <p class="subscription-price">{{ "%.2f"|format(current_subscription.amount) }} {{ current_subscription.currency }}</p>
+                  <p class="voice-meta">{{ current_subscription.description or "Подписка активна и готова к использованию." }}</p>
+                  {% if current_subscription.kind == 'unlimited' and current_subscription.expires_at %}
+                    <p class="voice-meta">Действует до {{ current_subscription.expires_at.strftime('%d.%m.%Y %H:%M') }}.</p>
+                  {% elif current_subscription.kind == 'call_package' and current_subscription.remaining_minutes is not none %}
+                    <p class="voice-meta">В пакете осталось {{ current_subscription.remaining_minutes }} минут.</p>
+                  {% endif %}
+                  {% if current_subscription.paid_at %}
+                    <p class="voice-meta">Оплачено {{ current_subscription.paid_at.strftime('%d.%m.%Y %H:%M') }}.</p>
+                  {% endif %}
+                </div>
+              {% else %}
+                <div class="subscription-offer">
+                  <p class="subscription-name">Подписка не подключена</p>
+                  <p class="voice-meta">Откройте список тарифов и выберите подходящий вариант: пакет минут или безлимит на период.</p>
+                  <button
+                    class="call-btn call-btn-primary account-buy-btn"
+                    id="subscription-buy-btn"
+                    type="button"
+                    {% if not cloudpayments_enabled or not pricing_plans %}disabled{% endif %}
+                  >
+                    Купить
+                  </button>
+                  <p class="account-payment-status" id="subscription-status">
+                    {% if not cloudpayments_enabled %}
+                      CloudPayments пока не настроен.
+                    {% elif not pricing_plans %}
+                      В админке пока нет активных тарифов.
+                    {% else %}
+                      Нажмите «Купить», чтобы выбрать тариф.
+                    {% endif %}
+                  </p>
+                </div>
+              {% endif %}
+            </div>
+            {% if current_subscription %}
+              <div class="subscription-help subscription-help-wide">
+                <p class="subscription-help-title">Статус</p>
+                <p class="voice-meta">Текущий тариф уже закреплён за аккаунтом.</p>
+                <p class="voice-meta">Если позже захочешь, можно будет добавить продление или смену тарифа отдельным действием.</p>
+              </div>
+            {% endif %}
+
+            <div class="account-history-toggle">
+              <button class="call-btn call-btn-secondary" id="payment-history-toggle" type="button">
+                История платежей
+              </button>
+            </div>
+
+            <div class="voice-list account-payment-list" id="payment-history-list" hidden>
+              {% for purchase in purchases %}
+                <article class="voice-card account-call-card">
+                  <div class="voice-card-head">
+                    <div>
+                      <h2>{{ purchase.plan_name }}</h2>
+                      <p>{{ purchase.created_at.strftime('%d.%m.%Y %H:%M') if purchase.created_at else 'Без даты' }}</p>
+                    </div>
+                    <span class="voice-badge">{{ purchase.status }}</span>
+                  </div>
+                  <p class="voice-meta">
+                    Счёт: {{ purchase.invoice_id }} · {{ "%.2f"|format(purchase.amount) }} {{ purchase.currency }}
+                    {% if purchase.transaction_id %}
+                      · Transaction ID: {{ purchase.transaction_id }}
+                    {% endif %}
+                  </p>
+                </article>
+              {% else %}
+                <article class="voice-card">
+                  <div class="voice-card-head">
+                    <div>
+                      <h2>Покупок пока нет</h2>
+                      <p>После тестовой оплаты здесь появится история платежей.</p>
+                    </div>
+                  </div>
+                </article>
+              {% endfor %}
+            </div>
+          </article>
+
+          <div class="voice-list">
+            {% for call in calls %}
+              <article class="voice-card account-call-card">
+                <div class="voice-card-head">
+                  <div>
+                    <h2>{{ (call.meta_json or {}).get('character_name') or call.character_slug }}</h2>
+                    <p>
+                      {{ call.started_at.strftime('%d.%m.%Y %H:%M') if call.started_at else 'Без даты' }}
+                      {% if call.duration_display %}
+                        · {{ call.duration_display }}
+                      {% endif %}
+                    </p>
+                  </div>
+                  <span class="voice-badge">{{ call.status }}</span>
+                </div>
+                <div class="account-transcript">
+                  {% for line in (call.meta_json or {}).get('conversation_log', []) %}
+                    <p class="log-line">
+                      <strong>{{ 'Вы' if line.role == 'user' else 'Персонаж' }}:</strong>
+                      {{ line.text }}
+                    </p>
+                  {% else %}
+                    <p class="log-line">Транскрипция разговора пока не сохранена.</p>
+                  {% endfor %}
+                </div>
+              </article>
+            {% else %}
+              <article class="voice-card">
+                <div class="voice-card-head">
+                  <div>
+                    <h2>Пока нет звонков</h2>
+                    <p>После первого разговора здесь появится история и транскрипция.</p>
+                  </div>
+                </div>
+              </article>
+            {% endfor %}
+          </div>
+        </div>
+      </section>
+    </main>
+
+    {% if not current_subscription %}
+      <div class="modal-backdrop" id="plan-modal" hidden>
+        <div class="modal-card">
+          <div class="voice-card-head">
+            <div>
+              <h2>Выберите тариф</h2>
+              <p>После выбора откроется тестовая форма оплаты CloudPayments.</p>
+            </div>
+            <button class="modal-close" id="plan-modal-close" type="button" aria-label="Закрыть">×</button>
+          </div>
+          <div class="plan-modal-list" id="plan-modal-list">
+            {% for plan in pricing_plans %}
+              <label class="plan-option">
+                <input type="radio" name="pricing_plan" value="{{ plan.code }}" {% if loop.first %}checked{% endif %}>
+                <span class="plan-option-card">
+                  <strong>{{ plan.name }}</strong>
+                  <span>{{ plan.description or ('Пакет минут' if plan.kind == 'call_package' else 'Безлимитный доступ') }}</span>
+                  <span>
+                    {% if plan.kind == 'call_package' and plan.minutes_included %}
+                      {{ plan.minutes_included }} минут
+                    {% elif plan.kind == 'unlimited' and plan.period_days %}
+                      {{ plan.period_days }} дней без ограничений
+                    {% endif %}
+                  </span>
+                  <span>{{ "%.2f"|format(plan.price) }} {{ plan.currency }}</span>
+                </span>
+              </label>
+            {% else %}
+              <p class="voice-meta">Доступных тарифов пока нет.</p>
+            {% endfor %}
+          </div>
+          <div class="modal-actions">
+            <button class="call-btn call-btn-secondary" id="plan-modal-cancel" type="button">Отмена</button>
+            <button class="call-btn call-btn-primary" id="plan-modal-submit" type="button" {% if not pricing_plans %}disabled{% endif %}>Перейти к оплате</button>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+    <script src="https://widget.cloudpayments.ru/bundles/cloudpayments"></script>
+    <script src="{{ url_for('static', filename='account.js', v='20260409minutes') }}"></script>
+  </body>
+</html>

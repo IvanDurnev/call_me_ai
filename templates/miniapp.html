@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ character.name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='call.css', v='20260409minutes') }}">
+  </head>
+  <body
+    class="miniapp-page"
+    data-character-slug="{{ character.slug }}"
+    data-character-name="{{ character.name }}"
+    data-character-description="{{ character.description }}"
+    data-started-from="{{ started_from }}"
+    data-websocket-url="{{ websocket_url }}"
+    data-app-user-id="{{ app_user.id }}"
+    data-call-access-available="{{ 'true' if call_access_available else 'false' }}"
+  >
+    <main class="call-shell">
+      <section class="phone-frame">
+        <div class="phone-screen">
+          <div class="call-topline">
+            <div class="call-topline-status">
+              <span class="status-dot" id="status-dot"></span>
+              <span id="connection-state">Готов к звонку</span>
+            </div>
+            <span class="call-timer" id="call-timer">00:00</span>
+          </div>
+
+          <div class="avatar-orb{% if character.avatar_url %} avatar-orb-image{% endif %}">
+            {% if character.avatar_url %}
+              <img src="{{ character.avatar_url }}" alt="{{ character.name }}">
+            {% else %}
+              <span>{{ character.emoji }}</span>
+            {% endif %}
+          </div>
+
+          <div class="call-title">
+            <h1>{{ character.name }}</h1>
+            <p>{{ character.description }}</p>
+          </div>
+
+          <div class="call-log" id="call-log">
+            {% if call_access_available %}
+              <p class="log-line">Нажмите «Позвонить», чтобы начать разговор.</p>
+            {% else %}
+              <p class="log-line">Доступные минуты исчерпаны. Историю разговоров и тарифы можно посмотреть в личном кабинете.</p>
+            {% endif %}
+          </div>
+
+          <div class="call-actions">
+            <button class="call-btn call-btn-primary call-btn-single" id="mic-btn" type="button" {% if not call_access_available %}disabled{% endif %}>
+              {% if call_access_available %}Позвонить{% else %}Минуты закончились{% endif %}
+            </button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="{{ url_for('static', filename='call.js', v='20260409minutes') }}"></script>
+  </body>
+</html>

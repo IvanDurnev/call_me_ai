@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Вход по коду</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='call.css', v='20260409logincode') }}">
+  </head>
+  <body class="miniapp-page account-page">
+    <main class="call-shell account-shell">
+      <section class="phone-frame">
+        <div class="phone-screen account-screen">
+          <div class="voices-header">
+            <p class="eyebrow">Вход</p>
+            <h1>Войти по одноразовому коду</h1>
+            <p class="lead">Введите email. Мы отправим одноразовый код для входа в личный кабинет. Если почта ещё не подтверждена, отправим код подтверждения.</p>
+          </div>
+
+          <form class="hero-form account-form" method="post">
+            <input type="hidden" name="next" value="{{ next_url }}">
+            <label class="hero-field">
+              <span>Электронная почта</span>
+              <input name="email" type="text" value="{{ email }}" required>
+            </label>
+            {% if code_sent %}
+              <input type="hidden" name="purpose" value="{{ purpose }}">
+              <label class="hero-field auth-code-field">
+                <span>Одноразовый код</span>
+                <input class="auth-code-input" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="123456" required>
+              </label>
+            {% endif %}
+            {% if info %}
+              <div class="hero-status">{{ info }}</div>
+            {% endif %}
+            {% if error %}
+              <div class="hero-status is-error">{{ error }}</div>
+            {% endif %}
+            <div class="hero-actions">
+              {% if code_sent %}
+                <button class="call-btn call-btn-primary" type="submit" name="action" value="verify">Войти</button>
+                <button class="call-btn call-btn-secondary" type="submit" name="action" value="resend" formnovalidate>Отправить код ещё раз</button>
+              {% else %}
+                <button class="call-btn call-btn-primary" type="submit" name="action" value="send">Отправить код</button>
+              {% endif %}
+              <a class="call-btn call-btn-secondary call-link-btn" href="{{ url_for('main.register', next=next_url) }}">Регистрация</a>
+              <a class="call-btn call-btn-secondary call-link-btn" href="{{ url_for('main.index') }}">На главную</a>
+            </div>
+          </form>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

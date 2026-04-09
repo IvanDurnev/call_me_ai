@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Вход в админку</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='call.css', v='20260409a') }}">
+  </head>
+  <body class="miniapp-page admin-login-page">
+    <main class="call-shell admin-login-shell">
+      <section class="phone-frame">
+        <div class="phone-screen admin-login-screen">
+          <div class="voices-header">
+            <p class="eyebrow">Admin</p>
+            <h1>Вход в админку</h1>
+            <p class="lead">Введите логин и пароль администратора, чтобы управлять персонажами.</p>
+          </div>
+
+          <form class="hero-form admin-login-form" method="post">
+            <label class="hero-field">
+              <span>Логин</span>
+              <input name="username" type="text" autocomplete="username" required>
+            </label>
+            <label class="hero-field">
+              <span>Пароль</span>
+              <input name="password" type="password" autocomplete="current-password" required>
+            </label>
+            {% if error %}
+              <div class="hero-status is-error">{{ error }}</div>
+            {% endif %}
+            <button class="call-btn call-btn-primary" type="submit">Войти</button>
+          </form>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

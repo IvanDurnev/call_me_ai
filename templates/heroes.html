@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Admin</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='call.css', v='20260409minutes-admin') }}">
+  </head>
+  <body class="miniapp-page heroes-page">
+    <main class="call-shell heroes-shell">
+      <section class="phone-frame">
+        <div class="phone-screen heroes-screen">
+          <div class="voices-header admin-header">
+            <div>
+              <p class="eyebrow">Admin</p>
+              <h1>Управление персонажами</h1>
+              <p class="lead">Создавайте, редактируйте и удаляйте персонажей. Здесь же можно менять аватар, базу знаний и параметры голоса.</p>
+            </div>
+            <form action="{{ url_for('main.admin_logout') }}" method="post">
+              <button class="call-btn call-btn-secondary" type="submit">Выйти</button>
+            </form>
+          </div>
+
+          <nav class="admin-nav">
+            <a class="admin-nav-link{% if admin_section == 'heroes' %} is-active{% endif %}" href="{{ url_for('main.admin_heroes') }}">Персонажи</a>
+            <a class="admin-nav-link{% if admin_section == 'pricing_plans' %} is-active{% endif %}" href="{{ url_for('main.admin_pricing_plans') }}">Тарифы</a>
+          </nav>
+
+          <div class="heroes-layout">
+            <aside class="heroes-sidebar">
+              <form class="hero-create-card" id="hero-create-form">
+                <div class="hero-section-head">
+                  <h3>Новый персонаж</h3>
+                  <p>Создайте карточку, а затем настройте её подробнее справа.</p>
+                </div>
+                <label class="hero-field">
+                  <span>Имя</span>
+                  <input name="name" type="text" maxlength="255" placeholder="Например, Чудо-ёжик" required>
+                </label>
+                <label class="hero-field">
+                  <span>Эмодзи</span>
+                  <input name="emoji" type="text" maxlength="16" placeholder="🦔">
+                </label>
+                <button class="call-btn call-btn-primary" type="submit">Добавить</button>
+                <div class="hero-status" id="hero-create-status">Новый герой появится в списке слева.</div>
+              </form>
+
+              <div class="heroes-list" id="heroes-list"></div>
+            </aside>
+
+            <section class="hero-editor" id="hero-editor">
+              <div class="hero-editor-empty">Герои не найдены.</div>
+            </section>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script id="heroes-initial-state" type="application/json">{{ initial_state|safe }}</script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="{{ url_for('static', filename='heroes.js', v='20260409minutes-admin') }}"></script>
+  </body>
+</html>

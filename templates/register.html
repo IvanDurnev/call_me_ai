@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Регистрация</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='call.css', v='20260409reg2') }}">
+  </head>
+  <body class="miniapp-page account-page">
+    <main class="call-shell account-shell">
+      <section class="phone-frame">
+        <div class="phone-screen account-screen">
+          <div class="voices-header">
+            <p class="eyebrow">Регистрация</p>
+            <h1>Один пробный звонок после регистрации</h1>
+            <p class="lead">Перед первым звонком оставьте имя, электронную почту и телефон. Это нужно, чтобы открыть личный кабинет и сохранить историю разговора.</p>
+          </div>
+
+          <form class="hero-form account-form" method="post">
+            <input type="hidden" name="next" value="{{ next_url }}">
+            <label class="hero-field">
+              <span>Имя</span>
+              <input name="name" type="text" value="{{ form_data.name }}" required>
+            </label>
+            <label class="hero-field">
+              <span>Электронная почта</span>
+              <input name="email" id="register-email" type="email" value="{{ form_data.email }}" autocomplete="email" placeholder="name@example.com" required>
+            </label>
+            <label class="hero-field">
+              <span>Телефон</span>
+              <input name="phone" id="register-phone" type="tel" value="{{ form_data.phone }}" inputmode="numeric" autocomplete="tel" placeholder="+7 (900) 123-45-67" required>
+            </label>
+            <label class="hero-field hero-field-inline account-consent">
+              <input name="consent_to_personal_data" type="checkbox" required>
+              <span>Согласен на хранение и обработку персональных данных</span>
+            </label>
+            {% if error %}
+              <div class="hero-status is-error" id="register-status">{{ error }}</div>
+            {% else %}
+              <div class="hero-status" id="register-status">Заполните данные для регистрации.</div>
+            {% endif %}
+            <div class="hero-actions">
+              <button class="call-btn call-btn-primary" type="submit">Зарегистрироваться</button>
+              <a class="call-btn call-btn-secondary call-link-btn" href="{{ url_for('main.login_email', next=next_url) }}">У меня уже есть код</a>
+              <a class="call-btn call-btn-secondary call-link-btn" href="{{ url_for('main.index') }}">На главную</a>
+            </div>
+          </form>
+        </div>
+      </section>
+    </main>
+    <script src="{{ url_for('static', filename='register.js', v='20260409a') }}"></script>
+  </body>
+</html>

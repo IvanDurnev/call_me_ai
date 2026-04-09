@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Admin</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='call.css', v='20260409minutes-admin') }}">
+  </head>
+  <body class="miniapp-page heroes-page">
+    <main class="call-shell heroes-shell">
+      <section class="phone-frame">
+        <div class="phone-screen heroes-screen">
+          <div class="voices-header admin-header">
+            <div>
+              <p class="eyebrow">Admin</p>
+              <h1>Управление тарифами</h1>
+              <p class="lead">Создавайте пакеты минут и безлимитные тарифы на нужный период, чтобы потом показывать их в личном кабинете.</p>
+            </div>
+            <form action="{{ url_for('main.admin_logout') }}" method="post">
+              <button class="call-btn call-btn-secondary" type="submit">Выйти</button>
+            </form>
+          </div>
+
+          <nav class="admin-nav">
+            <a class="admin-nav-link{% if admin_section == 'heroes' %} is-active{% endif %}" href="{{ url_for('main.admin_heroes') }}">Персонажи</a>
+            <a class="admin-nav-link{% if admin_section == 'pricing_plans' %} is-active{% endif %}" href="{{ url_for('main.admin_pricing_plans') }}">Тарифы</a>
+          </nav>
+
+          <div class="heroes-layout tariffs-layout">
+            <aside class="heroes-sidebar">
+              <form class="hero-create-card" id="plan-create-form">
+                <div class="hero-section-head">
+                  <h3>Новый тариф</h3>
+                  <p>Создайте тариф и настройте его справа. Поддерживаются пакеты минут и безлимитный доступ.</p>
+                </div>
+                <label class="hero-field">
+                  <span>Название</span>
+                  <input name="name" type="text" maxlength="255" placeholder="Например, 30 минут" required>
+                </label>
+                <label class="hero-field">
+                  <span>Тип тарифа</span>
+                  <select name="kind">
+                    <option value="call_package">Пакет минут</option>
+                    <option value="unlimited">Безлимит на период</option>
+                  </select>
+                </label>
+                <button class="call-btn call-btn-primary" type="submit">Добавить</button>
+                <div class="hero-status" id="plan-create-status">Новый тариф появится в списке слева.</div>
+              </form>
+
+              <div class="heroes-list" id="plans-list"></div>
+            </aside>
+
+            <section class="hero-editor" id="plan-editor">
+              <div class="hero-editor-empty">Тарифы пока не созданы.</div>
+            </section>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script id="heroes-initial-state" type="application/json">{{ initial_state|safe }}</script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="{{ url_for('static', filename='heroes.js', v='20260409minutes-admin') }}"></script>
+  </body>
+</html>

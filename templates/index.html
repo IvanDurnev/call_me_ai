@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Звонок другу</title>
+    <meta
+      name="description"
+      content="Детский сервис, где малыш может позвонить любимым сказочным героям, послушать сказку, поделиться радостью и получить поддержку."
+    >
+    <link rel="stylesheet" href="{{ url_for('static', filename='call.css') }}">
+  </head>
+  <body class="landing-page">
+    <div class="landing-bg" aria-hidden="true"></div>
+    <div class="landing-overlay" aria-hidden="true"></div>
+
+    <main class="landing-shell landing-shell-wide landing-screen">
+      <section class="landing-stage">
+        <div class="landing-copy">
+          <a class="brand-mark" href="{{ public_base_url }}">
+            <img class="brand-mark-logo" src="{{ url_for('static', filename='images/logo.webp') }}" alt="Логотип Звонок другу">
+            <span class="brand-mark-copy">
+              <strong>Звонок другу</strong>
+              <span>Сказочные звонки для детей</span>
+            </span>
+          </a>
+
+          <p class="eyebrow">Живые разговоры с любимыми героями</p>
+          <h1>Любимые герои всегда на связи.</h1>
+          <p class="lead lead-lg">
+            Малыш может послушать сказку на ночь, поделиться радостью, найти поддержку или задать важный вопрос.
+            А родители после разговора увидят аккуратную текстовую транскрипцию в личном кабинете.
+          </p>
+
+          <div class="cta-block">
+            <p class="cta-title">Позвонить через</p>
+            <div class="cta-row">
+              {% if telegram_bot_link %}
+                <a class="cta-button cta-button-primary" href="{{ telegram_bot_link }}" target="_blank" rel="noreferrer">
+                  Telegram
+                </a>
+              {% endif %}
+
+              {% if max_bot_link %}
+                <a class="cta-button cta-button-secondary" href="{{ max_bot_link }}" target="_blank" rel="noreferrer">
+                  Max
+                </a>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="mini-points">
+            <article class="mini-point">
+              <span>🌙</span>
+              <p>Сказка на ночь</p>
+            </article>
+            <article class="mini-point">
+              <span>🎈</span>
+              <p>Поделиться радостью</p>
+            </article>
+            <article class="mini-point">
+              <span>🧸</span>
+              <p>Поддержка рядом</p>
+            </article>
+            <article class="mini-point">
+              <span>🛡</span>
+              <p>Транскрипция для родителей</p>
+            </article>
+          </div>
+        </div>
+
+        <aside class="landing-panel">
+          <div class="panel-topline">
+            <p>Выберите персонажа и начните маленькое путешествие.</p>
+          </div>
+
+          <div class="cards cards-grid-compact">
+            {% for character in characters %}
+              <a class="character-card character-card-rich" href="{{ character.link }}">
+                <span class="character-card-top">
+                  <span class="landing-character-avatar{{ ' landing-character-avatar-image' if character.avatar_url else '' }}">
+                    {% if character.avatar_url %}
+                      <img src="{{ character.avatar_url }}" alt="{{ character.name }}">
+                    {% else %}
+                      <span class="character-emoji">{{ character.emoji }}</span>
+                    {% endif %}
+                  </span>
+                </span>
+                <strong>{{ character.name }}</strong>
+                <span>{{ character.description }}</span>
+              </a>
+            {% endfor %}
+
+            <a class="character-card character-card-rich landing-account-card" href="{{ url_for('main.account') if current_user else url_for('main.login_email') }}">
+              <span class="character-card-top">
+                <span class="landing-character-avatar landing-account-avatar">
+                  <span class="character-emoji">🏠</span>
+                </span>
+              </span>
+              <strong>Личный кабинет</strong>
+              <span>
+                {% if current_user %}
+                  Привет, {{ current_user.name }}!
+                {% else %}
+                  Транскрипции разговоров, тарифы и настройки.
+                {% endif %}
+              </span>
+            </a>
+          </div>
+        </aside>
+      </section>
+    </main>
+  </body>
+</html>

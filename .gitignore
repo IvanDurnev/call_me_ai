@@ -1,0 +1,11 @@
+.env
+.venv
+venv
+__pycache__/
+*.pyc
+call_me_ai.db
+.idea/
+static/images
+static/uploads
+static/voices
+migrations/

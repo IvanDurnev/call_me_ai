@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Выберите персонажа</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='call.css', v='20260409maxpicker') }}">
+  </head>
+  <body class="miniapp-page account-page" data-max-auth-url="{{ max_auth_url }}">
+    <main class="call-shell account-shell">
+      <section class="phone-frame">
+        <div class="phone-screen account-screen">
+          <div class="voices-header">
+            <p class="eyebrow">Max</p>
+            <h1>Выберите персонажа</h1>
+            <p class="lead">Откройте карточку героя, чтобы перейти к звонку.</p>
+          </div>
+
+          <div class="voice-list max-picker-list">
+            {% for character in characters %}
+              <a class="character-card character-card-rich max-picker-card" href="{{ character.link }}">
+                <span class="character-card-top">
+                  <span class="landing-character-avatar{{ ' landing-character-avatar-image' if character.avatar_url else '' }}">
+                    {% if character.avatar_url %}
+                      <img src="{{ character.avatar_url }}" alt="{{ character.name }}">
+                    {% else %}
+                      <span class="character-emoji">{{ character.emoji }}</span>
+                    {% endif %}
+                  </span>
+                </span>
+                <strong>{{ character.name }}</strong>
+                <span>{{ character.description }}</span>
+              </a>
+            {% else %}
+              <article class="voice-card">
+                <div class="voice-card-head">
+                  <div>
+                    <h2>Персонажи пока не добавлены</h2>
+                    <p>Когда герои появятся, здесь можно будет выбрать, кому позвонить.</p>
+                  </div>
+                </div>
+              </article>
+            {% endfor %}
+          </div>
+        </div>
+      </section>
+    </main>
+    <script src="https://st.max.ru/js/max-web-app.js"></script>
+    <script src="{{ url_for('static', filename='max-auth.js', v='20260409maxauth') }}"></script>
+  </body>
+</html>

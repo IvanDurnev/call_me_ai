@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Управление голосами</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='call.css') }}">
+  </head>
+  <body class="miniapp-page voices-page">
+    <main class="call-shell">
+      <section class="phone-frame">
+        <div class="phone-screen voices-screen">
+          <div class="voices-header">
+            <p class="eyebrow">Voice Lab</p>
+            <h1>Управление голосами</h1>
+            <p class="lead">
+              Папки подгружаются из <code>static/voices</code>. Для consent и voice используется первый поддерживаемый
+              аудиофайл в папке.
+            </p>
+          </div>
+
+          <div class="voices-banner{% if library['consents_error'] %} voices-banner-error{% endif %}" id="voices-banner">
+            {% if library["consents_error"] %}
+              <strong>OpenAI API:</strong> {{ library["consents_error"] }}
+            {% else %}
+              <strong>Consent language:</strong> {{ library["consent_language"] }}
+            {% endif %}
+          </div>
+
+          <div class="voice-list" id="voice-list">
+            {% for item in library["items"] %}
+              <article class="voice-card" data-voice-name="{{ item.name }}">
+                <div class="voice-card-head">
+                  <div>
+                    <h2>{{ item.name }}</h2>
+                    {% if item.sample_file %}
+                      <p>Sample: {{ item.sample_file }}{% if item.sample_format %} ({{ item.sample_format }}){% endif %}</p>
+                    {% else %}
+                      <p>Нет поддерживаемого аудиофайла</p>
+                    {% endif %}
+                  </div>
+                  <span class="voice-badge{% if item.consent %} voice-badge-ok{% endif %}">
+                    {% if item.consent %}Consent ready{% else %}No consent{% endif %}
+                  </span>
+                </div>
+
+                <div class="voice-meta">
+                  <span>Consent: {{ item.consent.id if item.consent else "не создан" }}</span>
+                </div>
+
+                <div class="voice-actions">
+                  <button class="call-btn call-btn-secondary js-convert-wav" type="button" {% if not item.has_sample %}disabled{% endif %}>
+                    Convert to WAV
+                  </button>
+                  <button class="call-btn call-btn-secondary js-create-consent" type="button" {% if not item.has_sample %}disabled{% endif %}>
+                    Create consent
+                  </button>
+                  <button class="call-btn call-btn-primary js-create-voice" type="button" {% if not item.has_sample %}disabled{% endif %}>
+                    Create voice
+                  </button>
+                </div>
+
+                <pre class="voice-result" id="voice-result-{{ loop.index0 }}">Готово к запуску.</pre>
+              </article>
+            {% else %}
+              <article class="voice-card">
+                <div class="voice-card-head">
+                  <div>
+                    <h2>Папок пока нет</h2>
+                    <p>Добавьте подпапки с mp3/wav в <code>static/voices</code>.</p>
+                  </div>
+                </div>
+              </article>
+            {% endfor %}
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="{{ url_for('static', filename='voices.js') }}"></script>
+  </body>
+</html>
