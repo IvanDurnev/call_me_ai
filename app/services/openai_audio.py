@@ -5,9 +5,8 @@ from pathlib import Path
 from typing import Any
 
 from flask import current_app, has_app_context
-from openai import (
-    OpenAI,
-)
+
+from .openai_client import build_openai_client
 
 
 OPENAI_AUDIO_VOICES_URL = "https://api.openai.com/v1/audio/voices"
@@ -34,7 +33,7 @@ def list_voice_consents(
     if not resolved_api_key:
         raise ValueError("OPENAI_API_KEY is not configured.")
 
-    client = _build_openai_client(resolved_api_key, timeout_seconds)
+    client = build_openai_client(resolved_api_key, timeout_seconds)
     payload = client.get(
         "/audio/voice_consents",
         cast_to=dict,
@@ -71,7 +70,7 @@ def create_voice_consent(
         raise ValueError("OPENAI_API_KEY is not configured.")
 
     mime_type = _guess_mime_type(recording_file_path)
-    client = _build_openai_client(resolved_api_key, timeout_seconds)
+    client = build_openai_client(resolved_api_key, timeout_seconds)
     with recording_file_path.open("rb") as recording_file:
         payload = client.post(
             "/audio/voice_consents",
@@ -110,7 +109,7 @@ def create_custom_voice(
         raise ValueError("OPENAI_API_KEY is not configured.")
 
     mime_type = _guess_mime_type(sample_path)
-    client = _build_openai_client(resolved_api_key, timeout_seconds)
+    client = build_openai_client(resolved_api_key, timeout_seconds)
     with sample_path.open("rb") as audio_file:
         payload = client.post(
             "/audio/voices",
@@ -142,7 +141,7 @@ def generate_speech_preview(
     if not resolved_api_key:
         raise ValueError("OPENAI_API_KEY is not configured.")
 
-    client = _build_openai_client(resolved_api_key, timeout_seconds)
+    client = build_openai_client(resolved_api_key, timeout_seconds)
     response = client.audio.speech.create(
         model="gpt-4o-mini-tts",
         voice=voice.strip(),
@@ -169,7 +168,3 @@ def _guess_mime_type(sample_path: Path) -> str:
             + ", ".join(sorted(SUPPORTED_AUDIO_MIME_TYPES))
         )
     return mime_type
-
-
-def _build_openai_client(api_key: str, timeout_seconds: float) -> OpenAI:
-    return OpenAI(api_key=api_key, timeout=timeout_seconds)

@@ -50,6 +50,7 @@ class Config:
     PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "http://127.0.0.1:5000").rstrip("/")
 
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+    OPENAI_PROXY = os.getenv("OPENAI_PROXY", os.getenv("OPENAI_PROXY_IP", "")).strip()
     OPENAI_REALTIME_MODEL = os.getenv("OPENAI_REALTIME_MODEL", "gpt-4o-realtime-preview")
     OPENAI_REALTIME_VOICE = os.getenv("OPENAI_REALTIME_VOICE", "alloy")
     OPENAI_REALTIME_URL = f"wss://api.openai.com/v1/realtime?model={OPENAI_REALTIME_MODEL}"

@@ -14,6 +14,7 @@ from .characters import build_character_identity_prompt, build_realtime_session_
 from .extensions import db
 from .models import AppUser, CallSession
 from .services.billing import build_user_access_state
+from .services.openai_client import build_openai_websocket_options
 
 
 def build_openai_headers(app) -> list[str]:
@@ -56,6 +57,7 @@ class SocketBridge:
             header=build_openai_headers(self.app),
             enable_multithread=True,
             timeout=30,
+            **build_openai_websocket_options(),
         )
         self._send_openai(
             {
