@@ -79,8 +79,15 @@
                   {% elif current_subscription.kind == 'call_package' and current_subscription.remaining_minutes is not none %}
                     <p class="voice-meta">В пакете осталось {{ current_subscription.remaining_minutes }} минут.</p>
                   {% endif %}
-                  {% if current_subscription.kind == 'unlimited' and current_subscription.auto_renew_enabled and current_subscription.next_transaction_at %}
-                    <p class="voice-meta">Следующее списание запланировано на {{ current_subscription.next_transaction_at.strftime('%d.%m.%Y %H:%M') }} UTC.</p>
+                  {% if current_subscription.kind == 'unlimited' and current_subscription.auto_renew_enabled %}
+                    <p class="voice-meta">
+                      Следующее списание:
+                      {% if current_subscription.next_transaction_at %}
+                        {{ current_subscription.next_transaction_at.strftime('%d.%m.%Y %H:%M') }} UTC.
+                      {% else %}
+                        дата уточняется у CloudPayments.
+                      {% endif %}
+                    </p>
                   {% elif current_subscription.kind == 'unlimited' and not current_subscription.auto_renew_enabled %}
                     <p class="voice-meta">Автопродление отключено. Доступ сохранится до конца текущего периода.</p>
                   {% endif %}
