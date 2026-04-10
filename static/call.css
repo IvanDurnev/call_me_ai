@@ -1274,15 +1274,13 @@ body {
 
 @media (max-width: 1024px) {
   .landing-stage {
+    width: 100%;
+    margin-inline: auto;
     grid-template-columns: 1fr;
   }
 
   .landing-screen {
     height: auto;
-  }
-
-  .cards-grid-compact {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -1314,6 +1312,8 @@ body {
   }
 
   .landing-stage {
+    width: 100%;
+    margin-inline: auto;
     padding: 18px;
     border-radius: 28px;
   }
