@@ -179,8 +179,7 @@ def build_user_access_state(user: AppUser | None, *, trial_minutes_limit: int) -
             "next_transaction_at": active_unlimited["next_transaction_at"],
             "canceled_at": active_unlimited["canceled_at"],
             "auto_renew_enabled": bool(
-                active_unlimited["subscription_id"]
-                and (active_unlimited["subscription_status"] or "").lower() not in {"canceled", "cancelled"}
+                (active_unlimited["subscription_status"] or "active").lower() not in {"canceled", "cancelled"}
                 and active_unlimited["canceled_at"] is None
             ),
         }
