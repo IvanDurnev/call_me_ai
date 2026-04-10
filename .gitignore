@@ -48,4 +48,10 @@ pip-wheel-metadata/
 static/images
 static/uploads
 static/voices
+migrations
 migrations/
+!migrations/
+migrations/*
+!migrations/versions/
+migrations/versions/*
+!migrations/versions/e8f9a0b1c2d3_add_cloudpayments_subscription_fields.py

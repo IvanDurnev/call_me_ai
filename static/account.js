@@ -12,6 +12,7 @@ const recurringConsentBlock = document.getElementById("recurring-consent-block")
 const recurringConsentCheckbox = document.getElementById("recurring-consent-checkbox");
 const recurringConsentHint = document.getElementById("recurring-consent-hint");
 const paymentFrequencyText = document.getElementById("payment-frequency-text");
+const cancelSubscriptionButton = document.getElementById("subscription-cancel-btn");
 
 function selectedPlanInput() {
   return document.querySelector('input[name="pricing_plan"]:checked');
@@ -69,6 +70,9 @@ function syncPlanPaymentTerms() {
     recurringConsentHint.textContent = requiresConsent
       ? "Отменить автопродление можно по запросу на info@itd.dev или по телефону 89240254453 до следующего периода списания."
       : "Для разовых пакетов минут автоматические списания не применяются.";
+  }
+  if (recurringConsentCheckbox) {
+    recurringConsentCheckbox.disabled = !requiresConsent;
   }
   if (!requiresConsent && recurringConsentCheckbox) {
     recurringConsentCheckbox.checked = false;
@@ -176,12 +180,20 @@ async function startSubscriptionCheckout(planCode) {
       recurring_consent: Boolean(recurringConsentCheckbox?.checked),
     });
     const checkout = data.checkout || {};
+    const checkoutPayload = { ...checkout };
+    if (checkout.recurrent) {
+      checkoutPayload.recurrent = { ...checkout.recurrent };
+      if (checkoutPayload.recurrent.startDateIso) {
+        checkoutPayload.recurrent.startDate = new Date(checkoutPayload.recurrent.startDateIso);
+        delete checkoutPayload.recurrent.startDateIso;
+      }
+    }
     const widget = new window.cp.CloudPayments({ language: "ru-RU" });
     closePlanModal();
 
     widget.pay(
       "charge",
-      checkout,
+      checkoutPayload,
       {
         onSuccess: async () => {
           try {
@@ -248,6 +260,20 @@ paymentHistoryToggle?.addEventListener("click", () => {
   }
   paymentHistoryList.hidden = !paymentHistoryList.hidden;
   syncPaymentHistoryToggle();
+});
+
+cancelSubscriptionButton?.addEventListener("click", async () => {
+  cancelSubscriptionButton.disabled = true;
+  setPaymentStatus("Отключаем автопродление…");
+  try {
+    const data = await postJson("/api/account/subscription/cancel");
+    setPaymentStatus(data.message || "Автопродление отключено.", "success");
+    window.setTimeout(() => window.location.reload(), 1200);
+  } catch (error) {
+    setPaymentStatus(error.message, "danger");
+  } finally {
+    cancelSubscriptionButton.disabled = false;
+  }
 });
 
 syncPaymentHistoryToggle();

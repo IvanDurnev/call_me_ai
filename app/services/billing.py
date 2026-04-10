@@ -52,6 +52,10 @@ def _purchase_plan_snapshot(
         "description": description,
         "paid_at": paid_at,
         "expires_at": expires_at,
+        "subscription_id": purchase.cloudpayments_subscription_id,
+        "subscription_status": purchase.subscription_status,
+        "next_transaction_at": purchase.next_transaction_at,
+        "canceled_at": purchase.canceled_at,
     }
 
 
@@ -170,6 +174,15 @@ def build_user_access_state(user: AppUser | None, *, trial_minutes_limit: int) -
             "remaining_minutes": None,
             "period_days": active_unlimited["period_days"],
             "description": active_unlimited["description"],
+            "subscription_id": active_unlimited["subscription_id"],
+            "subscription_status": active_unlimited["subscription_status"],
+            "next_transaction_at": active_unlimited["next_transaction_at"],
+            "canceled_at": active_unlimited["canceled_at"],
+            "auto_renew_enabled": bool(
+                active_unlimited["subscription_id"]
+                and (active_unlimited["subscription_status"] or "").lower() not in {"canceled", "cancelled"}
+                and active_unlimited["canceled_at"] is None
+            ),
         }
     elif package_remaining_minutes > 0:
         latest_package = next(
@@ -195,6 +208,11 @@ def build_user_access_state(user: AppUser | None, *, trial_minutes_limit: int) -
                 "remaining_minutes": package_remaining_minutes,
                 "period_days": None,
                 "description": latest_package["description"],
+                "subscription_id": None,
+                "subscription_status": None,
+                "next_transaction_at": None,
+                "canceled_at": None,
+                "auto_renew_enabled": False,
             }
 
     return {

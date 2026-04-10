@@ -890,6 +890,10 @@ body {
   color: var(--text);
 }
 
+.consent-check[hidden] {
+  display: none !important;
+}
+
 .consent-check input {
   width: 18px;
   height: 18px;

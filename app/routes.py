@@ -7,7 +7,7 @@ import re
 import shutil
 import subprocess
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
 from functools import wraps
@@ -34,6 +34,7 @@ from .models import AdminUser, AppUser, Hero, CallSession, SubscriptionPurchase,
 from .services import (
     build_user_access_state,
     build_voice_library_payload,
+    cancel_cloudpayments_subscription,
     cloudpayments_enabled,
     convert_voice_sample_to_wav,
     create_custom_voice,
@@ -41,6 +42,7 @@ from .services import (
     find_payment,
     generate_speech_preview,
     issue_email_code,
+    verify_cloudpayments_webhook_signature,
     verify_email_code,
 )
 from .services.voice_library import iter_voice_directories, normalize_voice_name, pick_voice_sample
@@ -420,6 +422,10 @@ def _serialize_subscription_purchase(purchase: SubscriptionPurchase) -> dict:
         "currency": purchase.currency,
         "status": purchase.status,
         "transaction_id": purchase.transaction_id,
+        "cloudpayments_subscription_id": purchase.cloudpayments_subscription_id,
+        "subscription_status": purchase.subscription_status,
+        "next_transaction_at": purchase.next_transaction_at.isoformat() if purchase.next_transaction_at else None,
+        "canceled_at": purchase.canceled_at.isoformat() if purchase.canceled_at else None,
         "paid_at": purchase.paid_at.isoformat() if purchase.paid_at else None,
         "created_at": purchase.created_at.isoformat() if purchase.created_at else None,
     }
@@ -531,6 +537,246 @@ def _apply_pricing_plan_payload(plan: PricingPlan, payload: dict) -> None:
     plan.period_days = period_days
     plan.sort_order = sort_order
     plan.is_active = bool(payload.get("is_active", plan.is_active))
+
+
+def _plan_recurrent_payload(plan: PricingPlan) -> dict | None:
+    if plan.kind != "unlimited" or not plan.period_days:
+        return None
+    start_date = datetime.utcnow() + timedelta(days=int(plan.period_days))
+    return {
+        "interval": "Day",
+        "period": int(plan.period_days),
+        "startDateIso": start_date.replace(microsecond=0).isoformat() + "Z",
+    }
+
+
+def _parse_cloudpayments_datetime(raw_value) -> datetime | None:
+    text = str(raw_value or "").strip()
+    if not text:
+        return None
+    normalized = text.replace("Z", "+00:00")
+    try:
+        parsed = datetime.fromisoformat(normalized)
+    except ValueError:
+        return None
+    if parsed.tzinfo is not None:
+        parsed = parsed.astimezone(timezone.utc).replace(tzinfo=None)
+    return parsed
+
+
+def _cloudpayments_json_code(code: int = 0, *, status: int = 200) -> Response:
+    return jsonify({"code": code}), status
+
+
+def _cloudpayments_notification_payload() -> dict:
+    if request.is_json:
+        payload = request.get_json(silent=True) or {}
+    elif request.form:
+        payload = request.form.to_dict(flat=True)
+    else:
+        payload = dict(parse_qsl(request.get_data(as_text=True), keep_blank_values=True))
+
+    data_value = payload.get("Data")
+    if isinstance(data_value, str) and data_value.strip():
+        try:
+            payload["Data"] = json.loads(data_value)
+        except json.JSONDecodeError:
+            payload["Data"] = {"raw": data_value}
+    return payload
+
+
+def _cloudpayments_notification_user(payload: dict) -> AppUser | None:
+    account_id = str(payload.get("AccountId") or "").strip()
+    if not account_id:
+        return None
+    try:
+        user_id = int(account_id)
+    except ValueError:
+        return None
+    return AppUser.query.filter_by(id=user_id).first()
+
+
+def _find_purchase_by_notification(
+    payload: dict,
+    *,
+    user: AppUser | None = None,
+) -> SubscriptionPurchase | None:
+    transaction_id = str(payload.get("TransactionId") or "").strip()
+    invoice_id = str(payload.get("InvoiceId") or "").strip()
+    subscription_id = str(payload.get("SubscriptionId") or payload.get("Id") or "").strip()
+
+    if transaction_id:
+        purchase = SubscriptionPurchase.query.filter_by(transaction_id=transaction_id).first()
+        if purchase:
+            return purchase
+    if invoice_id:
+        purchase = SubscriptionPurchase.query.filter_by(invoice_id=invoice_id).first()
+        if purchase:
+            return purchase
+    if subscription_id:
+        query = SubscriptionPurchase.query.filter_by(cloudpayments_subscription_id=subscription_id)
+        if user:
+            query = query.filter_by(app_user_id=user.id)
+        purchase = query.order_by(SubscriptionPurchase.paid_at.desc(), SubscriptionPurchase.id.desc()).first()
+        if purchase:
+            return purchase
+    return None
+
+
+def _merge_provider_payload(existing_payload: dict | None, **updates) -> dict:
+    payload = dict(existing_payload or {})
+    for key, value in updates.items():
+        if value is not None:
+            payload[key] = value
+    return payload
+
+
+def _record_cloudpayments_payment(payload: dict, *, mark_paid: bool) -> SubscriptionPurchase | None:
+    user = _cloudpayments_notification_user(payload)
+    purchase = _find_purchase_by_notification(payload, user=user)
+    data = payload.get("Data") if isinstance(payload.get("Data"), dict) else {}
+    plan_code = str((data or {}).get("plan_code") or "").strip()
+    plan = _get_pricing_plan(plan_code) if plan_code else None
+
+    if not purchase and user is None:
+        return None
+
+    if not purchase and user and not plan:
+        subscription_id = str(payload.get("SubscriptionId") or "").strip()
+        template_query = SubscriptionPurchase.query.filter_by(app_user_id=user.id)
+        if subscription_id:
+            template_query = template_query.filter_by(cloudpayments_subscription_id=subscription_id)
+        template = template_query.order_by(SubscriptionPurchase.paid_at.desc(), SubscriptionPurchase.id.desc()).first()
+        if template:
+            plan_code = template.plan_code
+            plan = _get_pricing_plan(plan_code)
+            purchase = template if str(payload.get("TransactionId") or "").strip() == (template.transaction_id or "") else None
+
+    amount = Decimal(str(payload.get("Amount") or payload.get("TotalAmount") or "0").replace(",", ".") or "0")
+    currency = str(payload.get("Currency") or "RUB").strip().upper() or "RUB"
+    invoice_id = str(payload.get("InvoiceId") or "").strip()
+    transaction_id = str(payload.get("TransactionId") or "").strip()
+    subscription_id = str(payload.get("SubscriptionId") or payload.get("Id") or "").strip()
+    paid_at = (
+        _parse_cloudpayments_datetime(payload.get("DateTime"))
+        or _parse_cloudpayments_datetime(payload.get("TransactionDateTime"))
+        or datetime.utcnow()
+    )
+    next_transaction_at = _parse_cloudpayments_datetime(payload.get("NextTransactionDateIso"))
+    subscription_status = str(payload.get("Status") or "").strip() or None
+
+    if not purchase:
+        if not user:
+            return None
+        source_purchase = None
+        if subscription_id:
+            source_purchase = (
+                SubscriptionPurchase.query.filter_by(app_user_id=user.id, cloudpayments_subscription_id=subscription_id)
+                .order_by(SubscriptionPurchase.paid_at.desc(), SubscriptionPurchase.id.desc())
+                .first()
+            )
+        if not source_purchase and plan_code:
+            source_purchase = (
+                SubscriptionPurchase.query.filter_by(app_user_id=user.id, plan_code=plan_code)
+                .order_by(SubscriptionPurchase.paid_at.desc(), SubscriptionPurchase.id.desc())
+                .first()
+            )
+        invoice_id = invoice_id or f"cp-rec-{user.id}-{uuid.uuid4().hex[:16]}"
+        purchase = SubscriptionPurchase(
+            app_user_id=user.id,
+            invoice_id=invoice_id,
+            plan_code=(plan.code if plan else (source_purchase.plan_code if source_purchase else plan_code or "unknown-plan")),
+            plan_name=(
+                (plan.name if plan else None)
+                or (source_purchase.plan_name if source_purchase else None)
+                or str(payload.get("Description") or "Подписка").strip()
+                or "Подписка"
+            ),
+            amount=amount,
+            currency=currency,
+            status="paid" if mark_paid else "failed",
+            transaction_id=transaction_id or None,
+            paid_at=paid_at if mark_paid else None,
+            cloudpayments_subscription_id=subscription_id or (source_purchase.cloudpayments_subscription_id if source_purchase else None),
+            subscription_status=subscription_status or (source_purchase.subscription_status if source_purchase else None),
+            recurring_interval=(source_purchase.recurring_interval if source_purchase else None),
+            recurring_period=(source_purchase.recurring_period if source_purchase else None),
+            next_transaction_at=next_transaction_at,
+            provider_payload_json={
+                "kind": "cloudpayments_webhook",
+                "webhook_origin": "cloudpayments",
+                "initial_notification": payload,
+            },
+        )
+        db.session.add(purchase)
+
+    purchase.amount = amount or purchase.amount
+    purchase.currency = currency or purchase.currency
+    purchase.transaction_id = transaction_id or purchase.transaction_id
+    purchase.cloudpayments_subscription_id = subscription_id or purchase.cloudpayments_subscription_id
+    purchase.subscription_status = subscription_status or purchase.subscription_status
+    purchase.next_transaction_at = next_transaction_at or purchase.next_transaction_at
+    purchase.provider_payload_json = _merge_provider_payload(
+        purchase.provider_payload_json,
+        payment=payload if mark_paid else None,
+        payment_failure=payload if not mark_paid else None,
+        last_webhook_at=datetime.utcnow().isoformat(),
+    )
+    if mark_paid:
+        purchase.status = "paid"
+        purchase.paid_at = paid_at or purchase.paid_at or datetime.utcnow()
+        if purchase.canceled_at and purchase.subscription_status and purchase.subscription_status.lower() == "active":
+            purchase.canceled_at = None
+    else:
+        purchase.status = "failed"
+    return purchase
+
+
+def _update_cloudpayments_subscription_state(payload: dict) -> SubscriptionPurchase | None:
+    user = _cloudpayments_notification_user(payload)
+    purchase = _find_purchase_by_notification(payload, user=user)
+    if not purchase and user:
+        subscription_id = str(payload.get("Id") or payload.get("SubscriptionId") or "").strip()
+        if subscription_id:
+            purchase = (
+                SubscriptionPurchase.query.filter_by(app_user_id=user.id, cloudpayments_subscription_id=subscription_id)
+                .order_by(SubscriptionPurchase.paid_at.desc(), SubscriptionPurchase.id.desc())
+                .first()
+            )
+    if not purchase:
+        return None
+
+    subscription_id = str(payload.get("Id") or payload.get("SubscriptionId") or "").strip()
+    status_value = str(payload.get("Status") or "").strip() or None
+    next_transaction_at = _parse_cloudpayments_datetime(payload.get("NextTransactionDateIso"))
+    canceled_at = None
+    if status_value and status_value.lower() in {"cancelled", "canceled"}:
+        canceled_at = datetime.utcnow()
+
+    matching_purchases = SubscriptionPurchase.query.filter_by(
+        app_user_id=purchase.app_user_id,
+        cloudpayments_subscription_id=subscription_id or purchase.cloudpayments_subscription_id,
+    ).all()
+    for item in matching_purchases:
+        item.cloudpayments_subscription_id = subscription_id or item.cloudpayments_subscription_id
+        item.subscription_status = status_value or item.subscription_status
+        item.next_transaction_at = next_transaction_at or item.next_transaction_at
+        item.canceled_at = canceled_at or item.canceled_at
+        item.provider_payload_json = _merge_provider_payload(
+            item.provider_payload_json,
+            recurrent=item.provider_payload_json.get("recurrent") if item.provider_payload_json else None,
+            recurrent_notification=payload,
+            last_webhook_at=datetime.utcnow().isoformat(),
+        )
+    return purchase
+
+
+def _verify_cloudpayments_notification() -> bool:
+    raw_body = request.get_data(cache=True)
+    try:
+        return verify_cloudpayments_webhook_signature(raw_body, request.headers)
+    except RuntimeError:
+        return False
 
 
 @main_bp.get("/")
@@ -1030,6 +1276,12 @@ def account():
         cloudpayments_enabled=_cloudpayments_ready(),
         cloudpayments_public_id=current_app.config.get("CLOUDPAYMENTS_PUBLIC_ID", ""),
         current_subscription=access_state["current_subscription"],
+        can_cancel_autorenew=bool(
+            access_state["current_subscription"]
+            and access_state["current_subscription"].get("kind") == "unlimited"
+            and access_state["current_subscription"].get("subscription_id")
+            and access_state["current_subscription"].get("auto_renew_enabled")
+        ),
         pricing_plans=pricing_plans,
     )
 
@@ -1087,6 +1339,8 @@ def subscription_checkout():
         amount=plan.price,
         currency=plan.currency,
         status="created",
+        recurring_interval="Day" if plan.kind == "unlimited" and plan.period_days else None,
+        recurring_period=int(plan.period_days) if plan.kind == "unlimited" and plan.period_days else None,
         provider_payload_json={
             "kind": "cloudpayments_widget",
             "created_at": datetime.utcnow().isoformat(),
@@ -1110,6 +1364,7 @@ def subscription_checkout():
                 "invoiceId": invoice_id,
                 "email": user.email,
                 "skin": "modern",
+                "recurrent": _plan_recurrent_payload(plan),
                 "data": {
                     "plan_code": plan.code,
                     "app_user_id": user.id,
@@ -1161,6 +1416,9 @@ def subscription_confirm():
     if provider_status == "Completed":
         purchase.status = "paid"
         purchase.paid_at = purchase.paid_at or datetime.utcnow()
+        purchase.cloudpayments_subscription_id = str(payment.get("SubscriptionId") or purchase.cloudpayments_subscription_id or "").strip() or purchase.cloudpayments_subscription_id
+        purchase.subscription_status = str(payment.get("SubscriptionStatus") or payment.get("Status") or purchase.subscription_status or "").strip() or purchase.subscription_status
+        purchase.next_transaction_at = _parse_cloudpayments_datetime(payment.get("NextTransactionDateIso")) or purchase.next_transaction_at
     elif provider_status:
         purchase.status = provider_status.lower()
     else:
@@ -1168,6 +1426,86 @@ def subscription_confirm():
 
     db.session.commit()
     return jsonify({"ok": True, "purchase": _serialize_subscription_purchase(purchase)})
+
+
+@main_bp.post("/api/account/subscription/cancel")
+def subscription_cancel():
+    user = _current_app_user()
+    if not user:
+        return jsonify({"ok": False, "error": "Нужно войти в личный кабинет."}), 401
+
+    access_state = _app_user_access_state(user)
+    current_subscription = access_state.get("current_subscription") or {}
+    subscription_id = str(current_subscription.get("subscription_id") or "").strip()
+    if not subscription_id:
+        return jsonify({"ok": False, "error": "Активная подписка с автопродлением не найдена."}), 404
+
+    try:
+        cancel_cloudpayments_subscription(subscription_id)
+    except Exception as exc:  # noqa: BLE001
+        return jsonify({"ok": False, "error": str(exc)}), 502
+
+    canceled_at = datetime.utcnow()
+    purchases = SubscriptionPurchase.query.filter_by(
+        app_user_id=user.id,
+        cloudpayments_subscription_id=subscription_id,
+    ).all()
+    for purchase in purchases:
+        purchase.subscription_status = "Canceled"
+        purchase.canceled_at = canceled_at
+        purchase.next_transaction_at = None
+        purchase.provider_payload_json = _merge_provider_payload(
+            purchase.provider_payload_json,
+            canceled_via="account",
+            canceled_at=canceled_at.isoformat(),
+        )
+
+    db.session.commit()
+    return jsonify(
+        {
+            "ok": True,
+            "message": "Автопродление отключено. Подписка останется активной до конца оплаченного периода.",
+        }
+    )
+
+
+@main_bp.post("/api/cloudpayments/webhooks/pay")
+def cloudpayments_pay_webhook():
+    if not _verify_cloudpayments_notification():
+        return _cloudpayments_json_code(13, status=403)
+
+    payload = _cloudpayments_notification_payload()
+    purchase = _record_cloudpayments_payment(payload, mark_paid=True)
+    if purchase is None:
+        return _cloudpayments_json_code()
+
+    db.session.commit()
+    return _cloudpayments_json_code()
+
+
+@main_bp.post("/api/cloudpayments/webhooks/fail")
+def cloudpayments_fail_webhook():
+    if not _verify_cloudpayments_notification():
+        return _cloudpayments_json_code(13, status=403)
+
+    payload = _cloudpayments_notification_payload()
+    purchase = _record_cloudpayments_payment(payload, mark_paid=False)
+    if purchase is None:
+        return _cloudpayments_json_code()
+
+    db.session.commit()
+    return _cloudpayments_json_code()
+
+
+@main_bp.post("/api/cloudpayments/webhooks/recurrent")
+def cloudpayments_recurrent_webhook():
+    if not _verify_cloudpayments_notification():
+        return _cloudpayments_json_code(13, status=403)
+
+    payload = _cloudpayments_notification_payload()
+    _update_cloudpayments_subscription_state(payload)
+    db.session.commit()
+    return _cloudpayments_json_code()
 
 
 def _absolute_url(base_url: str, target: str) -> str:

@@ -79,8 +79,17 @@
                   {% elif current_subscription.kind == 'call_package' and current_subscription.remaining_minutes is not none %}
                     <p class="voice-meta">В пакете осталось {{ current_subscription.remaining_minutes }} минут.</p>
                   {% endif %}
+                  {% if current_subscription.kind == 'unlimited' and current_subscription.auto_renew_enabled and current_subscription.next_transaction_at %}
+                    <p class="voice-meta">Следующее списание запланировано на {{ current_subscription.next_transaction_at.strftime('%d.%m.%Y %H:%M') }} UTC.</p>
+                  {% elif current_subscription.kind == 'unlimited' and not current_subscription.auto_renew_enabled %}
+                    <p class="voice-meta">Автопродление отключено. Доступ сохранится до конца текущего периода.</p>
+                  {% endif %}
                   {% if current_subscription.paid_at %}
                     <p class="voice-meta">Оплачено {{ current_subscription.paid_at.strftime('%d.%m.%Y %H:%M') }}.</p>
+                  {% endif %}
+                  {% if can_cancel_autorenew %}
+                    <button class="call-btn call-btn-secondary" id="subscription-cancel-btn" type="button">Отключить автопродление</button>
+                    <p class="account-payment-status" id="subscription-status">Автопродление активно.</p>
                   {% endif %}
                 </div>
               {% else %}
@@ -111,7 +120,15 @@
               <div class="subscription-help subscription-help-wide">
                 <p class="subscription-help-title">Статус</p>
                 <p class="voice-meta">Текущий тариф уже закреплён за аккаунтом.</p>
-                <p class="voice-meta">Если позже захочешь, можно будет добавить продление или смену тарифа отдельным действием.</p>
+                <p class="voice-meta">
+                  {% if current_subscription.kind == 'unlimited' and current_subscription.auto_renew_enabled %}
+                    Автопродление обрабатывается через CloudPayments по сохранённой подписке.
+                  {% elif current_subscription.kind == 'unlimited' %}
+                    Автопродление отключено, новых списаний не будет.
+                  {% else %}
+                    Для пакетов минут автоматические списания не используются.
+                  {% endif %}
+                </p>
               </div>
             {% endif %}
             <div class="account-legal-links">
@@ -261,6 +278,6 @@
       </div>
     {% endif %}
     <script src="https://widget.cloudpayments.ru/bundles/cloudpayments"></script>
-    <script src="{{ url_for('static', filename='account.js', v='20260410legal') }}"></script>
+    <script src="{{ url_for('static', filename='account.js', v='20260410recurring') }}"></script>
   </body>
 </html>
