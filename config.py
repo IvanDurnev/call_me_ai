@@ -35,6 +35,7 @@ class Config:
     CLOUDPAYMENTS_CURRENCY = os.getenv("CLOUDPAYMENTS_CURRENCY", "RUB").strip().upper() or "RUB"
     CLOUDPAYMENTS_TEST_SUBSCRIPTION_AMOUNT = float(os.getenv("CLOUDPAYMENTS_TEST_SUBSCRIPTION_AMOUNT", "99"))
     CLOUDPAYMENTS_TEST_SUBSCRIPTION_NAME = os.getenv("CLOUDPAYMENTS_TEST_SUBSCRIPTION_NAME", "Тестовый абонемент").strip() or "Тестовый абонемент"
+    SUBSCRIPTION_RENEW_CHECK_INTERVAL_SECONDS = int(os.getenv("SUBSCRIPTION_RENEW_CHECK_INTERVAL_SECONDS", "60"))
 
     TG_BOT_TOKEN = os.getenv("TG_BOT_TOKEN", "")
     TG_BOT_NAME = os.getenv("TG_BOT_NAME", "").strip().lstrip("@")

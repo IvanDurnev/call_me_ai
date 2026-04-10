@@ -52,6 +52,8 @@ def _purchase_plan_snapshot(
         "description": description,
         "paid_at": paid_at,
         "expires_at": expires_at,
+        "purchase_id": purchase.id,
+        "cloudpayments_token": purchase.cloudpayments_token,
         "subscription_id": purchase.cloudpayments_subscription_id,
         "subscription_status": purchase.subscription_status,
         "next_transaction_at": purchase.next_transaction_at or expires_at,
@@ -162,6 +164,7 @@ def build_user_access_state(user: AppUser | None, *, trial_minutes_limit: int) -
     if active_unlimited:
         purchase = active_unlimited["purchase"]
         current_subscription = {
+            "purchase_id": purchase.id,
             "plan_code": purchase.plan_code,
             "plan_name": purchase.plan_name,
             "kind": "unlimited",
@@ -174,11 +177,14 @@ def build_user_access_state(user: AppUser | None, *, trial_minutes_limit: int) -
             "remaining_minutes": None,
             "period_days": active_unlimited["period_days"],
             "description": active_unlimited["description"],
+            "cloudpayments_token": active_unlimited["cloudpayments_token"],
             "subscription_id": active_unlimited["subscription_id"],
             "subscription_status": active_unlimited["subscription_status"],
             "next_transaction_at": active_unlimited["next_transaction_at"],
             "canceled_at": active_unlimited["canceled_at"],
             "auto_renew_enabled": bool(
+                bool(active_unlimited["cloudpayments_token"] or active_unlimited["subscription_id"])
+                and
                 (active_unlimited["subscription_status"] or "active").lower() not in {"canceled", "cancelled"}
                 and active_unlimited["canceled_at"] is None
             ),
@@ -195,6 +201,7 @@ def build_user_access_state(user: AppUser | None, *, trial_minutes_limit: int) -
         if latest_package:
             purchase = latest_package["purchase"]
             current_subscription = {
+                "purchase_id": purchase.id,
                 "plan_code": purchase.plan_code,
                 "plan_name": purchase.plan_name,
                 "kind": "call_package",
@@ -207,6 +214,7 @@ def build_user_access_state(user: AppUser | None, *, trial_minutes_limit: int) -
                 "remaining_minutes": package_remaining_minutes,
                 "period_days": None,
                 "description": latest_package["description"],
+                "cloudpayments_token": None,
                 "subscription_id": None,
                 "subscription_status": None,
                 "next_transaction_at": None,

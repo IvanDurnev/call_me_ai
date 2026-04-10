@@ -106,6 +106,7 @@ class SubscriptionPurchase(db.Model):
     status = db.Column(db.String(32), nullable=False, default="created", index=True)
     transaction_id = db.Column(db.String(64), nullable=True, index=True)
     paid_at = db.Column(db.DateTime, nullable=True)
+    cloudpayments_token = db.Column(db.String(128), nullable=True)
     cloudpayments_subscription_id = db.Column(db.String(64), nullable=True, index=True)
     subscription_status = db.Column(db.String(32), nullable=True, index=True)
     recurring_interval = db.Column(db.String(16), nullable=True)

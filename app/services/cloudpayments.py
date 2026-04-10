@@ -87,6 +87,33 @@ def cancel_cloudpayments_subscription(subscription_id: str) -> dict:
     return _cloudpayments_request(CLOUDPAYMENTS_CANCEL_SUBSCRIPTION_URL, {"Id": subscription_id})
 
 
+def charge_cloudpayments_token(
+    *,
+    token: str,
+    invoice_id: str,
+    amount,
+    currency: str,
+    description: str | None = None,
+    account_id: str | None = None,
+    email: str | None = None,
+    extra_data: dict | None = None,
+) -> dict:
+    payload: dict[str, object] = {
+        "Token": token,
+        "InvoiceId": invoice_id,
+        "Amount": float(Decimal(str(amount))),
+        "Currency": currency,
+        "Description": description or invoice_id,
+    }
+    if account_id:
+        payload["AccountId"] = account_id
+    if email:
+        payload["Email"] = email
+    if extra_data:
+        payload["JsonData"] = dict(extra_data)
+    return _cloudpayments_request("https://api.cloudpayments.ru/payments/tokens/charge", payload)
+
+
 def verify_cloudpayments_webhook_signature(raw_body: bytes, headers) -> bool:
     _, api_password = _cloudpayments_credentials()
     if raw_body is None:

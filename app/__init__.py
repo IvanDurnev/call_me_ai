@@ -50,10 +50,12 @@ def create_app(config_class: type[Config] = Config) -> Flask:
 
 def start_background_services(app: Flask) -> None:
     from .max_bot import start_polling_bot_once as start_max_polling_bot_once
+    from .services.recurring import start_recurring_worker_once
     from .telegram_bot import start_polling_bot_once as start_telegram_polling_bot_once
 
     start_telegram_polling_bot_once(app)
     start_max_polling_bot_once(app)
+    start_recurring_worker_once(app)
 
 
 def _maybe_start_background_services(app: Flask) -> None:

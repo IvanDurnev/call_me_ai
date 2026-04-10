@@ -2,6 +2,7 @@ from .billing import build_user_access_state
 from .cloudpayments import (
     build_test_subscription_offer,
     cancel_cloudpayments_subscription,
+    charge_cloudpayments_token,
     cloudpayments_enabled,
     find_payment,
     verify_cloudpayments_webhook_signature,
@@ -15,6 +16,7 @@ __all__ = [
     "build_test_subscription_offer",
     "build_voice_library_payload",
     "cancel_cloudpayments_subscription",
+    "charge_cloudpayments_token",
     "cloudpayments_enabled",
     "convert_voice_sample_to_wav",
     "create_custom_voice",

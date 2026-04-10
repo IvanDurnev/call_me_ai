@@ -141,7 +141,7 @@ async function confirmSubscriptionPayment(invoiceId) {
     );
     const data = await postJson("/api/account/subscription/confirm", { invoiceId });
     const purchase = data.purchase || {};
-    const hasRecurringBinding = Boolean(purchase.cloudpayments_subscription_id);
+    const hasRecurringBinding = Boolean(purchase.cloudpayments_subscription_id || purchase.cloudpayments_token);
     if (purchase.status === "paid" && hasRecurringBinding) {
       setPaymentStatus("Оплата подтверждена, обновляем кабинет…", "success");
       window.setTimeout(() => window.location.reload(), 700);

@@ -14,6 +14,7 @@ from flask import Flask
 from app.extensions import db
 from app.models import AppUser, PricingPlan, SubscriptionPurchase
 from app.routes import APP_USER_SESSION_KEY, _apply_pricing_plan_payload, main_bp
+from app.services.recurring import process_due_recurring_purchases
 
 
 class RedirectRoutesTests(unittest.TestCase):
@@ -145,6 +146,7 @@ class CloudPaymentsRoutesTests(unittest.TestCase):
                 ("AccountId", str(user_id)),
                 ("Amount", "199.00"),
                 ("Currency", "RUB"),
+                ("Token", "tok_1"),
                 ("SubscriptionId", "sub_1"),
                 ("Status", "Active"),
                 ("NextTransactionDateIso", "2026-05-10T10:00:00Z"),
@@ -163,6 +165,7 @@ class CloudPaymentsRoutesTests(unittest.TestCase):
             self.assertIsNotNone(purchase)
             self.assertEqual(purchase.status, "paid")
             self.assertEqual(purchase.transaction_id, "tx-1")
+            self.assertEqual(purchase.cloudpayments_token, "tok_1")
             self.assertEqual(purchase.cloudpayments_subscription_id, "sub_1")
             self.assertEqual(purchase.subscription_status, "Active")
             self.assertEqual(purchase.next_transaction_at, datetime(2026, 5, 10, 10, 0, 0))
@@ -215,6 +218,7 @@ class CloudPaymentsRoutesTests(unittest.TestCase):
                 "Model": {
                     "Status": "Completed",
                     "TransactionId": "tx-confirm-1",
+                    "Token": "tok-confirm-1",
                     "SubscriptionId": "sub-confirm-1",
                     "SubscriptionStatus": "Active",
                     "NextTransactionDateIso": "2026-05-10T11:30:00Z",
@@ -230,6 +234,7 @@ class CloudPaymentsRoutesTests(unittest.TestCase):
             self.assertIsNotNone(purchase)
             self.assertEqual(purchase.status, "paid")
             self.assertEqual(purchase.transaction_id, "tx-confirm-1")
+            self.assertEqual(purchase.cloudpayments_token, "tok-confirm-1")
             self.assertEqual(purchase.cloudpayments_subscription_id, "sub-confirm-1")
             self.assertEqual(purchase.subscription_status, "Active")
             self.assertEqual(purchase.next_transaction_at, datetime(2026, 5, 10, 11, 30, 0))
@@ -266,6 +271,7 @@ class CloudPaymentsRoutesTests(unittest.TestCase):
                 currency=plan.currency,
                 status="paid",
                 paid_at=datetime(2026, 4, 10, 8, 0, 0),
+                cloudpayments_token="tok_cancel",
                 cloudpayments_subscription_id="sub_cancel",
                 subscription_status="Active",
                 recurring_interval="Day",
@@ -289,6 +295,114 @@ class CloudPaymentsRoutesTests(unittest.TestCase):
             self.assertEqual(purchase.subscription_status, "Canceled")
             self.assertIsNotNone(purchase.canceled_at)
             self.assertIsNone(purchase.next_transaction_at)
+
+    def test_account_cancel_disables_local_autorenew_without_subscription_id(self) -> None:
+        with self.app.app_context():
+            user = AppUser(
+                email="token-cancel@example.com",
+                phone="+79994444444",
+                name="Token Cancel",
+                consent_to_personal_data=True,
+                email_verified=True,
+            )
+            plan = PricingPlan(
+                code="unlimited-30",
+                name="Unlimited 30",
+                description="Unlimited plan",
+                kind="unlimited",
+                price=Decimal("199.00"),
+                currency="RUB",
+                period_days=30,
+                sort_order=0,
+                is_active=True,
+            )
+            db.session.add_all([user, plan])
+            db.session.flush()
+            user_id = user.id
+            purchase = SubscriptionPurchase(
+                app_user_id=user.id,
+                invoice_id="inv-cancel-local-1",
+                plan_code=plan.code,
+                plan_name=plan.name,
+                amount=plan.price,
+                currency=plan.currency,
+                status="paid",
+                paid_at=datetime(2026, 4, 10, 8, 0, 0),
+                cloudpayments_token="tok_local_cancel",
+                subscription_status="Active",
+                recurring_interval="Day",
+                recurring_period=30,
+                next_transaction_at=datetime(2026, 5, 10, 8, 0, 0),
+                provider_payload_json={"pricing_plan": {"code": plan.code, "kind": plan.kind, "period_days": 30}},
+            )
+            db.session.add(purchase)
+            db.session.commit()
+
+        with self.client.session_transaction() as session:
+            session[APP_USER_SESSION_KEY] = user_id
+
+        response = self.client.post("/api/account/subscription/cancel", json={})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.get_json()["ok"])
+        with self.app.app_context():
+            purchase = SubscriptionPurchase.query.filter_by(invoice_id="inv-cancel-local-1").first()
+            self.assertEqual(purchase.subscription_status, "Canceled")
+            self.assertIsNotNone(purchase.canceled_at)
+
+    def test_process_due_recurring_purchases_uses_saved_token(self) -> None:
+        with self.app.app_context():
+            user = AppUser(
+                email="renew@example.com",
+                phone="+79995555555",
+                name="Renew User",
+                consent_to_personal_data=True,
+                email_verified=True,
+            )
+            plan = PricingPlan(
+                code="unlimited-30",
+                name="Unlimited 30",
+                description="Unlimited plan",
+                kind="unlimited",
+                price=Decimal("199.00"),
+                currency="RUB",
+                period_days=30,
+                sort_order=0,
+                is_active=True,
+            )
+            db.session.add_all([user, plan])
+            db.session.flush()
+            purchase = SubscriptionPurchase(
+                app_user_id=user.id,
+                invoice_id="inv-rec-source-1",
+                plan_code=plan.code,
+                plan_name=plan.name,
+                amount=plan.price,
+                currency=plan.currency,
+                status="paid",
+                paid_at=datetime(2026, 3, 1, 8, 0, 0),
+                cloudpayments_token="tok_saved",
+                subscription_status="Active",
+                recurring_interval="Day",
+                recurring_period=30,
+                provider_payload_json={"pricing_plan": {"code": plan.code, "kind": plan.kind, "period_days": 30}},
+            )
+            db.session.add(purchase)
+            db.session.commit()
+
+            with patch(
+                "app.services.recurring.charge_cloudpayments_token",
+                return_value={"TransactionId": "tx-rec-1", "Success": True},
+            ) as mocked_charge:
+                messages = process_due_recurring_purchases(now=datetime(2026, 4, 10, 10, 0, 0))
+
+            self.assertEqual(messages, [f"Подписка пользователя #{user.id}: запрос на автосписание отправлен."])
+            mocked_charge.assert_called_once()
+            self.assertEqual(mocked_charge.call_args.kwargs["token"], "tok_saved")
+            recurring_purchase = SubscriptionPurchase.query.filter_by(invoice_id=mocked_charge.call_args.kwargs["invoice_id"]).first()
+            self.assertIsNotNone(recurring_purchase)
+            self.assertEqual(recurring_purchase.status, "pending")
+            self.assertEqual(recurring_purchase.transaction_id, "tx-rec-1")
 
 
 if __name__ == "__main__":

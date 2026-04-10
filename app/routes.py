@@ -422,6 +422,7 @@ def _serialize_subscription_purchase(purchase: SubscriptionPurchase) -> dict:
         "currency": purchase.currency,
         "status": purchase.status,
         "transaction_id": purchase.transaction_id,
+        "cloudpayments_token": purchase.cloudpayments_token,
         "cloudpayments_subscription_id": purchase.cloudpayments_subscription_id,
         "subscription_status": purchase.subscription_status,
         "next_transaction_at": purchase.next_transaction_at.isoformat() if purchase.next_transaction_at else None,
@@ -692,6 +693,7 @@ def _record_cloudpayments_payment(payload: dict, *, mark_paid: bool) -> Subscrip
     currency = str(_cloudpayments_payload_value(payload, "Currency") or "RUB").strip().upper() or "RUB"
     invoice_id = str(_cloudpayments_payload_value(payload, "InvoiceId") or "").strip()
     transaction_id = str(_cloudpayments_payload_value(payload, "TransactionId") or "").strip()
+    cloudpayments_token = str(_cloudpayments_payload_value(payload, "Token") or "").strip()
     subscription_id = str(_cloudpayments_payload_value(payload, "SubscriptionId", "Id") or "").strip()
     paid_at = (
         _parse_cloudpayments_datetime(_cloudpayments_payload_value(payload, "DateTime", "TransactionDateTime"))
@@ -732,6 +734,7 @@ def _record_cloudpayments_payment(payload: dict, *, mark_paid: bool) -> Subscrip
             status="paid" if mark_paid else "failed",
             transaction_id=transaction_id or None,
             paid_at=paid_at if mark_paid else None,
+            cloudpayments_token=cloudpayments_token or (source_purchase.cloudpayments_token if source_purchase else None),
             cloudpayments_subscription_id=subscription_id or (source_purchase.cloudpayments_subscription_id if source_purchase else None),
             subscription_status=subscription_status or (source_purchase.subscription_status if source_purchase else None),
             recurring_interval=(source_purchase.recurring_interval if source_purchase else None),
@@ -748,6 +751,7 @@ def _record_cloudpayments_payment(payload: dict, *, mark_paid: bool) -> Subscrip
     purchase.amount = amount or purchase.amount
     purchase.currency = currency or purchase.currency
     purchase.transaction_id = transaction_id or purchase.transaction_id
+    purchase.cloudpayments_token = cloudpayments_token or purchase.cloudpayments_token
     purchase.cloudpayments_subscription_id = subscription_id or purchase.cloudpayments_subscription_id
     purchase.subscription_status = subscription_status or purchase.subscription_status
     purchase.next_transaction_at = next_transaction_at or purchase.next_transaction_at
@@ -1397,7 +1401,6 @@ def subscription_checkout():
                 "invoiceId": invoice_id,
                 "email": user.email,
                 "skin": "modern",
-                "recurrent": _plan_recurrent_payload(plan),
                 "data": {
                     "plan_code": plan.code,
                     "app_user_id": user.id,
@@ -1449,6 +1452,10 @@ def subscription_confirm():
     if provider_status == "Completed":
         purchase.status = "paid"
         purchase.paid_at = purchase.paid_at or datetime.utcnow()
+        purchase.cloudpayments_token = (
+            str(_cloudpayments_payload_value(payment, "Token") or purchase.cloudpayments_token or "").strip()
+            or purchase.cloudpayments_token
+        )
         purchase.cloudpayments_subscription_id = (
             str(_cloudpayments_payload_value(payment, "SubscriptionId") or purchase.cloudpayments_subscription_id or "").strip()
             or purchase.cloudpayments_subscription_id
@@ -1478,29 +1485,30 @@ def subscription_cancel():
 
     access_state = _app_user_access_state(user)
     current_subscription = access_state.get("current_subscription") or {}
+    purchase_id = current_subscription.get("purchase_id")
     subscription_id = str(current_subscription.get("subscription_id") or "").strip()
-    if not subscription_id:
+    if not purchase_id:
         return jsonify({"ok": False, "error": "Активная подписка с автопродлением не найдена."}), 404
 
-    try:
-        cancel_cloudpayments_subscription(subscription_id)
-    except Exception as exc:  # noqa: BLE001
-        return jsonify({"ok": False, "error": str(exc)}), 502
+    if subscription_id:
+        try:
+            cancel_cloudpayments_subscription(subscription_id)
+        except Exception as exc:  # noqa: BLE001
+            return jsonify({"ok": False, "error": str(exc)}), 502
 
     canceled_at = datetime.utcnow()
-    purchases = SubscriptionPurchase.query.filter_by(
-        app_user_id=user.id,
-        cloudpayments_subscription_id=subscription_id,
-    ).all()
-    for purchase in purchases:
-        purchase.subscription_status = "Canceled"
-        purchase.canceled_at = canceled_at
-        purchase.next_transaction_at = None
-        purchase.provider_payload_json = _merge_provider_payload(
-            purchase.provider_payload_json,
-            canceled_via="account",
-            canceled_at=canceled_at.isoformat(),
-        )
+    purchase = SubscriptionPurchase.query.filter_by(id=purchase_id, app_user_id=user.id).first()
+    if not purchase:
+        return jsonify({"ok": False, "error": "Активная подписка с автопродлением не найдена."}), 404
+
+    purchase.subscription_status = "Canceled"
+    purchase.canceled_at = canceled_at
+    purchase.next_transaction_at = None
+    purchase.provider_payload_json = _merge_provider_payload(
+        purchase.provider_payload_json,
+        canceled_via="account",
+        canceled_at=canceled_at.isoformat(),
+    )
 
     db.session.commit()
     return jsonify(
