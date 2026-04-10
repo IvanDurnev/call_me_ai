@@ -3,8 +3,48 @@
 venv
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+*.py[cod]
+*$py.class
+
+# Local databases and runtime files
 call_me_ai.db
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+*.pid
+*.seed
+*.out
+*.err
+*.log
+
+# IDE and OS files
 .idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Python tooling caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+.hypothesis/
+.ipynb_checkpoints/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+pip-wheel-metadata/
+
+# App-generated static files
 static/images
 static/uploads
 static/voices
