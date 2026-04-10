@@ -132,15 +132,32 @@ function syncPaymentHistoryToggle() {
 }
 
 async function confirmSubscriptionPayment(invoiceId) {
-  setPaymentStatus("Проверяем статус платежа…");
-  const data = await postJson("/api/account/subscription/confirm", { invoiceId });
-  const purchase = data.purchase || {};
-  if (purchase.status === "paid") {
-    setPaymentStatus("Оплата подтверждена. Обновите страницу, чтобы увидеть активный тариф.", "success");
-    return;
+  const attempts = 5;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    setPaymentStatus(
+      attempt === 1
+        ? "Проверяем статус платежа…"
+        : "Ждём подтверждение подписки от CloudPayments…",
+    );
+    const data = await postJson("/api/account/subscription/confirm", { invoiceId });
+    const purchase = data.purchase || {};
+    const hasRecurringBinding = Boolean(purchase.cloudpayments_subscription_id);
+    if (purchase.status === "paid" && hasRecurringBinding) {
+      setPaymentStatus("Оплата подтверждена, обновляем кабинет…", "success");
+      window.setTimeout(() => window.location.reload(), 700);
+      return;
+    }
+    if (purchase.status !== "paid") {
+      setPaymentStatus(`Платёж пока в статусе: ${purchase.status || "unknown"}.`, "warning");
+      return;
+    }
+    if (attempt < attempts) {
+      await new Promise((resolve) => window.setTimeout(resolve, 1500));
+    }
   }
 
-  setPaymentStatus(`Платёж пока в статусе: ${purchase.status || "unknown"}.`, "warning");
+  setPaymentStatus("Оплата подтверждена. Подписка появится в кабинете после обновления страницы.", "success");
+  window.setTimeout(() => window.location.reload(), 1200);
 }
 
 async function startSubscriptionCheckout(planCode) {

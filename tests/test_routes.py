@@ -168,6 +168,72 @@ class CloudPaymentsRoutesTests(unittest.TestCase):
             self.assertEqual(purchase.next_transaction_at, datetime(2026, 5, 10, 10, 0, 0))
             self.assertIsNotNone(purchase.paid_at)
 
+    def test_confirm_reads_subscription_fields_from_nested_cloudpayments_response(self) -> None:
+        with self.app.app_context():
+            user = AppUser(
+                email="nested@example.com",
+                phone="+79992222222",
+                name="Nested User",
+                consent_to_personal_data=True,
+                email_verified=True,
+            )
+            plan = PricingPlan(
+                code="unlimited-30",
+                name="Unlimited 30",
+                description="Unlimited plan",
+                kind="unlimited",
+                price=Decimal("199.00"),
+                currency="RUB",
+                period_days=30,
+                sort_order=0,
+                is_active=True,
+            )
+            db.session.add_all([user, plan])
+            db.session.flush()
+            user_id = user.id
+            purchase = SubscriptionPurchase(
+                app_user_id=user.id,
+                invoice_id="inv-confirm-1",
+                plan_code=plan.code,
+                plan_name=plan.name,
+                amount=plan.price,
+                currency=plan.currency,
+                status="created",
+                recurring_interval="Day",
+                recurring_period=30,
+                provider_payload_json={"pricing_plan": {"code": plan.code, "kind": plan.kind, "period_days": 30}},
+            )
+            db.session.add(purchase)
+            db.session.commit()
+
+        with self.client.session_transaction() as session:
+            session[APP_USER_SESSION_KEY] = user_id
+
+        with patch(
+            "app.routes.find_payment",
+            return_value={
+                "Model": {
+                    "Status": "Completed",
+                    "TransactionId": "tx-confirm-1",
+                    "SubscriptionId": "sub-confirm-1",
+                    "SubscriptionStatus": "Active",
+                    "NextTransactionDateIso": "2026-05-10T11:30:00Z",
+                }
+            },
+        ):
+            response = self.client.post("/api/account/subscription/confirm", json={"invoiceId": "inv-confirm-1"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.get_json()["ok"])
+        with self.app.app_context():
+            purchase = SubscriptionPurchase.query.filter_by(invoice_id="inv-confirm-1").first()
+            self.assertIsNotNone(purchase)
+            self.assertEqual(purchase.status, "paid")
+            self.assertEqual(purchase.transaction_id, "tx-confirm-1")
+            self.assertEqual(purchase.cloudpayments_subscription_id, "sub-confirm-1")
+            self.assertEqual(purchase.subscription_status, "Active")
+            self.assertEqual(purchase.next_transaction_at, datetime(2026, 5, 10, 11, 30, 0))
+
     def test_account_cancel_disables_autorenew_for_active_subscription(self) -> None:
         with self.app.app_context():
             user = AppUser(

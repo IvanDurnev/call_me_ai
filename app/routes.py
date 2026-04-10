@@ -596,14 +596,50 @@ def _cloudpayments_notification_user(payload: dict) -> AppUser | None:
     return AppUser.query.filter_by(id=user_id).first()
 
 
+def _cloudpayments_payload_candidates(payload: dict | None) -> list[dict]:
+    if not isinstance(payload, dict):
+        return []
+
+    candidates: list[dict] = []
+    queue = [payload]
+    visited: set[int] = set()
+    nested_keys = ("Model", "model", "Payment", "payment", "Transaction", "transaction", "Data", "data")
+
+    while queue:
+        current = queue.pop(0)
+        current_id = id(current)
+        if current_id in visited:
+            continue
+        visited.add(current_id)
+        candidates.append(current)
+        for key in nested_keys:
+            nested_value = current.get(key)
+            if isinstance(nested_value, dict):
+                queue.append(nested_value)
+
+    return candidates
+
+
+def _cloudpayments_payload_value(payload: dict | None, *keys: str):
+    for candidate in _cloudpayments_payload_candidates(payload):
+        for key in keys:
+            value = candidate.get(key)
+            if value is None:
+                continue
+            if isinstance(value, str) and not value.strip():
+                continue
+            return value
+    return None
+
+
 def _find_purchase_by_notification(
     payload: dict,
     *,
     user: AppUser | None = None,
 ) -> SubscriptionPurchase | None:
-    transaction_id = str(payload.get("TransactionId") or "").strip()
-    invoice_id = str(payload.get("InvoiceId") or "").strip()
-    subscription_id = str(payload.get("SubscriptionId") or payload.get("Id") or "").strip()
+    transaction_id = str(_cloudpayments_payload_value(payload, "TransactionId") or "").strip()
+    invoice_id = str(_cloudpayments_payload_value(payload, "InvoiceId") or "").strip()
+    subscription_id = str(_cloudpayments_payload_value(payload, "SubscriptionId", "Id") or "").strip()
 
     if transaction_id:
         purchase = SubscriptionPurchase.query.filter_by(transaction_id=transaction_id).first()
@@ -642,7 +678,7 @@ def _record_cloudpayments_payment(payload: dict, *, mark_paid: bool) -> Subscrip
         return None
 
     if not purchase and user and not plan:
-        subscription_id = str(payload.get("SubscriptionId") or "").strip()
+        subscription_id = str(_cloudpayments_payload_value(payload, "SubscriptionId", "Id") or "").strip()
         template_query = SubscriptionPurchase.query.filter_by(app_user_id=user.id)
         if subscription_id:
             template_query = template_query.filter_by(cloudpayments_subscription_id=subscription_id)
@@ -652,18 +688,17 @@ def _record_cloudpayments_payment(payload: dict, *, mark_paid: bool) -> Subscrip
             plan = _get_pricing_plan(plan_code)
             purchase = template if str(payload.get("TransactionId") or "").strip() == (template.transaction_id or "") else None
 
-    amount = Decimal(str(payload.get("Amount") or payload.get("TotalAmount") or "0").replace(",", ".") or "0")
-    currency = str(payload.get("Currency") or "RUB").strip().upper() or "RUB"
-    invoice_id = str(payload.get("InvoiceId") or "").strip()
-    transaction_id = str(payload.get("TransactionId") or "").strip()
-    subscription_id = str(payload.get("SubscriptionId") or payload.get("Id") or "").strip()
+    amount = Decimal(str(_cloudpayments_payload_value(payload, "Amount", "TotalAmount") or "0").replace(",", ".") or "0")
+    currency = str(_cloudpayments_payload_value(payload, "Currency") or "RUB").strip().upper() or "RUB"
+    invoice_id = str(_cloudpayments_payload_value(payload, "InvoiceId") or "").strip()
+    transaction_id = str(_cloudpayments_payload_value(payload, "TransactionId") or "").strip()
+    subscription_id = str(_cloudpayments_payload_value(payload, "SubscriptionId", "Id") or "").strip()
     paid_at = (
-        _parse_cloudpayments_datetime(payload.get("DateTime"))
-        or _parse_cloudpayments_datetime(payload.get("TransactionDateTime"))
+        _parse_cloudpayments_datetime(_cloudpayments_payload_value(payload, "DateTime", "TransactionDateTime"))
         or datetime.utcnow()
     )
-    next_transaction_at = _parse_cloudpayments_datetime(payload.get("NextTransactionDateIso"))
-    subscription_status = str(payload.get("Status") or "").strip() or None
+    next_transaction_at = _parse_cloudpayments_datetime(_cloudpayments_payload_value(payload, "NextTransactionDateIso"))
+    subscription_status = str(_cloudpayments_payload_value(payload, "SubscriptionStatus", "Status") or "").strip() or None
 
     if not purchase:
         if not user:
@@ -736,7 +771,7 @@ def _update_cloudpayments_subscription_state(payload: dict) -> SubscriptionPurch
     user = _cloudpayments_notification_user(payload)
     purchase = _find_purchase_by_notification(payload, user=user)
     if not purchase and user:
-        subscription_id = str(payload.get("Id") or payload.get("SubscriptionId") or "").strip()
+        subscription_id = str(_cloudpayments_payload_value(payload, "Id", "SubscriptionId") or "").strip()
         if subscription_id:
             purchase = (
                 SubscriptionPurchase.query.filter_by(app_user_id=user.id, cloudpayments_subscription_id=subscription_id)
@@ -746,9 +781,9 @@ def _update_cloudpayments_subscription_state(payload: dict) -> SubscriptionPurch
     if not purchase:
         return None
 
-    subscription_id = str(payload.get("Id") or payload.get("SubscriptionId") or "").strip()
-    status_value = str(payload.get("Status") or "").strip() or None
-    next_transaction_at = _parse_cloudpayments_datetime(payload.get("NextTransactionDateIso"))
+    subscription_id = str(_cloudpayments_payload_value(payload, "Id", "SubscriptionId") or "").strip()
+    status_value = str(_cloudpayments_payload_value(payload, "SubscriptionStatus", "Status") or "").strip() or None
+    next_transaction_at = _parse_cloudpayments_datetime(_cloudpayments_payload_value(payload, "NextTransactionDateIso"))
     canceled_at = None
     if status_value and status_value.lower() in {"cancelled", "canceled"}:
         canceled_at = datetime.utcnow()
@@ -1402,8 +1437,8 @@ def subscription_confirm():
         db.session.commit()
         return jsonify({"ok": False, "error": str(exc)}), 502
 
-    provider_status = (payment.get("Status") or "").strip()
-    transaction_id = payment.get("TransactionId")
+    provider_status = str(_cloudpayments_payload_value(payment, "Status") or "").strip()
+    transaction_id = _cloudpayments_payload_value(payment, "TransactionId")
     purchase.transaction_id = str(transaction_id) if transaction_id else purchase.transaction_id
     purchase.provider_payload_json = {
         **dict(purchase.provider_payload_json or {}),
@@ -1414,9 +1449,18 @@ def subscription_confirm():
     if provider_status == "Completed":
         purchase.status = "paid"
         purchase.paid_at = purchase.paid_at or datetime.utcnow()
-        purchase.cloudpayments_subscription_id = str(payment.get("SubscriptionId") or purchase.cloudpayments_subscription_id or "").strip() or purchase.cloudpayments_subscription_id
-        purchase.subscription_status = str(payment.get("SubscriptionStatus") or payment.get("Status") or purchase.subscription_status or "").strip() or purchase.subscription_status
-        purchase.next_transaction_at = _parse_cloudpayments_datetime(payment.get("NextTransactionDateIso")) or purchase.next_transaction_at
+        purchase.cloudpayments_subscription_id = (
+            str(_cloudpayments_payload_value(payment, "SubscriptionId") or purchase.cloudpayments_subscription_id or "").strip()
+            or purchase.cloudpayments_subscription_id
+        )
+        purchase.subscription_status = (
+            str(_cloudpayments_payload_value(payment, "SubscriptionStatus", "Status") or purchase.subscription_status or "").strip()
+            or purchase.subscription_status
+        )
+        purchase.next_transaction_at = (
+            _parse_cloudpayments_datetime(_cloudpayments_payload_value(payment, "NextTransactionDateIso"))
+            or purchase.next_transaction_at
+        )
     elif provider_status:
         purchase.status = provider_status.lower()
     else:
