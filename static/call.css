@@ -716,6 +716,10 @@ body {
   margin-top: 10px;
 }
 
+.account-resume-btn {
+  margin-top: 8px;
+}
+
 .account-payment-status {
   margin: 12px 0 0;
   color: var(--muted);
