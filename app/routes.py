@@ -488,7 +488,7 @@ def _coerce_optional_positive_int(raw_value, field_label: str) -> int | None:
 
 
 def _coerce_non_negative_int(raw_value, field_label: str) -> int:
-    text = str(raw_value or "").strip()
+    text = "" if raw_value is None else str(raw_value).strip()
     if text == "":
         raise ValueError(f"{field_label} обязательно.")
     value = int(text)

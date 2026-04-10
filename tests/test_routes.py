@@ -4,7 +4,8 @@ import unittest
 
 from flask import Flask
 
-from app.routes import main_bp
+from app.models import PricingPlan
+from app.routes import _apply_pricing_plan_payload, main_bp
 
 
 class RedirectRoutesTests(unittest.TestCase):
@@ -24,6 +25,36 @@ class RedirectRoutesTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 301)
         self.assertEqual(response.headers["Location"], "/")
+
+
+class PricingPlanPayloadTests(unittest.TestCase):
+    def test_apply_pricing_plan_payload_keeps_zero_sort_order(self) -> None:
+        plan = PricingPlan(
+            code="starter",
+            name="Starter",
+            description="",
+            kind="call_package",
+            price=1,
+            currency="RUB",
+            calls_included=15,
+            period_days=None,
+            sort_order=0,
+            is_active=True,
+        )
+
+        _apply_pricing_plan_payload(
+            plan,
+            {
+                "name": "Starter",
+                "kind": "call_package",
+                "price": "99",
+                "currency": "RUB",
+                "minutes_included": "15",
+                "is_active": True,
+            },
+        )
+
+        self.assertEqual(plan.sort_order, 0)
 
 
 if __name__ == "__main__":
