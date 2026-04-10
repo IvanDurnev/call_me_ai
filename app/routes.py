@@ -54,6 +54,7 @@ ADMIN_SESSION_KEY = "admin_user_id"
 APP_USER_SESSION_KEY = "app_user_id"
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 PRICING_PLAN_KINDS = {"call_package", "unlimited"}
+EMAIL_SPAM_HINT = "Если не видите письмо во входящих, проверьте папку СПАМ."
 LEGAL_BUSINESS_DETAILS = {
     "business_name": "ИП Дурнев И.В.",
     "inn": "281601583789",
@@ -895,7 +896,7 @@ def login_email():
                     else:
                         error = message
                 else:
-                    info = "Новый код отправлен на почту."
+                    info = f"Новый код отправлен на почту. {EMAIL_SPAM_HINT}"
                     code_sent = True
         else:
             user = _find_app_user_by_email(email)
@@ -913,7 +914,7 @@ def login_email():
                     else:
                         error = message
                 else:
-                    info = "Код отправлен на почту. Введите его ниже."
+                    info = f"Код отправлен на почту. Введите его ниже. {EMAIL_SPAM_HINT}"
                     code_sent = True
 
     purpose = "verify_email"
@@ -955,7 +956,7 @@ def verify_email():
                 else:
                     error = message
             else:
-                info = "Новый код отправлен на почту."
+                info = f"Новый код отправлен на почту. {EMAIL_SPAM_HINT}"
         else:
             code = (request.form.get("code") or "").strip()
             try:

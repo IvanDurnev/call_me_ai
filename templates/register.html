@@ -12,8 +12,7 @@
         <div class="phone-screen account-screen">
           <div class="voices-header">
             <p class="eyebrow">Регистрация</p>
-            <h1>Один пробный звонок после регистрации</h1>
-            <p class="lead">Перед первым звонком оставьте имя, электронную почту и телефон. Это нужно, чтобы открыть личный кабинет и сохранить историю разговора.</p>
+            <h1>5 минут звонков после регистрации</h1>
           </div>
 
           <form class="hero-form account-form" method="post">
@@ -41,7 +40,7 @@
             {% endif %}
             <div class="hero-actions">
               <button class="call-btn call-btn-primary" type="submit">Зарегистрироваться</button>
-              <a class="call-btn call-btn-secondary call-link-btn" href="{{ url_for('main.login_email', next=next_url) }}">У меня уже есть код</a>
+              <a class="call-btn call-btn-secondary call-link-btn" href="{{ url_for('main.login_email', next=next_url) }}">Уже регистрировались</a>
               <a class="call-btn call-btn-secondary call-link-btn" href="{{ url_for('main.index') }}">На главную</a>
             </div>
           </form>
