@@ -888,6 +888,7 @@ body {
   align-items: start;
   font-size: 0.95rem;
   color: var(--text);
+  cursor: pointer;
 }
 
 .consent-check[hidden] {
