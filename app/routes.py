@@ -1280,7 +1280,6 @@ def account():
             access_state["current_subscription"]
             and access_state["current_subscription"].get("kind") == "unlimited"
             and access_state["current_subscription"].get("subscription_id")
-            and access_state["current_subscription"].get("auto_renew_enabled")
         ),
         pricing_plans=pricing_plans,
     )

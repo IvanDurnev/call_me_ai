@@ -88,8 +88,21 @@
                     <p class="voice-meta">Оплачено {{ current_subscription.paid_at.strftime('%d.%m.%Y %H:%M') }}.</p>
                   {% endif %}
                   {% if can_cancel_autorenew %}
-                    <button class="call-btn call-btn-secondary" id="subscription-cancel-btn" type="button">Отключить автопродление</button>
-                    <p class="account-payment-status" id="subscription-status">Автопродление активно.</p>
+                    <button
+                      class="call-btn call-btn-secondary"
+                      id="subscription-cancel-btn"
+                      type="button"
+                      {% if not current_subscription.auto_renew_enabled %}disabled{% endif %}
+                    >
+                      Отменить автопродление
+                    </button>
+                    <p class="account-payment-status" id="subscription-status">
+                      {% if current_subscription.auto_renew_enabled %}
+                        Автопродление активно.
+                      {% else %}
+                        Автопродление уже отключено.
+                      {% endif %}
+                    </p>
                   {% endif %}
                 </div>
               {% else %}
