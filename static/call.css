@@ -1273,14 +1273,28 @@ body {
 }
 
 @media (max-width: 1024px) {
-  .landing-stage {
+  .landing-shell-wide,
+  .landing-screen {
     width: 100%;
+    max-width: 100%;
+  }
+
+  .landing-stage {
+    width: min(100%, 760px);
     margin-inline: auto;
     grid-template-columns: 1fr;
   }
 
   .landing-screen {
     height: auto;
+  }
+
+  .cards-grid-compact {
+    grid-template-columns: 1fr;
+  }
+
+  .cards-grid-compact > .landing-account-card:last-child:nth-child(odd) {
+    grid-column: auto;
   }
 }
 
