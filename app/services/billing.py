@@ -54,7 +54,7 @@ def _purchase_plan_snapshot(
         "expires_at": expires_at,
         "subscription_id": purchase.cloudpayments_subscription_id,
         "subscription_status": purchase.subscription_status,
-        "next_transaction_at": purchase.next_transaction_at,
+        "next_transaction_at": purchase.next_transaction_at or expires_at,
         "canceled_at": purchase.canceled_at,
     }
 

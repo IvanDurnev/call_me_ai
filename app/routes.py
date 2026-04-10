@@ -1279,7 +1279,6 @@ def account():
         can_cancel_autorenew=bool(
             access_state["current_subscription"]
             and access_state["current_subscription"].get("kind") == "unlimited"
-            and access_state["current_subscription"].get("subscription_id")
         ),
         pricing_plans=pricing_plans,
     )

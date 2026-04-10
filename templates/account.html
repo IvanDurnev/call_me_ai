@@ -99,13 +99,15 @@
                       class="call-btn call-btn-secondary"
                       id="subscription-cancel-btn"
                       type="button"
-                      {% if not current_subscription.auto_renew_enabled %}disabled{% endif %}
+                      {% if not current_subscription.auto_renew_enabled or not current_subscription.subscription_id %}disabled{% endif %}
                     >
                       Отменить автопродление
                     </button>
                     <p class="account-payment-status" id="subscription-status">
-                      {% if current_subscription.auto_renew_enabled %}
+                      {% if current_subscription.auto_renew_enabled and current_subscription.subscription_id %}
                         Автопродление активно.
+                      {% elif current_subscription.auto_renew_enabled %}
+                        Автопродление активно, кнопка отключения станет доступна после подтверждения подписки в CloudPayments.
                       {% else %}
                         Автопродление уже отключено.
                       {% endif %}
