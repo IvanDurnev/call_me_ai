@@ -668,6 +668,30 @@ def _merge_provider_payload(existing_payload: dict | None, **updates) -> dict:
     return payload
 
 
+def _append_subscription_action(
+    existing_payload: dict | None,
+    *,
+    action: str,
+    actor: str,
+    purchase: SubscriptionPurchase,
+    details: dict | None = None,
+) -> dict:
+    payload = dict(existing_payload or {})
+    history = list(payload.get("subscription_action_history") or [])
+    history.append(
+        {
+            "action": action,
+            "actor": actor,
+            "app_user_id": purchase.app_user_id,
+            "purchase_id": purchase.id,
+            "timestamp": datetime.utcnow().isoformat(),
+            "details": dict(details or {}),
+        }
+    )
+    payload["subscription_action_history"] = history[-100:]
+    return payload
+
+
 def _record_cloudpayments_payment(payload: dict, *, mark_paid: bool) -> SubscriptionPurchase | None:
     user = _cloudpayments_notification_user(payload)
     purchase = _find_purchase_by_notification(payload, user=user)
@@ -1319,6 +1343,15 @@ def account():
             access_state["current_subscription"]
             and access_state["current_subscription"].get("kind") == "unlimited"
         ),
+        can_resume_autorenew=bool(
+            access_state["current_subscription"]
+            and access_state["current_subscription"].get("kind") == "unlimited"
+            and not access_state["current_subscription"].get("auto_renew_enabled")
+            and (
+                access_state["current_subscription"].get("cloudpayments_token")
+                or access_state["current_subscription"].get("subscription_id")
+            )
+        ),
         pricing_plans=pricing_plans,
     )
 
@@ -1505,7 +1538,13 @@ def subscription_cancel():
     purchase.canceled_at = canceled_at
     purchase.next_transaction_at = None
     purchase.provider_payload_json = _merge_provider_payload(
-        purchase.provider_payload_json,
+        _append_subscription_action(
+            purchase.provider_payload_json,
+            action="cancel_auto_renew",
+            actor="user",
+            purchase=purchase,
+            details={"source": "account"},
+        ),
         canceled_via="account",
         canceled_at=canceled_at.isoformat(),
     )
@@ -1515,6 +1554,51 @@ def subscription_cancel():
         {
             "ok": True,
             "message": "Автопродление отключено. Подписка останется активной до конца оплаченного периода.",
+        }
+    )
+
+
+@main_bp.post("/api/account/subscription/resume")
+def subscription_resume():
+    user = _current_app_user()
+    if not user:
+        return jsonify({"ok": False, "error": "Нужно войти в личный кабинет."}), 401
+
+    access_state = _app_user_access_state(user)
+    current_subscription = access_state.get("current_subscription") or {}
+    purchase_id = current_subscription.get("purchase_id")
+    if not purchase_id:
+        return jsonify({"ok": False, "error": "Подходящая подписка для автопродления не найдена."}), 404
+
+    purchase = SubscriptionPurchase.query.filter_by(id=purchase_id, app_user_id=user.id).first()
+    if not purchase:
+        return jsonify({"ok": False, "error": "Подходящая подписка для автопродления не найдена."}), 404
+    if not purchase.cloudpayments_token and not purchase.cloudpayments_subscription_id:
+        return jsonify({"ok": False, "error": "Для этой подписки не найден источник автосписания."}), 400
+
+    next_transaction_at = current_subscription.get("expires_at")
+    if next_transaction_at is None and purchase.paid_at and purchase.recurring_period:
+        next_transaction_at = purchase.paid_at + timedelta(days=int(purchase.recurring_period))
+
+    purchase.subscription_status = "Active"
+    purchase.canceled_at = None
+    purchase.next_transaction_at = next_transaction_at
+    purchase.provider_payload_json = _merge_provider_payload(
+        _append_subscription_action(
+            purchase.provider_payload_json,
+            action="resume_auto_renew",
+            actor="user",
+            purchase=purchase,
+            details={"source": "account"},
+        ),
+        resumed_via="account",
+        resumed_at=datetime.utcnow().isoformat(),
+    )
+    db.session.commit()
+    return jsonify(
+        {
+            "ok": True,
+            "message": "Автопродление снова включено. Следующее списание запланировано на конец текущего периода.",
         }
     )
 

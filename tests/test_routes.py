@@ -295,6 +295,9 @@ class CloudPaymentsRoutesTests(unittest.TestCase):
             self.assertEqual(purchase.subscription_status, "Canceled")
             self.assertIsNotNone(purchase.canceled_at)
             self.assertIsNone(purchase.next_transaction_at)
+            history = (purchase.provider_payload_json or {}).get("subscription_action_history") or []
+            self.assertEqual(history[-1]["action"], "cancel_auto_renew")
+            self.assertEqual(history[-1]["actor"], "user")
 
     def test_account_cancel_disables_local_autorenew_without_subscription_id(self) -> None:
         with self.app.app_context():
@@ -349,6 +352,66 @@ class CloudPaymentsRoutesTests(unittest.TestCase):
             purchase = SubscriptionPurchase.query.filter_by(invoice_id="inv-cancel-local-1").first()
             self.assertEqual(purchase.subscription_status, "Canceled")
             self.assertIsNotNone(purchase.canceled_at)
+            history = (purchase.provider_payload_json or {}).get("subscription_action_history") or []
+            self.assertEqual(history[-1]["action"], "cancel_auto_renew")
+
+    def test_account_resume_reenables_local_autorenew(self) -> None:
+        with self.app.app_context():
+            user = AppUser(
+                email="resume@example.com",
+                phone="+79996666666",
+                name="Resume User",
+                consent_to_personal_data=True,
+                email_verified=True,
+            )
+            plan = PricingPlan(
+                code="unlimited-30",
+                name="Unlimited 30",
+                description="Unlimited plan",
+                kind="unlimited",
+                price=Decimal("199.00"),
+                currency="RUB",
+                period_days=30,
+                sort_order=0,
+                is_active=True,
+            )
+            db.session.add_all([user, plan])
+            db.session.flush()
+            user_id = user.id
+            purchase = SubscriptionPurchase(
+                app_user_id=user.id,
+                invoice_id="inv-resume-1",
+                plan_code=plan.code,
+                plan_name=plan.name,
+                amount=plan.price,
+                currency=plan.currency,
+                status="paid",
+                paid_at=datetime(2026, 4, 10, 8, 0, 0),
+                cloudpayments_token="tok_resume",
+                subscription_status="Canceled",
+                recurring_interval="Day",
+                recurring_period=30,
+                canceled_at=datetime(2026, 4, 11, 8, 0, 0),
+                provider_payload_json={"pricing_plan": {"code": plan.code, "kind": plan.kind, "period_days": 30}},
+            )
+            db.session.add(purchase)
+            db.session.commit()
+
+        with self.client.session_transaction() as session:
+            session[APP_USER_SESSION_KEY] = user_id
+
+        response = self.client.post("/api/account/subscription/resume", json={})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.get_json()["ok"])
+        with self.app.app_context():
+            purchase = SubscriptionPurchase.query.filter_by(invoice_id="inv-resume-1").first()
+            self.assertEqual(purchase.subscription_status, "Active")
+            self.assertIsNone(purchase.canceled_at)
+            self.assertEqual(purchase.next_transaction_at, datetime(2026, 5, 10, 8, 0, 0))
+            history = (purchase.provider_payload_json or {}).get("subscription_action_history") or []
+            self.assertEqual(history[-1]["action"], "resume_auto_renew")
+            self.assertEqual(history[-1]["actor"], "user")
 
     def test_process_due_recurring_purchases_uses_saved_token(self) -> None:
         with self.app.app_context():

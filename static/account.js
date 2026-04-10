@@ -13,6 +13,7 @@ const recurringConsentCheckbox = document.getElementById("recurring-consent-chec
 const recurringConsentHint = document.getElementById("recurring-consent-hint");
 const paymentFrequencyText = document.getElementById("payment-frequency-text");
 const cancelSubscriptionButton = document.getElementById("subscription-cancel-btn");
+const resumeSubscriptionButton = document.getElementById("subscription-resume-btn");
 
 function selectedPlanInput() {
   return document.querySelector('input[name="pricing_plan"]:checked');
@@ -290,6 +291,20 @@ cancelSubscriptionButton?.addEventListener("click", async () => {
     setPaymentStatus(error.message, "danger");
   } finally {
     cancelSubscriptionButton.disabled = false;
+  }
+});
+
+resumeSubscriptionButton?.addEventListener("click", async () => {
+  resumeSubscriptionButton.disabled = true;
+  setPaymentStatus("Возобновляем автопродление…");
+  try {
+    const data = await postJson("/api/account/subscription/resume");
+    setPaymentStatus(data.message || "Автопродление снова включено.", "success");
+    window.setTimeout(() => window.location.reload(), 1200);
+  } catch (error) {
+    setPaymentStatus(error.message, "danger");
+  } finally {
+    resumeSubscriptionButton.disabled = false;
   }
 });
 

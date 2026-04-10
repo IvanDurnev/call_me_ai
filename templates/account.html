@@ -103,6 +103,16 @@
                     >
                       Отменить автопродление
                     </button>
+                    {% if can_resume_autorenew %}
+                      <button
+                        class="call-btn"
+                        id="subscription-resume-btn"
+                        type="button"
+                        {% if current_subscription.auto_renew_enabled %}disabled{% endif %}
+                      >
+                        Возобновить автопродление
+                      </button>
+                    {% endif %}
                     <p class="account-payment-status" id="subscription-status">
                       {% if current_subscription.auto_renew_enabled %}
                         Автопродление активно.
