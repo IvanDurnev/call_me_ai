@@ -143,6 +143,10 @@ async def configure_telegram_bot(application: Application) -> None:
     )
 
 
+async def reset_telegram_webhook(application: Application) -> None:
+    await application.bot.delete_webhook(drop_pending_updates=False)
+
+
 async def process_webhook_update(flask_app, update_payload: dict) -> None:
     application = create_telegram_application(flask_app)
     try:
@@ -177,6 +181,7 @@ def run_polling_bot(flask_app) -> None:
     async def runner():
         await application.initialize()
         await configure_telegram_bot(application)
+        await reset_telegram_webhook(application)
         await application.start()
         await application.updater.start_polling(drop_pending_updates=False)
         logging.info("Telegram polling started")

@@ -75,6 +75,7 @@ body {
   width: 100%;
   max-width: 460px;
   min-height: 0;
+  margin-inline: auto;
 }
 
 .landing-shell-wide {
@@ -1236,6 +1237,11 @@ body {
     padding: 12px;
   }
 
+  .call-shell {
+    width: min(100%, 460px);
+    margin-inline: auto;
+  }
+
   .landing-topbar {
     align-items: flex-start;
   }
@@ -1258,6 +1264,10 @@ body {
   }
 
   .call-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .voice-list {
     grid-template-columns: 1fr;
   }
 }
