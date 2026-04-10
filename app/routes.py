@@ -538,6 +538,12 @@ def index():
     return _render_index("telegram")
 
 
+@main_bp.get("/ru")
+@main_bp.get("/ru/")
+def redirect_ru_to_index():
+    return redirect(url_for("main.index"), code=301)
+
+
 @main_bp.get("/max/miniapp")
 def max_index():
     characters = _serialize_characters(list_characters())
