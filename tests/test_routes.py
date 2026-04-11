@@ -12,8 +12,8 @@ from unittest.mock import patch
 from flask import Flask
 
 from app.extensions import db
-from app.models import AppUser, PricingPlan, SubscriptionPurchase
-from app.routes import APP_USER_SESSION_KEY, _apply_pricing_plan_payload, main_bp
+from app.models import AdminUser, AppUser, CallSession, Hero, PricingPlan, SubscriptionPurchase
+from app.routes import ADMIN_SESSION_KEY, APP_USER_SESSION_KEY, _apply_pricing_plan_payload, _build_runtime_diagnostics, main_bp
 from app.services.recurring import process_due_recurring_purchases
 
 
@@ -466,6 +466,380 @@ class CloudPaymentsRoutesTests(unittest.TestCase):
             self.assertIsNotNone(recurring_purchase)
             self.assertEqual(recurring_purchase.status, "pending")
             self.assertEqual(recurring_purchase.transaction_id, "tx-rec-1")
+
+
+class CallSessionRoutesTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.app = Flask(__name__)
+        self.app.config.update(
+            SECRET_KEY="test-secret",
+            TESTING=True,
+            SQLALCHEMY_DATABASE_URI="sqlite://",
+            SQLALCHEMY_TRACK_MODIFICATIONS=False,
+            PUBLIC_BASE_URL="https://example.test",
+            REALTIME_API_PROVIDER="elevenlabs",
+            ELEVEN_LABS_API_KEY="el-test",
+            ELEVENLABS_AGENT_ID="agent-default",
+            OPENAI_REALTIME_MODEL="gpt-realtime",
+            OPENAI_REALTIME_VOICE="alloy",
+        )
+        db.init_app(self.app)
+        self.app.register_blueprint(main_bp)
+        with self.app.app_context():
+            db.create_all()
+            admin = AdminUser(username="admin", is_active=True)
+            admin.set_password("secret")
+            db.session.add(admin)
+            user = AppUser(
+                email="caller@example.com",
+                phone="+79990001122",
+                name="Caller",
+                consent_to_personal_data=True,
+                email_verified=True,
+            )
+            db.session.add(user)
+            hero = Hero(
+                slug="domovenok-kuzya",
+                name="Домовёнок Кузя",
+                description="Тестовый герой",
+                emoji="AI",
+                voice="alloy",
+                greeting_prompt="Привет, это Кузя.",
+                system_prompt="Будь добрым сказочным героем.",
+                is_active=True,
+            )
+            db.session.add(hero)
+            db.session.commit()
+            self.user_id = user.id
+            self.admin_id = admin.id
+        self.client = self.app.test_client()
+        with self.client.session_transaction() as session:
+            session[APP_USER_SESSION_KEY] = self.user_id
+
+    def tearDown(self) -> None:
+        with self.app.app_context():
+            db.session.remove()
+            db.drop_all()
+
+    def test_start_call_session_returns_signed_url_for_elevenlabs(self) -> None:
+        with patch("app.routes.get_signed_url", return_value="wss://signed.example/socket"):
+            response = self.client.post(
+                "/api/call-sessions/start",
+                json={"character_slug": "domovenok-kuzya", "started_from": "web"},
+            )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertTrue(payload["ok"])
+        self.assertEqual(payload["provider"], "elevenlabs")
+        self.assertEqual(payload["signed_url"], "wss://signed.example/socket")
+        self.assertEqual(payload["conversation_initiation_client_data"]["type"], "conversation_initiation_client_data")
+        self.assertEqual(payload["conversation_initiation_client_data"]["conversation_config_override"], {})
+        with self.app.app_context():
+            session = db.session.get(CallSession, payload["call_session_id"])
+            self.assertIsNotNone(session)
+            self.assertEqual(session.status, "active")
+
+    def test_start_call_session_uses_hero_provider_override(self) -> None:
+        self.app.config["REALTIME_API_PROVIDER"] = "openai"
+        with self.app.app_context():
+            hero = Hero.query.filter_by(slug="domovenok-kuzya").first()
+            self.assertIsNotNone(hero)
+            hero.realtime_settings_json = {"provider": "elevenlabs"}
+            db.session.commit()
+
+        with patch("app.routes.get_signed_url", return_value="wss://signed.example/socket"):
+            response = self.client.post(
+                "/api/call-sessions/start",
+                json={"character_slug": "domovenok-kuzya", "started_from": "web"},
+            )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertTrue(payload["ok"])
+        self.assertEqual(payload["provider"], "elevenlabs")
+        self.assertEqual(payload["signed_url"], "wss://signed.example/socket")
+
+    def test_runtime_diagnostics_reports_voice_and_agent_checks(self) -> None:
+        with self.app.app_context():
+            with patch(
+                "app.routes.list_elevenlabs_voices",
+                return_value=[{"voice_id": "alloy", "name": "Alloy Imported"}],
+            ), patch(
+                "app.routes.get_agent",
+                return_value={
+                    "conversation_config": {
+                        "asr": {"user_input_audio_format": "pcm_16000"},
+                        "tts": {"agent_output_audio_format": "pcm_16000"},
+                    }
+                },
+            ):
+                diagnostics = _build_runtime_diagnostics(
+                    [
+                        {
+                            "slug": "domovenok-kuzya",
+                            "name": "Домовёнок Кузя",
+                            "voice": "alloy",
+                            "realtime_settings": {"elevenlabs_agent_id": "agent-1"},
+                        }
+                    ]
+                )
+
+        hero_diagnostics = diagnostics["domovenok-kuzya"]
+        self.assertEqual(hero_diagnostics["provider"], "elevenlabs")
+        self.assertIn(hero_diagnostics["summary"], {"Ready", "Check settings"})
+        labels = {item["label"] for item in hero_diagnostics["checks"]}
+        self.assertIn("Voice lookup", labels)
+        self.assertIn("Agent lookup", labels)
+
+    def test_test_hero_agent_endpoint_runs_smoke_check(self) -> None:
+        with self.client.session_transaction() as session:
+            session[ADMIN_SESSION_KEY] = self.admin_id
+
+        with patch(
+            "app.routes.list_elevenlabs_voices",
+            return_value=[{"voice_id": "alloy", "name": "Alloy Imported"}],
+        ), patch(
+            "app.routes.get_agent",
+            return_value={
+                "conversation_config": {
+                    "asr": {"user_input_audio_format": "pcm_16000"},
+                    "tts": {"agent_output_audio_format": "pcm_16000"},
+                }
+            },
+        ), patch(
+            "app.routes.get_signed_url",
+            return_value="wss://signed.example/socket",
+        ):
+            response = self.client.post("/api/heroes/domovenok-kuzya/test-agent")
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertTrue(payload["ok"])
+        self.assertIn(payload["diagnostics"]["summary"], {"Smoke test passed", "Smoke test passed with warnings"})
+        labels = {item["label"] for item in payload["diagnostics"]["checks"]}
+        self.assertIn("Signed URL", labels)
+
+    def test_create_hero_agent_endpoint_saves_agent_id(self) -> None:
+        with self.client.session_transaction() as session:
+            session[ADMIN_SESSION_KEY] = self.admin_id
+
+        with self.app.app_context():
+            hero = Hero.query.filter_by(slug="domovenok-kuzya").first()
+            self.assertIsNotNone(hero)
+            hero.realtime_settings_json = {"provider": "elevenlabs", "elevenlabs_llm": "gpt-4o-mini"}
+            hero.elevenlabs_voice_id = "alloy"
+            db.session.commit()
+
+        with patch(
+            "app.routes.create_agent",
+            return_value={"agent_id": "agent-created"},
+        ) as mocked_create_agent, patch(
+            "app.routes.list_elevenlabs_voices",
+            return_value=[{"voice_id": "alloy", "name": "Alloy Imported"}],
+        ), patch(
+            "app.routes.get_agent",
+            return_value={
+                "conversation_config": {
+                    "asr": {"user_input_audio_format": "pcm_16000"},
+                    "tts": {"agent_output_audio_format": "pcm_16000"},
+                }
+            },
+        ), patch(
+            "app.routes.get_signed_url",
+            return_value="wss://signed.example/socket",
+        ):
+            response = self.client.post("/api/heroes/domovenok-kuzya/create-agent")
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertTrue(payload["ok"])
+        self.assertTrue(payload["created"])
+        self.assertEqual(payload["agent_id"], "agent-created")
+        mocked_create_agent.assert_called_once()
+        conversation_config = mocked_create_agent.call_args.kwargs["conversation_config"]
+        self.assertEqual(conversation_config["agent"]["prompt"]["llm"], "gpt-4o-mini")
+        self.assertIn("<END_CALL:короткая причина>", conversation_config["agent"]["prompt"]["prompt"])
+        self.assertNotIn("вызови функцию end_call", conversation_config["agent"]["prompt"]["prompt"])
+
+        with self.app.app_context():
+            hero = Hero.query.filter_by(slug="domovenok-kuzya").first()
+            self.assertIsNotNone(hero)
+            self.assertEqual((hero.realtime_settings_json or {}).get("elevenlabs_agent_id"), "agent-created")
+
+    def test_start_call_session_syncs_agent_before_signed_url(self) -> None:
+        with self.app.app_context():
+            hero = Hero.query.filter_by(slug="domovenok-kuzya").first()
+            self.assertIsNotNone(hero)
+            hero.realtime_settings_json = {"provider": "elevenlabs", "elevenlabs_llm": "gpt-4o-mini"}
+            hero.elevenlabs_voice_id = "alloy"
+            db.session.commit()
+
+        with patch("app.routes.update_agent") as mocked_update_agent, patch(
+            "app.routes.get_signed_url",
+            return_value="wss://signed.example/socket",
+        ):
+            response = self.client.post(
+                "/api/call-sessions/start",
+                json={"character_slug": "domovenok-kuzya", "started_from": "web"},
+            )
+
+        self.assertEqual(response.status_code, 200)
+        mocked_update_agent.assert_called_once()
+        conversation_config = mocked_update_agent.call_args.kwargs["conversation_config"]
+        self.assertIn("<END_CALL:короткая причина>", conversation_config["agent"]["prompt"]["prompt"])
+        self.assertNotIn("вызови функцию end_call", conversation_config["agent"]["prompt"]["prompt"])
+
+    def test_update_hero_saves_provider_in_realtime_settings(self) -> None:
+        with self.client.session_transaction() as session:
+            session[ADMIN_SESSION_KEY] = self.admin_id
+
+        response = self.client.patch(
+            "/api/heroes/domovenok-kuzya",
+            json={
+                "name": "Домовёнок Кузя",
+                "emoji": "AI",
+                "description": "Тестовый герой",
+                "provider": "openai",
+                "voice": "verse",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertTrue(payload["ok"])
+        self.assertEqual(payload["hero"]["provider"], "openai")
+
+        with self.app.app_context():
+            hero = Hero.query.filter_by(slug="domovenok-kuzya").first()
+            self.assertIsNotNone(hero)
+            self.assertEqual((hero.realtime_settings_json or {}).get("provider"), "openai")
+
+    def test_update_hero_saves_elevenlabs_llm_setting(self) -> None:
+        with self.client.session_transaction() as session:
+            session[ADMIN_SESSION_KEY] = self.admin_id
+
+        response = self.client.patch(
+            "/api/heroes/domovenok-kuzya",
+            json={
+                "name": "Домовёнок Кузя",
+                "provider": "elevenlabs",
+                "elevenlabs_llm": "gpt-4o",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertTrue(payload["ok"])
+        self.assertEqual(payload["hero"]["elevenlabs_llm"], "gpt-4o")
+
+        with self.app.app_context():
+            hero = Hero.query.filter_by(slug="domovenok-kuzya").first()
+            self.assertIsNotNone(hero)
+            self.assertEqual((hero.realtime_settings_json or {}).get("elevenlabs_llm"), "gpt-4o")
+
+    def test_update_hero_preserves_hidden_provider_settings_when_keys_omitted(self) -> None:
+        with self.app.app_context():
+            hero = Hero.query.filter_by(slug="domovenok-kuzya").first()
+            self.assertIsNotNone(hero)
+            hero.realtime_settings_json = {
+                "provider": "elevenlabs",
+                "elevenlabs_agent_id": "agent-keep",
+                "output_audio_speed": 0.9,
+            }
+            hero.elevenlabs_voice_id = "voice-keep"
+            hero.elevenlabs_first_message = "Привет"
+            db.session.commit()
+
+        with self.client.session_transaction() as session:
+            session[ADMIN_SESSION_KEY] = self.admin_id
+
+        response = self.client.patch(
+            "/api/heroes/domovenok-kuzya",
+            json={
+                "name": "Домовёнок Кузя",
+                "provider": "openai",
+                "voice": "verse",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        with self.app.app_context():
+            hero = Hero.query.filter_by(slug="domovenok-kuzya").first()
+            self.assertIsNotNone(hero)
+            self.assertEqual(hero.elevenlabs_voice_id, "voice-keep")
+            self.assertEqual(hero.elevenlabs_first_message, "Привет")
+            self.assertEqual((hero.realtime_settings_json or {}).get("elevenlabs_agent_id"), "agent-keep")
+
+    def test_create_hero_auto_creates_agent_for_elevenlabs_provider(self) -> None:
+        with self.client.session_transaction() as session:
+            session[ADMIN_SESSION_KEY] = self.admin_id
+
+        with patch(
+            "app.routes.create_agent",
+            return_value={"agent_id": "agent-new-hero"},
+        ) as mocked_create_agent:
+            response = self.client.post(
+                "/api/heroes",
+                json={"name": "Новый герой", "slug": "new-hero", "emoji": "✨"},
+            )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertTrue(payload["ok"])
+        self.assertTrue(payload["agent_created"])
+        self.assertEqual(payload["agent_id"], "agent-new-hero")
+        mocked_create_agent.assert_called_once()
+
+        with self.app.app_context():
+            hero = Hero.query.filter_by(slug="new-hero").first()
+            self.assertIsNotNone(hero)
+            self.assertEqual((hero.realtime_settings_json or {}).get("elevenlabs_agent_id"), "agent-new-hero")
+
+    def test_finish_call_session_persists_elevenlabs_transcript(self) -> None:
+        with self.app.app_context():
+            session = CallSession(
+                app_user_id=self.user_id,
+                character_slug="domovenok-kuzya",
+                status="active",
+                meta_json={"provider": "elevenlabs", "conversation_log": [], "technical_log": []},
+            )
+            db.session.add(session)
+            db.session.commit()
+            session_id = session.id
+
+        with patch(
+            "app.routes.get_conversation_details",
+            return_value={
+                "conversation_id": "conv-1",
+                "status": "done",
+                "has_audio": True,
+                "has_user_audio": True,
+                "has_response_audio": True,
+                "transcript": [
+                    {"role": "user", "message": "Привет"},
+                    {"role": "agent", "message": "Здравствуйте!"},
+                ],
+            },
+        ):
+            response = self.client.post(
+                f"/api/call-sessions/{session_id}/finish",
+                json={"provider": "elevenlabs", "conversation_id": "conv-1", "reason": "manual"},
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.get_json()["ok"])
+        with self.app.app_context():
+            session = db.session.get(CallSession, session_id)
+            self.assertEqual(session.status, "finished")
+            self.assertEqual(
+                session.meta_json["conversation_log"],
+                [
+                    {"role": "user", "text": "Привет"},
+                    {"role": "agent", "text": "Здравствуйте!"},
+                ],
+            )
+            self.assertEqual(session.meta_json["provider_conversation_id"], "conv-1")
 
 
 if __name__ == "__main__":

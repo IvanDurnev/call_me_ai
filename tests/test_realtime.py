@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import base64
 import unittest
 from unittest.mock import patch
 
 from flask import Flask
 
-from app.characters import build_realtime_session_config
+from app.characters import build_realtime_session_config, build_runtime_instructions
 from app.realtime import SocketBridge
 
 
@@ -46,9 +47,16 @@ class RealtimeBridgeTests(unittest.TestCase):
     def setUp(self) -> None:
         self.app = Flask(__name__)
 
-    def _make_bridge(self) -> RecordingSocketBridge:
+    def _make_bridge(self, **config_overrides) -> RecordingSocketBridge:
         with self.app.app_context():
+            self.app.config.update(config_overrides)
             with patch("app.realtime.get_character", return_value={"slug": "baba-yaga", "name": "Баба Яга"}):
+                return RecordingSocketBridge(DummyBrowserWs(), "baba-yaga")
+
+    def _make_bridge_for_character(self, character: dict, **config_overrides) -> RecordingSocketBridge:
+        with self.app.app_context():
+            self.app.config.update(config_overrides)
+            with patch("app.realtime.get_character", return_value=character):
                 return RecordingSocketBridge(DummyBrowserWs(), "baba-yaga")
 
     def test_user_transcript_is_saved_and_emitted_from_created_item(self) -> None:
@@ -145,6 +153,18 @@ class RealtimeBridgeTests(unittest.TestCase):
         self.assertEqual(session["tool_choice"], "auto")
         self.assertEqual(session["tools"][0]["name"], "end_call")
 
+    def test_marker_mode_instructions_do_not_mention_end_call_function(self) -> None:
+        instructions = build_runtime_instructions(
+            {
+                "name": "Баба Яга",
+                "description": "Лесная наставница",
+            },
+            end_call_mode="marker",
+        )
+
+        self.assertIn("<END_CALL:короткая причина>", instructions)
+        self.assertNotIn("вызови функцию end_call", instructions)
+
     def test_end_call_function_requests_browser_close(self) -> None:
         bridge = self._make_bridge()
 
@@ -178,6 +198,54 @@ class RealtimeBridgeTests(unittest.TestCase):
             {"type": "call.end_requested", "reason": "пользователь попрощался"},
             bridge.browser_payloads,
         )
+
+    def test_elevenlabs_commit_transcribes_and_emits_user_transcript(self) -> None:
+        bridge = self._make_bridge(
+            REALTIME_API_PROVIDER="elevenlabs",
+            ELEVEN_LABS_API_KEY="test-key",
+        )
+
+        with patch("app.realtime.transcribe_audio", return_value={"text": "Привет из ElevenLabs"}):
+            bridge._handle_browser_message(
+                json_dumps(
+                    {
+                        "type": "input_audio_buffer.append",
+                        "audio": base64.b64encode(b"\x01\x02\x03\x04").decode("ascii"),
+                    }
+                )
+            )
+            bridge._handle_browser_message(json_dumps({"type": "input_audio_buffer.commit"}))
+
+        self.assertIn(("user", "Привет из ElevenLabs", "user:elevenlabs:0"), bridge.lines)
+        self.assertIn({"type": "input_audio_buffer.committed"}, bridge.browser_payloads)
+
+    def test_character_provider_override_switches_bridge_to_elevenlabs(self) -> None:
+        bridge = self._make_bridge_for_character(
+            {
+                "slug": "baba-yaga",
+                "name": "Баба Яга",
+                "realtime_settings": {"provider": "elevenlabs"},
+            },
+            REALTIME_API_PROVIDER="openai",
+        )
+
+        self.assertEqual(bridge.provider, "elevenlabs")
+
+    def test_extract_end_call_marker_returns_clean_text_and_reason(self) -> None:
+        text, reason = SocketBridge._extract_end_call_marker("До свидания! <END_CALL:пользователь попрощался>")
+        self.assertEqual(text, "До свидания!")
+        self.assertEqual(reason, "пользователь попрощался")
+
+    def test_extract_end_call_marker_strips_spoken_endcall_function(self) -> None:
+        text, reason = SocketBridge._extract_end_call_marker("До свидания! endcall()")
+        self.assertEqual(text, "До свидания!")
+        self.assertEqual(reason, "разговор завершён")
+
+
+def json_dumps(payload: dict) -> str:
+    import json
+
+    return json.dumps(payload, ensure_ascii=False)
 
 
 if __name__ == "__main__":

@@ -1,5 +1,6 @@
 const body = document.body;
 const websocketUrl = body.dataset.websocketUrl;
+const realtimeProvider = body.dataset.realtimeProvider || "openai";
 const characterSlug = body.dataset.characterSlug;
 const characterName = body.dataset.characterName;
 const characterDescription = body.dataset.characterDescription || "";
@@ -27,7 +28,6 @@ let processorNode;
 let monitorGain;
 let currentSource;
 let assistantGainNode;
-let recording = false;
 let speaking = false;
 let micEnabled = false;
 let awaitingResponse = false;
@@ -48,6 +48,11 @@ let silenceStartedAt = 0;
 let interruptLoggedAt = 0;
 let callStartedAt = null;
 let callTimerInterval = null;
+let providerInputSampleRate = realtimeProvider === "elevenlabs" ? 16000 : 24000;
+let providerOutputSampleRate = realtimeProvider === "elevenlabs" ? 16000 : 24000;
+let callSessionId = null;
+let providerConversationId = null;
+let finishingCallSession = false;
 const playbackQueue = [];
 const CALL_END_PATTERNS = [
   /\b(пока|прощай|прощайте|до свидания|до встречи|до скорого)\b/,
@@ -76,7 +81,7 @@ function logLine(text) {
 }
 
 function logError(text) {
-  if (socket?.readyState === WebSocket.OPEN) {
+  if (realtimeProvider === "openai" && socket?.readyState === WebSocket.OPEN) {
     socket.send(JSON.stringify({
       type: "client.error",
       message: text,
@@ -96,19 +101,32 @@ function shouldAutoEndCall(text) {
   return CALL_END_PATTERNS.some((pattern) => pattern.test(normalized));
 }
 
-function endCall(reason = "manual") {
-  manuallyClosed = true;
-  pendingAutoEnd = false;
-  if (socket?.readyState === WebSocket.OPEN) {
-    interruptAssistant(reason);
-    socket.send(JSON.stringify({ type: "call.stop" }));
-    socket.close();
-    return;
+function extractAssistantEndCall(text) {
+  const raw = String(text || "").trim();
+  if (!raw) {
+    return { transcript: "", reason: null };
   }
 
-  if (socket?.readyState === WebSocket.CONNECTING) {
-    socket.close();
+  const marker = "<END_CALL:";
+  let transcript = raw;
+  let reason = null;
+
+  const markerStart = transcript.lastIndexOf(marker);
+  if (markerStart !== -1) {
+    const markerEnd = transcript.indexOf(">", markerStart);
+    if (markerEnd !== -1) {
+      reason = transcript.slice(markerStart + marker.length, markerEnd).trim() || "разговор завершён";
+      transcript = `${transcript.slice(0, markerStart)}${transcript.slice(markerEnd + 1)}`.trim();
+    }
   }
+
+  const functionMatch = transcript.match(/\b(?:end_call|endcall)\s*\((?:[^()]|\([^)]*\))*\)\s*$/i);
+  if (functionMatch) {
+    reason = reason || "разговор завершён";
+    transcript = transcript.slice(0, functionMatch.index).trim();
+  }
+
+  return { transcript, reason };
 }
 
 function setMicButtonState(text, disabled = false) {
@@ -198,7 +216,7 @@ function base64FromArrayBuffer(arrayBuffer) {
   return window.btoa(binary);
 }
 
-function decodePcm16(base64Audio) {
+function decodePcm16(base64Audio, sampleRate = providerOutputSampleRate) {
   const binary = window.atob(base64Audio);
   const bytes = new Uint8Array(binary.length);
   for (let index = 0; index < binary.length; index += 1) {
@@ -210,10 +228,10 @@ function decodePcm16(base64Audio) {
   for (let index = 0; index < samples.length; index += 1) {
     samples[index] = view.getInt16(index * 2, true) / 32768;
   }
-  return samples;
+  return { samples, sampleRate };
 }
 
-function applyChunkEnvelope(samples, sampleRate = 24000) {
+function applyChunkEnvelope(samples, sampleRate = providerOutputSampleRate) {
   const framed = new Float32Array(samples);
   const fadeSamples = Math.min(
     Math.floor(sampleRate * CHUNK_FADE_MS),
@@ -238,12 +256,13 @@ async function playNextChunk() {
   }
 
   speaking = true;
-  const samples = applyChunkEnvelope(playbackQueue.shift());
-  audioContext = audioContext || new AudioContext({ sampleRate: 24000 });
+  const { samples: rawSamples, sampleRate } = playbackQueue.shift();
+  const samples = applyChunkEnvelope(rawSamples, sampleRate);
+  audioContext = audioContext || new AudioContext({ sampleRate });
   assistantGainNode = assistantGainNode || audioContext.createGain();
   assistantGainNode.connect(audioContext.destination);
 
-  const buffer = audioContext.createBuffer(1, samples.length, 24000);
+  const buffer = audioContext.createBuffer(1, samples.length, sampleRate);
   buffer.copyToChannel(samples, 0);
 
   const source = audioContext.createBufferSource();
@@ -269,6 +288,9 @@ async function playNextChunk() {
     }
     if (!playbackQueue.length) {
       playbackCursorTime = 0;
+      if (realtimeProvider === "elevenlabs") {
+        assistantResponseActive = false;
+      }
     }
     speaking = false;
     if (pendingAutoEnd && !playbackQueue.length && !assistantResponseActive) {
@@ -293,6 +315,7 @@ function stopAssistantPlayback() {
     currentSource = null;
   }
   speaking = false;
+  assistantResponseActive = false;
 }
 
 function interruptAssistant(reason = "voice") {
@@ -304,11 +327,13 @@ function interruptAssistant(reason = "voice") {
   stopAssistantPlayback();
   pendingResponseAfterCommit = false;
 
-  if (socket?.readyState === WebSocket.OPEN && assistantResponseActive) {
-    cancelInFlight = true;
-    socket.send(JSON.stringify({ type: "response.cancel" }));
-  } else if (responseRequested) {
-    cancelPendingOnCreate = true;
+  if (realtimeProvider === "openai") {
+    if (socket?.readyState === WebSocket.OPEN && assistantResponseActive) {
+      cancelInFlight = true;
+      socket.send(JSON.stringify({ type: "response.cancel" }));
+    } else if (responseRequested) {
+      cancelPendingOnCreate = true;
+    }
   }
 
   if (reason === "voice") {
@@ -359,11 +384,9 @@ function downsampleBuffer(float32Array, inputSampleRate, outputSampleRate) {
 }
 
 function beginVoiceTurn() {
-  if (recording) {
+  if (realtimeProvider === "elevenlabs") {
     return;
   }
-
-  recording = true;
   turnPrimed = false;
   bufferedAudioMs = 0;
   silenceStartedAt = 0;
@@ -371,6 +394,9 @@ function beginVoiceTurn() {
 }
 
 function requestAssistantReply() {
+  if (realtimeProvider !== "openai") {
+    return;
+  }
   responseRequested = true;
   awaitingResponse = true;
   socket.send(JSON.stringify({
@@ -393,8 +419,16 @@ function requestAssistantReply() {
 }
 
 function commitVoiceTurn() {
+  if (realtimeProvider !== "openai") {
+    return;
+  }
   commitPending = true;
   socket.send(JSON.stringify({ type: "input_audio_buffer.commit" }));
+}
+
+function parseSampleRate(formatValue) {
+  const match = String(formatValue || "").match(/(\d{4,6})/);
+  return match ? Number(match[1]) : null;
 }
 
 async function ensureAudioPipeline() {
@@ -429,7 +463,7 @@ async function ensureAudioPipeline() {
       silenceStartedAt = 0;
     } else {
       speechFrameCount = 0;
-      if (recording) {
+      if (realtimeProvider === "openai") {
         silenceStartedAt = silenceStartedAt || Date.now();
       }
     }
@@ -442,23 +476,28 @@ async function ensureAudioPipeline() {
       interruptAssistant();
     }
 
-    const readyToStartTurn = assistantTalkingNow ? isInterruptSpeech : isSpeech;
-    if (!recording && readyToStartTurn && speechFrameCount >= START_SPEECH_FRAMES) {
-      beginVoiceTurn();
-    }
+    const downsampled = downsampleBuffer(input, audioContext.sampleRate, providerInputSampleRate);
+    const pcm16 = floatTo16BitPCM(downsampled);
 
-    if (!recording) {
+    if (realtimeProvider === "elevenlabs") {
+      socket.send(JSON.stringify({
+        user_audio_chunk: base64FromArrayBuffer(pcm16),
+      }));
       return;
     }
 
-    const downsampled = downsampleBuffer(input, audioContext.sampleRate, 24000);
-    if (!turnPrimed) {
+    const readyToStartTurn = assistantTalkingNow ? isInterruptSpeech : isSpeech;
+    if (!turnPrimed && readyToStartTurn && speechFrameCount >= START_SPEECH_FRAMES) {
+      beginVoiceTurn();
       turnPrimed = true;
       socket.send(JSON.stringify({ type: "input_audio_buffer.clear" }));
     }
 
-    const pcm16 = floatTo16BitPCM(downsampled);
-    bufferedAudioMs += (downsampled.length / 24000) * 1000;
+    if (!turnPrimed) {
+      return;
+    }
+
+    bufferedAudioMs += (downsampled.length / providerInputSampleRate) * 1000;
     socket.send(JSON.stringify({
       type: "input_audio_buffer.append",
       audio: base64FromArrayBuffer(pcm16),
@@ -499,11 +538,10 @@ async function enableMicrophone() {
 }
 
 function finishVoiceTurn() {
-  if (!recording) {
+  if (realtimeProvider === "elevenlabs") {
     return;
   }
 
-  recording = false;
   silenceStartedAt = 0;
   speechFrameCount = 0;
   turnPrimed = false;
@@ -529,10 +567,6 @@ function disableMicrophone() {
     return;
   }
 
-  if (recording) {
-    finishVoiceTurn();
-  }
-
   micEnabled = false;
   bufferedAudioMs = 0;
   turnPrimed = false;
@@ -543,10 +577,74 @@ function disableMicrophone() {
   }
 }
 
-function connect() {
-  connecting = true;
-  manuallyClosed = false;
-  syncCallControls();
+async function startCallSession() {
+  finishingCallSession = false;
+  providerConversationId = null;
+  const response = await fetch("/api/call-sessions/start", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      character_slug: characterSlug,
+      started_from: startedFrom,
+      app_user_id: appUserId,
+      telegram_user_id: tg?.initDataUnsafe?.user?.id ?? null,
+      telegram_username: tg?.initDataUnsafe?.user?.username ?? null,
+    }),
+  });
+  const payload = await response.json().catch(() => ({ ok: false, error: "Invalid server response." }));
+  if (!response.ok || !payload.ok) {
+    throw new Error(payload.error || "Не удалось создать звонок.");
+  }
+  callSessionId = payload.call_session_id || null;
+  return payload;
+}
+
+async function finishCallSession(reason = "client") {
+  if (!callSessionId || finishingCallSession || realtimeProvider !== "elevenlabs") {
+    return;
+  }
+  finishingCallSession = true;
+  try {
+    await fetch(`/api/call-sessions/${callSessionId}/finish`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        provider: realtimeProvider,
+        conversation_id: providerConversationId,
+        reason,
+      }),
+      keepalive: true,
+    });
+  } catch {
+    // Best-effort finish request.
+  }
+}
+
+function attachCommonSocketHandlers() {
+  socket.addEventListener("close", () => {
+    connecting = false;
+    callActive = false;
+    stopCallTimer();
+    micEnabled = false;
+    bufferedAudioMs = 0;
+    turnPrimed = false;
+    cancelInFlight = false;
+    assistantResponseActive = false;
+    responseRequested = false;
+    cancelPendingOnCreate = false;
+    commitPending = false;
+    pendingResponseAfterCommit = false;
+    pendingAutoEnd = false;
+    setConnectionState("Соединение завершено", false);
+    stopAssistantPlayback();
+    awaitingResponse = false;
+    syncCallControls();
+    logLine(manuallyClosed ? "Звонок завершён." : "Соединение оборвалось.");
+    void finishCallSession(manuallyClosed ? "manual" : "disconnect");
+  });
+}
+
+function connectOpenAi() {
   socket = new WebSocket(websocketUrl);
 
   socket.addEventListener("open", () => {
@@ -586,7 +684,8 @@ function connect() {
     }
 
     if (payload.type === "response.audio.delta" && payload.delta) {
-      playbackQueue.push(decodePcm16(payload.delta));
+      playbackQueue.push(decodePcm16(payload.delta, providerOutputSampleRate));
+      assistantResponseActive = true;
       await playNextChunk();
       return;
     }
@@ -679,27 +778,149 @@ function connect() {
     }
   });
 
-  socket.addEventListener("close", () => {
+  attachCommonSocketHandlers();
+}
+
+function connectElevenLabs(sessionPayload) {
+  providerConversationId = null;
+  socket = new WebSocket(sessionPayload.signed_url);
+
+  socket.addEventListener("open", () => {
     connecting = false;
-    callActive = false;
-    stopCallTimer();
-    recording = false;
-    micEnabled = false;
-    bufferedAudioMs = 0;
-    turnPrimed = false;
-    cancelInFlight = false;
-    assistantResponseActive = false;
-    responseRequested = false;
-    cancelPendingOnCreate = false;
-    commitPending = false;
-    pendingResponseAfterCommit = false;
-    pendingAutoEnd = false;
-    setConnectionState("Соединение завершено", false);
-    stopAssistantPlayback();
-    awaitingResponse = false;
+    callActive = true;
+    startCallTimer();
+    setConnectionState("На линии", true);
     syncCallControls();
-    logLine(manuallyClosed ? "Звонок завершён." : "Соединение оборвалось.");
+    const initPayload = JSON.stringify(sessionPayload.conversation_initiation_client_data);
+    console.log("[ElevenLabs] sending init:", initPayload);
+    socket.send(initPayload);
+    logLine(`Соединение с ${characterName} установлено.`);
   });
+
+  socket.addEventListener("close", (event) => {
+    console.warn("[ElevenLabs] WebSocket closed", event.code, event.reason);
+    logLine(`[debug] WS закрыт: code=${event.code} reason=${event.reason || "нет"}`);
+  });
+
+  socket.addEventListener("message", async (event) => {
+    console.log("[ElevenLabs] message:", event.data.slice(0, 300));
+    let payload;
+    try {
+      payload = JSON.parse(event.data);
+    } catch {
+      return;
+    }
+
+    const conversationMetadata = payload.conversation_initiation_metadata_event || payload.conversation_initiation_metadata || {};
+    providerConversationId = conversationMetadata.conversation_id || payload.conversation_id || providerConversationId;
+    const inputRate = parseSampleRate(conversationMetadata.user_input_audio_format);
+    const outputRate = parseSampleRate(conversationMetadata.agent_output_audio_format);
+    if (inputRate) {
+      providerInputSampleRate = inputRate;
+    }
+    if (outputRate) {
+      providerOutputSampleRate = outputRate;
+    }
+
+    if (payload.type === "ping") {
+      socket.send(JSON.stringify({
+        type: "pong",
+        event_id: payload.ping_event?.event_id,
+      }));
+      return;
+    }
+
+    if (payload.type === "conversation_initiation_metadata") {
+      logLine("Аудиосессия готова.");
+      return;
+    }
+
+    if (payload.type === "audio" && payload.audio_event?.audio_base_64) {
+      playbackQueue.push(decodePcm16(payload.audio_event.audio_base_64, providerOutputSampleRate));
+      assistantResponseActive = true;
+      await playNextChunk();
+      return;
+    }
+
+    if (payload.type === "user_transcript" && payload.user_transcription_event?.user_transcript) {
+      const transcript = payload.user_transcription_event.user_transcript;
+      logLine(`Вы: ${transcript}`);
+      if (shouldAutoEndCall(transcript)) {
+        logLine("Похоже, вы завершили разговор. Закрываю звонок.");
+        endCall("auto-end");
+      }
+      return;
+    }
+
+    if (payload.type === "agent_response" && payload.agent_response_event?.agent_response) {
+      const { transcript, reason } = extractAssistantEndCall(payload.agent_response_event.agent_response);
+      if (transcript) {
+        logLine(`${characterName}: ${transcript}`);
+      }
+      if (reason) {
+        logLine(`${characterName} завершает разговор.`);
+        endCall("auto-end");
+      }
+      return;
+    }
+
+    if (payload.type === "agent_response_correction" && payload.agent_response_correction_event?.corrected_agent_response) {
+      const { transcript, reason } = extractAssistantEndCall(payload.agent_response_correction_event.corrected_agent_response);
+      if (transcript) {
+        logLine(`${characterName}: ${transcript}`);
+      }
+      if (reason) {
+        logLine(`${characterName} завершает разговор.`);
+        endCall("auto-end");
+      }
+      return;
+    }
+
+    if (payload.type === "interruption") {
+      stopAssistantPlayback();
+      return;
+    }
+
+    if (payload.type === "error") {
+      const message = payload.message || payload.error?.message || "unknown";
+      setConnectionState("Ошибка соединения", false);
+      logLine(`Ошибка звонка: ${message}`);
+    }
+  });
+
+  attachCommonSocketHandlers();
+}
+
+async function connect() {
+  connecting = true;
+  manuallyClosed = false;
+  finishingCallSession = false;
+  syncCallControls();
+
+  if (realtimeProvider === "elevenlabs") {
+    const sessionPayload = await startCallSession();
+    connectElevenLabs(sessionPayload);
+    return;
+  }
+
+  connectOpenAi();
+}
+
+function endCall(reason = "manual") {
+  manuallyClosed = true;
+  pendingAutoEnd = false;
+  if (socket?.readyState === WebSocket.OPEN) {
+    interruptAssistant(reason);
+    if (realtimeProvider === "openai") {
+      socket.send(JSON.stringify({ type: "call.stop" }));
+    }
+    socket.close();
+    return;
+  }
+
+  if (socket?.readyState === WebSocket.CONNECTING) {
+    socket.close();
+  }
 }
 
 micButton.addEventListener("click", async () => {
@@ -734,7 +955,15 @@ micButton.addEventListener("click", async () => {
 
   setConnectionState("Соединяем…", false);
   logLine(`Звоним ${characterName}…`);
-  connect();
+  try {
+    await connect();
+  } catch (error) {
+    connecting = false;
+    syncCallControls();
+    setConnectionState("Соединение не удалось", false);
+    logLine(error instanceof Error ? error.message : String(error));
+    await finishCallSession("setup_failed");
+  }
 });
 
 setConnectionState("Готов к звонку", false);

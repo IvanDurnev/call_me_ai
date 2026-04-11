@@ -12,7 +12,6 @@ let selectedSlug = heroes[0]?.slug || null;
 let pricingPlans = initialState.pricing_plans || [];
 let selectedPlanCode = pricingPlans[0]?.code || null;
 let previewAudioUrl = null;
-const PREVIEW_VERSION = "20260409c";
 
 const heroesList = document.getElementById("heroes-list");
 const heroEditor = document.getElementById("hero-editor");
@@ -22,6 +21,10 @@ const plansList = document.getElementById("plans-list");
 const planEditor = document.getElementById("plan-editor");
 const planCreateForm = document.getElementById("plan-create-form");
 const planCreateStatus = document.getElementById("plan-create-status");
+
+if (createForm?.elements?.provider && initialState.realtime_provider) {
+  createForm.elements.provider.value = initialState.realtime_provider;
+}
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -37,6 +40,41 @@ function selectedHero() {
 
 function selectedPlan() {
   return pricingPlans.find((plan) => plan.code === selectedPlanCode) || pricingPlans[0] || null;
+}
+
+function selectedHeroDiagnostics() {
+  return (initialState.runtime_diagnostics || {})[selectedSlug] || null;
+}
+
+function heroProvider(hero) {
+  return hero?.provider || initialState.realtime_provider || "openai";
+}
+
+function buildAgentSetupChecklist(hero, diagnostics) {
+  const lines = [
+    `Hero: ${hero.name || hero.slug}`,
+    `Provider: ${heroProvider(hero) || "unknown"}`,
+    "",
+    "Checklist:",
+    `1. Agent ID: ${hero.elevenlabs_agent_id || "set in .env (ELEVENLABS_AGENT_ID)"}`,
+    `2. Voice ID: ${hero.elevenlabs_voice_id || "missing"}`,
+    "3. In ElevenLabs agent Security, allow client overrides for:",
+    "   - prompt",
+    "   - first_message",
+    "   - voice_id",
+    "4. Confirm the agent audio formats are compatible with web calls.",
+    "5. Run Test agent from the admin panel.",
+  ];
+
+  if (diagnostics?.summary) {
+    lines.push("", `Current diagnostics: ${diagnostics.summary}`);
+  }
+
+  for (const item of diagnostics?.checks || []) {
+    lines.push(`- [${String(item.status || "").toUpperCase()}] ${item.label}: ${item.detail}`);
+  }
+
+  return lines.join("\n");
 }
 
 function setStatus(node, message, isError = false) {
@@ -101,9 +139,19 @@ function renderPlanList() {
 }
 
 function renderVoiceOptions(hero) {
-  return (initialState.voice_options || []).map((option) => `
-    <option value="${escapeHtml(option.value)}" ${option.value === hero.voice ? "selected" : ""}>
-      ${escapeHtml(option.label)}${option.recommended ? " recommended" : ""}
+  const isElevenLabs = heroProvider(hero) === "elevenlabs";
+  const currentVoice = isElevenLabs ? (hero.elevenlabs_voice_id || "") : (hero.voice || "");
+  const providerVoices = initialState.voice_options?.[isElevenLabs ? "elevenlabs" : "openai"] || [];
+  const options = [...providerVoices];
+  if (currentVoice && !options.some((option) => option.value === currentVoice)) {
+    options.unshift({
+      value: currentVoice,
+      label: `${currentVoice} (current)`,
+    });
+  }
+  return options.map((option) => `
+    <option value="${escapeHtml(option.value)}" ${option.value === currentVoice ? "selected" : ""}>
+      ${escapeHtml(option.label)}${option.recommended ? " ★" : ""}
     </option>
   `).join("");
 }
@@ -131,8 +179,61 @@ function renderNoiseReductionOptions(hero) {
   `).join("");
 }
 
-function previewUrlForVoice(voice) {
-  return `/static/voices/previews/${encodeURIComponent(String(voice || "").trim())}.mp3?v=${PREVIEW_VERSION}`;
+function renderElevenLabsLlmOptions(hero) {
+  const currentValue = hero.elevenlabs_llm || "gpt-4o-mini";
+  const options = [...(initialState.elevenlabs_llm_options || [])];
+  if (currentValue && !options.some((option) => option.value === currentValue)) {
+    options.unshift({ value: currentValue, label: `${currentValue} (current)` });
+  }
+  return options.map((option) => `
+    <option value="${escapeHtml(option.value)}" ${option.value === currentValue ? "selected" : ""}>${escapeHtml(option.label)}</option>
+  `).join("");
+}
+
+function buildHeroSavePayload(form, hero) {
+  const formData = new FormData(form);
+  const provider = formData.get("provider") || heroProvider(hero);
+  const payload = {
+    name: formData.get("name"),
+    emoji: formData.get("emoji"),
+    description: formData.get("description"),
+    provider,
+    is_active: formData.get("is_active") === "on",
+    greeting_prompt: formData.get("greeting_prompt"),
+    system_prompt: formData.get("system_prompt"),
+    instructions_override: formData.get("instructions_override"),
+    voice: hero.voice || "",
+    elevenlabs_voice_id: hero.elevenlabs_voice_id || "",
+    elevenlabs_first_message: hero.elevenlabs_first_message || "",
+    elevenlabs_agent_id: hero.elevenlabs_agent_id || "",
+    elevenlabs_llm: hero.elevenlabs_llm || "gpt-4o-mini",
+    realtime_model: hero.realtime_model || "",
+    input_transcription_model: hero.input_transcription_model || "",
+    input_transcription_language: hero.input_transcription_language || "",
+    input_transcription_prompt: hero.input_transcription_prompt || "",
+    noise_reduction_type: hero.noise_reduction_type || "none",
+    max_output_tokens: hero.max_output_tokens ?? "inf",
+    output_audio_speed: hero.output_audio_speed ?? 1,
+  };
+
+  if (provider === "elevenlabs") {
+    payload.elevenlabs_voice_id = formData.has("elevenlabs_voice_id") ? formData.get("elevenlabs_voice_id") : payload.elevenlabs_voice_id;
+    payload.elevenlabs_first_message = formData.has("elevenlabs_first_message") ? formData.get("elevenlabs_first_message") : payload.elevenlabs_first_message;
+    payload.elevenlabs_agent_id = formData.has("elevenlabs_agent_id") ? formData.get("elevenlabs_agent_id") : payload.elevenlabs_agent_id;
+    payload.elevenlabs_llm = formData.has("elevenlabs_llm") ? formData.get("elevenlabs_llm") : payload.elevenlabs_llm;
+    payload.input_transcription_language = formData.has("input_transcription_language") ? formData.get("input_transcription_language") : payload.input_transcription_language;
+    payload.output_audio_speed = formData.has("output_audio_speed") ? formData.get("output_audio_speed") : payload.output_audio_speed;
+  } else {
+    payload.voice = formData.has("voice") ? formData.get("voice") : payload.voice;
+    payload.realtime_model = formData.has("realtime_model") ? formData.get("realtime_model") : payload.realtime_model;
+    payload.input_transcription_model = formData.has("input_transcription_model") ? formData.get("input_transcription_model") : payload.input_transcription_model;
+    payload.input_transcription_language = formData.has("input_transcription_language") ? formData.get("input_transcription_language") : payload.input_transcription_language;
+    payload.input_transcription_prompt = formData.has("input_transcription_prompt") ? formData.get("input_transcription_prompt") : payload.input_transcription_prompt;
+    payload.noise_reduction_type = formData.has("noise_reduction_type") ? formData.get("noise_reduction_type") : payload.noise_reduction_type;
+    payload.max_output_tokens = formData.has("max_output_tokens") ? formData.get("max_output_tokens") : payload.max_output_tokens;
+  }
+
+  return payload;
 }
 
 function renderEditor() {
@@ -140,6 +241,9 @@ function renderEditor() {
     return;
   }
   const hero = selectedHero();
+  const diagnostics = selectedHeroDiagnostics();
+  const provider = heroProvider(hero);
+  const isElevenLabs = provider === "elevenlabs";
   if (!hero) {
     heroEditor.innerHTML = '<div class="hero-editor-empty">Герои не найдены.</div>';
     return;
@@ -172,18 +276,25 @@ function renderEditor() {
             <span>Эмодзи</span>
             <input name="emoji" type="text" value="${escapeHtml(hero.emoji || "")}" maxlength="16" placeholder="✨">
           </label>
+          <label class="hero-field">
+            <span>Провайдер звонка</span>
+            <select name="provider" id="hero-provider-select">
+              <option value="openai" ${provider === "openai" ? "selected" : ""}>OpenAI</option>
+              <option value="elevenlabs" ${provider === "elevenlabs" ? "selected" : ""}>ElevenLabs</option>
+            </select>
+          </label>
         </div>
         <label class="hero-field">
           <span>Описание</span>
           <textarea name="description" rows="4" placeholder="Кто это, как он разговаривает, в чём его характер.">${escapeHtml(hero.description || "")}</textarea>
         </label>
         <label class="hero-field">
-          <span>Голос OpenAI</span>
-          <select name="voice" id="hero-voice-select">${renderVoiceOptions(hero)}</select>
+          <span>${isElevenLabs ? "Голос (ElevenLabs)" : "Голос (OpenAI)"}</span>
+          <select name="${isElevenLabs ? "elevenlabs_voice_id" : "voice"}" id="hero-voice-select">${renderVoiceOptions(hero)}</select>
         </label>
         <div class="hero-voice-preview">
           <button class="call-btn call-btn-secondary" type="button" id="voice-preview-btn">Прослушать голос</button>
-          <audio id="voice-preview-audio" controls preload="metadata" src="${escapeHtml(previewUrlForVoice(hero.voice))}"></audio>
+          <audio id="voice-preview-audio" controls preload="metadata"></audio>
         </div>
         <label class="hero-field hero-field-inline">
           <input name="is_active" type="checkbox" ${hero.is_active ? "checked" : ""}>
@@ -224,10 +335,53 @@ function renderEditor() {
 
       <div class="hero-section">
         <div class="hero-section-head">
-          <h3>Realtime API</h3>
-          <p>Отдельный блок для точной настройки модели, инструкций, распознавания и аудиовыхода.</p>
+          <h3>Общие инструкции</h3>
+          <p>Эти настройки работают для обоих провайдеров и определяют поведение героя в разговоре.</p>
+        </div>
+        <label class="hero-field">
+          <span>Greeting prompt</span>
+          <textarea name="greeting_prompt" rows="3" placeholder="Как герой начинает разговор первым.">${escapeHtml(hero.greeting_prompt || "")}</textarea>
+        </label>
+        <label class="hero-field">
+          <span>System prompt</span>
+          <textarea name="system_prompt" rows="5" placeholder="Базовые инструкции для героя.">${escapeHtml(hero.system_prompt || "")}</textarea>
+        </label>
+        <label class="hero-field">
+          <span>Instructions override</span>
+          <textarea name="instructions_override" rows="4" placeholder="Если заполнить, будет использовано как override поверх базовых инструкций.">${escapeHtml(hero.instructions_override || "")}</textarea>
+        </label>
+      </div>
+
+      <div class="hero-section">
+        <div class="hero-section-head">
+          <h3>${isElevenLabs ? "ElevenLabs" : "OpenAI"}</h3>
+          <p>${isElevenLabs
+            ? "Только настройки ElevenLabs: агент, первая фраза, скорость и распознавание."
+            : "Только настройки OpenAI realtime: модель, транскрибация, шумодав и лимиты ответа."}</p>
         </div>
         <div class="hero-field-grid">
+          ${isElevenLabs ? `
+          <label class="hero-field">
+            <span>ElevenLabs agent ID</span>
+            <input name="elevenlabs_agent_id" type="text" value="${escapeHtml(hero.elevenlabs_agent_id || "")}" placeholder="Опционально, иначе берётся из .env">
+          </label>
+          <label class="hero-field">
+            <span>LLM</span>
+            <select name="elevenlabs_llm">${renderElevenLabsLlmOptions(hero)}</select>
+          </label>
+          <label class="hero-field">
+            <span>Язык распознавания</span>
+            <input name="input_transcription_language" type="text" value="${escapeHtml(hero.input_transcription_language || "")}" placeholder="ru">
+          </label>
+          <label class="hero-field">
+            <span>Скорость голоса</span>
+            <input name="output_audio_speed" type="number" min="0.25" max="1.5" step="0.01" value="${escapeHtml(hero.output_audio_speed ?? 1)}">
+          </label>
+          <label class="hero-field hero-field-wide">
+            <span>Первая фраза</span>
+            <textarea name="elevenlabs_first_message" rows="2" placeholder="Если задана, ElevenLabs произнесёт её дословно. Если пусто, начало будет генерироваться каждый раз.">${escapeHtml(hero.elevenlabs_first_message || "")}</textarea>
+          </label>
+          ` : `
           <label class="hero-field">
             <span>Realtime model</span>
             <select name="realtime_model">${renderModelOptions(hero)}</select>
@@ -248,28 +402,44 @@ function renderEditor() {
             <span>Max output tokens</span>
             <input name="max_output_tokens" type="text" value="${escapeHtml(hero.max_output_tokens ?? "inf")}" placeholder="inf">
           </label>
-          <label class="hero-field">
-            <span>Output audio speed</span>
-            <input name="output_audio_speed" type="number" min="0.25" max="1.5" step="0.01" value="${escapeHtml(hero.output_audio_speed ?? 1)}">
+          <label class="hero-field hero-field-wide">
+            <span>Transcription prompt</span>
+            <textarea name="input_transcription_prompt" rows="3" placeholder="Подсказка для распознавания речи.">${escapeHtml(hero.input_transcription_prompt || "")}</textarea>
           </label>
+          `}
         </div>
-        <label class="hero-field">
-          <span>Greeting prompt</span>
-          <textarea name="greeting_prompt" rows="3" placeholder="Как герой начинает разговор первым.">${escapeHtml(hero.greeting_prompt || "")}</textarea>
-        </label>
-        <label class="hero-field">
-          <span>System prompt</span>
-          <textarea name="system_prompt" rows="5" placeholder="Базовые инструкции для героя.">${escapeHtml(hero.system_prompt || "")}</textarea>
-        </label>
-        <label class="hero-field">
-          <span>Instructions override</span>
-          <textarea name="instructions_override" rows="4" placeholder="Если заполнить, будет использовано как override поверх session instructions.">${escapeHtml(hero.instructions_override || "")}</textarea>
-        </label>
-        <label class="hero-field">
-          <span>Transcription prompt</span>
-          <textarea name="input_transcription_prompt" rows="3" placeholder="Подсказка для распознавания речи.">${escapeHtml(hero.input_transcription_prompt || "")}</textarea>
-        </label>
       </div>
+
+      ${diagnostics ? `
+        <div class="hero-section">
+          <div class="hero-section-head">
+            <h3>Диагностика</h3>
+            <p>${escapeHtml(diagnostics.summary || "Проверка окружения")}</p>
+          </div>
+          ${isElevenLabs ? `
+            <div class="voice-actions">
+              <button class="call-btn call-btn-secondary" type="button" id="hero-create-agent-btn">Create agent</button>
+              <button class="call-btn call-btn-secondary" type="button" id="hero-test-agent-btn">Test agent</button>
+              <button class="call-btn call-btn-secondary" type="button" id="hero-copy-agent-checklist-btn">Copy setup checklist</button>
+            </div>
+          ` : ""}
+          <div class="voice-list">
+            ${(diagnostics.checks || []).map((item) => `
+              <article class="voice-card">
+                <div class="voice-card-head">
+                  <div>
+                    <h2>${escapeHtml(item.label || "Проверка")}</h2>
+                    <p>${escapeHtml(item.detail || "")}</p>
+                  </div>
+                  <span class="voice-badge${item.status === "ok" ? " voice-badge-ok" : ""}">
+                    ${escapeHtml(item.status || "unknown")}
+                  </span>
+                </div>
+              </article>
+            `).join("")}
+          </div>
+        </div>
+      ` : ""}
 
       <div class="hero-actions">
         <button class="call-btn call-btn-primary" type="submit">Сохранить героя</button>
@@ -287,43 +457,48 @@ function renderEditor() {
   const previewButton = document.getElementById("voice-preview-btn");
   const previewAudio = document.getElementById("voice-preview-audio");
   const voiceSelect = document.getElementById("hero-voice-select");
+  const providerSelect = document.getElementById("hero-provider-select");
+  const createAgentButton = document.getElementById("hero-create-agent-btn");
+  const testAgentButton = document.getElementById("hero-test-agent-btn");
+  const copyChecklistButton = document.getElementById("hero-copy-agent-checklist-btn");
+
+  providerSelect?.addEventListener("change", () => {
+    updateHero({ ...hero, ...buildHeroSavePayload(form, hero) });
+  });
+
+  async function persistHeroForm(options = {}) {
+    const {
+      statusMessage = "Сохраняю настройки героя...",
+      rerender = true,
+      successMessage = "Настройки героя сохранены.",
+    } = options;
+    setStatus(statusNode, statusMessage);
+    const payload = buildHeroSavePayload(form, hero);
+
+    console.log("[save] payload:", JSON.stringify({ elevenlabs_first_message: payload.elevenlabs_first_message, elevenlabs_llm: payload.elevenlabs_llm }));
+    const response = await fetch(`/api/heroes/${hero.slug}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const result = await response.json();
+    if (!response.ok || !result.ok) {
+      throw new Error(result.error || "Не удалось сохранить героя.");
+    }
+
+    heroes = heroes.map((entry) => entry.slug === result.hero.slug ? result.hero : entry);
+    if (rerender) {
+      await reloadAdminData();
+      const refreshedStatusNode = document.getElementById("hero-status");
+      setStatus(refreshedStatusNode, successMessage);
+    }
+    return result.hero;
+  }
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
-    setStatus(statusNode, "Сохраняю настройки героя...");
-    const formData = new FormData(form);
-    const payload = {
-      name: formData.get("name"),
-      emoji: formData.get("emoji"),
-      description: formData.get("description"),
-      voice: formData.get("voice"),
-      is_active: formData.get("is_active") === "on",
-      realtime_model: formData.get("realtime_model"),
-      input_transcription_model: formData.get("input_transcription_model"),
-      input_transcription_language: formData.get("input_transcription_language"),
-      input_transcription_prompt: formData.get("input_transcription_prompt"),
-      noise_reduction_type: formData.get("noise_reduction_type"),
-      max_output_tokens: formData.get("max_output_tokens"),
-      output_audio_format: "pcm16",
-      output_audio_speed: formData.get("output_audio_speed"),
-      greeting_prompt: formData.get("greeting_prompt"),
-      system_prompt: formData.get("system_prompt"),
-      instructions_override: formData.get("instructions_override"),
-    };
-
     try {
-      const response = await fetch(`/api/heroes/${hero.slug}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const result = await response.json();
-      if (!response.ok || !result.ok) {
-        throw new Error(result.error || "Не удалось сохранить героя.");
-      }
-
-      updateHero(result.hero);
-      setStatus(statusNode, "Настройки героя сохранены.");
+      await persistHeroForm();
     } catch (error) {
       setStatus(statusNode, error.message || "Не удалось сохранить героя.", true);
     }
@@ -345,6 +520,7 @@ function renderEditor() {
 
       heroes = heroes.filter((entry) => entry.slug !== hero.slug);
       selectedSlug = heroes[0]?.slug || null;
+      await reloadAdminData();
       render();
     } catch (error) {
       setStatus(statusNode, error.message || "Не удалось удалить героя.", true);
@@ -362,6 +538,23 @@ function renderEditor() {
     previewButton.disabled = true;
 
     try {
+      if (previewAudioUrl) {
+        URL.revokeObjectURL(previewAudioUrl);
+        previewAudioUrl = null;
+      }
+      const response = await fetch("/api/voices/preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ voice: selectedVoice, provider }),
+      });
+      if (!response.ok) {
+        const result = await response.json().catch(() => ({ error: "Не удалось получить предпрослушивание." }));
+        throw new Error(result.error || "Не удалось получить предпрослушивание.");
+      }
+      const blob = await response.blob();
+      previewAudioUrl = URL.createObjectURL(blob);
+      previewAudio.src = previewAudioUrl;
+      previewAudio.load();
       try {
         await previewAudio.play();
         setStatus(statusNode, "Предпрослушивание играет.");
@@ -376,12 +569,91 @@ function renderEditor() {
   });
 
   voiceSelect.addEventListener("change", () => {
-    const selectedVoice = voiceSelect.value;
     previewAudio.pause();
     previewAudio.currentTime = 0;
-    previewAudio.src = previewUrlForVoice(selectedVoice);
+    if (previewAudioUrl) {
+      URL.revokeObjectURL(previewAudioUrl);
+      previewAudioUrl = null;
+    }
+    previewAudio.removeAttribute("src");
     previewAudio.load();
-    setStatus(statusNode, "Файл предпрослушивания обновлён. Можно нажать Play.", false);
+    setStatus(statusNode, "Голос обновлён. Нажмите прослушать.", false);
+  });
+
+  testAgentButton?.addEventListener("click", async () => {
+    setStatus(statusNode, "Сохраняю и проверяю агента...");
+    testAgentButton.disabled = true;
+    try {
+      await persistHeroForm({
+        statusMessage: "Сохраняю настройки перед проверкой агента...",
+        rerender: false,
+      });
+      const response = await fetch(`/api/heroes/${hero.slug}/test-agent`, {
+        method: "POST",
+      });
+      const result = await response.json();
+      if (!response.ok || !result.ok) {
+        throw new Error(result.error || "Не удалось проверить агента.");
+      }
+      initialState.runtime_diagnostics = initialState.runtime_diagnostics || {};
+      initialState.runtime_diagnostics[hero.slug] = result.diagnostics;
+      await reloadAdminData();
+      const refreshedStatusNode = document.getElementById("hero-status");
+      setStatus(refreshedStatusNode, result.diagnostics?.summary || "Проверка завершена.");
+    } catch (error) {
+      setStatus(statusNode, error.message || "Не удалось проверить агента.", true);
+    } finally {
+      testAgentButton.disabled = false;
+    }
+  });
+
+  createAgentButton?.addEventListener("click", async () => {
+    setStatus(statusNode, "Сохраняю и создаю ElevenLabs агента...");
+    createAgentButton.disabled = true;
+    try {
+      await persistHeroForm({
+        statusMessage: "Сохраняю настройки перед обновлением агента...",
+        rerender: false,
+      });
+      const response = await fetch(`/api/heroes/${hero.slug}/create-agent`, {
+        method: "POST",
+      });
+      const result = await response.json();
+      if (!response.ok || !result.ok) {
+        throw new Error(result.error || "Не удалось создать агента.");
+      }
+
+      if (result.hero) {
+        heroes = heroes.map((entry) => entry.slug === result.hero.slug ? result.hero : entry);
+      }
+      if (result.diagnostics) {
+        initialState.runtime_diagnostics = initialState.runtime_diagnostics || {};
+        initialState.runtime_diagnostics[hero.slug] = result.diagnostics;
+      }
+      await reloadAdminData();
+
+      const refreshedStatusNode = document.getElementById("hero-status");
+      const message = result.created
+        ? `Agent создан и сохранён: ${result.agent_id}`
+        : result.updated
+          ? `Agent обновлён: ${result.agent_id}`
+          : `Agent уже задан: ${result.agent_id}`;
+      setStatus(refreshedStatusNode, message);
+    } catch (error) {
+      setStatus(statusNode, error.message || "Не удалось создать агента.", true);
+    } finally {
+      createAgentButton.disabled = false;
+    }
+  });
+
+  copyChecklistButton?.addEventListener("click", async () => {
+    const checklist = buildAgentSetupChecklist(hero, diagnostics);
+    try {
+      await navigator.clipboard.writeText(checklist);
+      setStatus(statusNode, "Чеклист скопирован в буфер обмена.");
+    } catch (error) {
+      setStatus(statusNode, error?.message || "Не удалось скопировать чеклист.", true);
+    }
   });
 
   knowledgeInput.addEventListener("change", async () => {
@@ -579,6 +851,7 @@ async function uploadFile(slug, file, kind, statusNode) {
     }
 
     updateHero(result.hero);
+    await reloadAdminData();
     setStatus(statusNode, kind === "knowledge" ? "База знаний обновлена." : "Аватар обновлён.");
   } catch (error) {
     setStatus(statusNode, error.message || "Ошибка загрузки файла.", true);
@@ -607,12 +880,36 @@ function prependPlan(plan) {
   render();
 }
 
+async function reloadAdminData() {
+  const response = await fetch("/api/heroes");
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.error || "Не удалось обновить данные.");
+  }
+  heroes = payload.items || [];
+  pricingPlans = payload.pricing_plans || [];
+  initialState.voice_options = payload.voice_options || [];
+  initialState.realtime_model_options = payload.realtime_model_options || [];
+  initialState.transcription_model_options = payload.transcription_model_options || [];
+  initialState.noise_reduction_options = payload.noise_reduction_options || [];
+  initialState.elevenlabs_llm_options = payload.elevenlabs_llm_options || [];
+  initialState.runtime_diagnostics = payload.runtime_diagnostics || {};
+  if (!heroes.some((hero) => hero.slug === selectedSlug)) {
+    selectedSlug = heroes[0]?.slug || null;
+  }
+  if (!pricingPlans.some((plan) => plan.code === selectedPlanCode)) {
+    selectedPlanCode = pricingPlans[0]?.code || null;
+  }
+  render();
+}
+
 createForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
   const formData = new FormData(createForm);
   const payload = {
     name: formData.get("name"),
     emoji: formData.get("emoji"),
+    provider: formData.get("provider") || initialState.realtime_provider || "openai",
   };
 
   setStatus(createStatus, "Создаю персонажа...");
@@ -629,7 +926,11 @@ createForm?.addEventListener("submit", async (event) => {
 
     createForm.reset();
     prependHero(result.hero);
-    setStatus(createStatus, "Персонаж создан. Теперь можно заполнить его карточку.");
+    await reloadAdminData();
+    const createdMessage = result.agent_created
+      ? `Персонаж создан, ElevenLabs agent тоже создан: ${result.agent_id}`
+      : "Персонаж создан. Теперь можно заполнить его карточку.";
+    setStatus(createStatus, createdMessage);
   } catch (error) {
     setStatus(createStatus, error.message || "Не удалось создать персонажа.", true);
   }
@@ -670,4 +971,16 @@ function render() {
   renderPlanEditor();
 }
 
-render();
+async function bootstrap() {
+  if (!heroes.length) {
+    try {
+      await reloadAdminData();
+      return;
+    } catch (_error) {
+      // Keep the server-rendered empty state if refresh failed.
+    }
+  }
+  render();
+}
+
+bootstrap();

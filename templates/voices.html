@@ -14,14 +14,20 @@
             <p class="eyebrow">Voice Lab</p>
             <h1>Управление голосами</h1>
             <p class="lead">
-              Папки подгружаются из <code>static/voices</code>. Для consent и voice используется первый поддерживаемый
-              аудиофайл в папке.
+              {% if library["provider"] == "elevenlabs" %}
+                Подтянуты голоса, доступные в аккаунте ElevenLabs.
+              {% else %}
+                Папки подгружаются из <code>static/voices</code>. Для consent и voice используется первый поддерживаемый
+                аудиофайл в папке.
+              {% endif %}
             </p>
           </div>
 
           <div class="voices-banner{% if library['consents_error'] %} voices-banner-error{% endif %}" id="voices-banner">
             {% if library["consents_error"] %}
-              <strong>OpenAI API:</strong> {{ library["consents_error"] }}
+              <strong>{{ "ElevenLabs API" if library["provider"] == "elevenlabs" else "OpenAI API" }}:</strong> {{ library["consents_error"] }}
+            {% elif library["provider"] == "elevenlabs" %}
+              <strong>Provider:</strong> ElevenLabs
             {% else %}
               <strong>Consent language:</strong> {{ library["consent_language"] }}
             {% endif %}
@@ -45,22 +51,29 @@
                 </div>
 
                 <div class="voice-meta">
-                  <span>Consent: {{ item.consent.id if item.consent else "не создан" }}</span>
+                  {% if library["provider"] == "elevenlabs" %}
+                    <span>Voice ID: {{ item.voice_id or "неизвестен" }}</span>
+                    {% if item.category %}<span>Категория: {{ item.category }}</span>{% endif %}
+                  {% else %}
+                    <span>Consent: {{ item.consent.id if item.consent else "не создан" }}</span>
+                  {% endif %}
                 </div>
 
-                <div class="voice-actions">
-                  <button class="call-btn call-btn-secondary js-convert-wav" type="button" {% if not item.has_sample %}disabled{% endif %}>
-                    Convert to WAV
-                  </button>
-                  <button class="call-btn call-btn-secondary js-create-consent" type="button" {% if not item.has_sample %}disabled{% endif %}>
-                    Create consent
-                  </button>
-                  <button class="call-btn call-btn-primary js-create-voice" type="button" {% if not item.has_sample %}disabled{% endif %}>
-                    Create voice
-                  </button>
-                </div>
+                {% if library["provider"] != "elevenlabs" %}
+                  <div class="voice-actions">
+                    <button class="call-btn call-btn-secondary js-convert-wav" type="button" {% if not item.has_sample %}disabled{% endif %}>
+                      Convert to WAV
+                    </button>
+                    <button class="call-btn call-btn-secondary js-create-consent" type="button" {% if not item.has_sample %}disabled{% endif %}>
+                      Create consent
+                    </button>
+                    <button class="call-btn call-btn-primary js-create-voice" type="button" {% if not item.has_sample %}disabled{% endif %}>
+                      Create voice
+                    </button>
+                  </div>
+                {% endif %}
 
-                <pre class="voice-result" id="voice-result-{{ loop.index0 }}">Готово к запуску.</pre>
+                <pre class="voice-result" id="voice-result-{{ loop.index0 }}">{% if library["provider"] == "elevenlabs" %}Голос доступен для выбора в героях.{% else %}Готово к запуску.{% endif %}</pre>
               </article>
             {% else %}
               <article class="voice-card">

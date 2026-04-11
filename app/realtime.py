@@ -1,19 +1,25 @@
 from __future__ import annotations
 
+import base64
+import io
 import json
 import logging
+import re
+import wave
 from contextlib import suppress
 from datetime import datetime
-from threading import Lock, Thread
+from threading import Event, Lock, Thread
 
 from flask import current_app
 from simple_websocket.errors import ConnectionClosed as BrowserConnectionClosed
 from websocket import WebSocket, WebSocketConnectionClosedException, WebSocketTimeoutException, create_connection
 
-from .characters import build_character_identity_prompt, build_realtime_session_config, get_character
+from .characters import build_character_identity_prompt, build_realtime_session_config, build_runtime_instructions, get_character, normalize_realtime_settings
 from .extensions import db
 from .models import AppUser, CallSession
 from .services.billing import build_user_access_state
+from .services.elevenlabs_audio import stream_speech, transcribe_audio
+from .services.llm import generate_chat_reply
 from .services.openai_client import build_openai_websocket_options
 
 
@@ -30,6 +36,8 @@ class SocketBridge:
         self.character_slug = character_slug
         self.character = get_character(character_slug)
         self.app = current_app._get_current_object()
+        settings = normalize_realtime_settings(self.character.get("realtime_settings") if self.character else None)
+        self.provider = str(settings.get("provider") or self.app.config.get("REALTIME_API_PROVIDER") or "openai").strip().lower() or "openai"
         self.openai_ws: WebSocket | None = None
         self.browser_send_lock = Lock()
         self.openai_send_lock = Lock()
@@ -39,12 +47,24 @@ class SocketBridge:
         self.pending_user_transcripts: dict[str, str] = {}
         self.seen_conversation_keys: set[str] = set()
         self.end_call_requested = False
+        self.conversation_history: list[dict[str, str]] = []
+        self.pending_audio_buffer = bytearray()
+        self.response_thread: Thread | None = None
+        self.response_cancel_event = Event()
+        self.response_sequence = 0
+        self.response_sequence_lock = Lock()
 
     @staticmethod
     def _format_browser_close(exc: BrowserConnectionClosed) -> str:
         return f"code={exc.reason or 'unknown'} message={exc.message or ''}".strip()
 
     def connect(self) -> None:
+        if self.provider == "elevenlabs":
+            self._connect_elevenlabs()
+            return
+        self._connect_openai()
+
+    def _connect_openai(self) -> None:
         session_config = build_realtime_session_config(
             self.character,
             self.app.config["OPENAI_REALTIME_MODEL"],
@@ -65,18 +85,25 @@ class SocketBridge:
                 "session": session_config,
             }
         )
-        self._send_browser(
-            {
-                "type": "call.ready",
-                "character": {
-                    "slug": self.character["slug"],
-                    "name": self.character["name"],
-                    "emoji": self.character["emoji"],
-                    "avatar_path": self.character.get("avatar_path"),
-                },
-            }
-        )
-        logging.info("Realtime session connected for %s", self.character_slug)
+        self._send_browser(self._call_ready_payload())
+        logging.info("OpenAI realtime session connected for %s", self.character_slug)
+
+    def _connect_elevenlabs(self) -> None:
+        self._send_browser(self._call_ready_payload())
+        self._send_browser({"type": "session.created", "session": {"provider": "elevenlabs"}})
+        self._send_browser({"type": "session.updated", "session": {"provider": "elevenlabs"}})
+        logging.info("ElevenLabs realtime session prepared for %s", self.character_slug)
+
+    def _call_ready_payload(self) -> dict:
+        return {
+            "type": "call.ready",
+            "character": {
+                "slug": self.character["slug"],
+                "name": self.character["name"],
+                "emoji": self.character["emoji"],
+                "avatar_path": self.character.get("avatar_path"),
+            },
+        }
 
     def _send_browser(self, payload: dict) -> None:
         if self.closed:
@@ -121,6 +148,7 @@ class SocketBridge:
                     "started_from": started_from,
                     "app_user_name": app_user.name,
                     "character_name": self.character["name"],
+                    "provider": self.provider,
                     "created_at": datetime.utcnow().isoformat(),
                     "conversation_log": [],
                     "technical_log": [],
@@ -159,9 +187,10 @@ class SocketBridge:
             return False
         if dedupe_key and dedupe_key in self.seen_conversation_keys:
             return False
+        if dedupe_key:
+            self.seen_conversation_keys.add(dedupe_key)
+        self.conversation_history.append({"role": role, "text": normalized_text})
         if self.call_session_id is None:
-            if dedupe_key:
-                self.seen_conversation_keys.add(dedupe_key)
             return True
         with self.app.app_context():
             call_session = db.session.get(CallSession, self.call_session_id)
@@ -180,8 +209,6 @@ class SocketBridge:
             meta["conversation_log"] = conversation_log[-200:]
             call_session.meta_json = meta
             db.session.commit()
-        if dedupe_key:
-            self.seen_conversation_keys.add(dedupe_key)
         return True
 
     def _emit_browser_transcript(self, role: str, text: str) -> None:
@@ -329,8 +356,7 @@ class SocketBridge:
             call_session.mark_finished()
             db.session.commit()
 
-    def _handle_browser_message(self, raw_message: str) -> None:
-        payload = json.loads(raw_message)
+    def _handle_openai_browser_message(self, payload: dict) -> None:
         message_type = payload.get("type")
 
         if message_type == "call.start":
@@ -376,7 +402,187 @@ class SocketBridge:
 
         self._send_browser({"type": "warning", "message": f"Unsupported event: {message_type}"})
 
-    def pump_browser_to_openai(self) -> None:
+    def _handle_elevenlabs_browser_message(self, payload: dict) -> None:
+        message_type = payload.get("type")
+
+        if message_type == "call.start":
+            self._create_call_session(payload)
+            if not self.greeted:
+                self.greeted = True
+                self._start_elevenlabs_response(greeting=True)
+            return
+
+        if message_type == "call.stop":
+            self._cancel_elevenlabs_response()
+            return
+
+        if message_type == "client.error":
+            self._append_call_session_log(
+                source="client",
+                message=payload.get("message") or "Unknown client error",
+                payload=payload,
+            )
+            return
+
+        if message_type == "input_audio_buffer.clear":
+            self.pending_audio_buffer.clear()
+            self._send_browser({"type": "input_audio_buffer.cleared"})
+            return
+
+        if message_type == "input_audio_buffer.append":
+            audio_payload = str(payload.get("audio") or "").strip()
+            if audio_payload:
+                self.pending_audio_buffer.extend(base64.b64decode(audio_payload))
+            return
+
+        if message_type == "input_audio_buffer.commit":
+            self._commit_elevenlabs_input_audio()
+            return
+
+        if message_type == "response.create":
+            self._start_elevenlabs_response(greeting=False)
+            return
+
+        if message_type == "response.cancel":
+            self._cancel_elevenlabs_response()
+            return
+
+        self._send_browser({"type": "warning", "message": f"Unsupported event: {message_type}"})
+
+    def _commit_elevenlabs_input_audio(self) -> None:
+        if not self.pending_audio_buffer:
+            self._send_browser({"type": "error", "message": "buffer too small"})
+            return
+
+        audio_bytes = bytes(self.pending_audio_buffer)
+        self.pending_audio_buffer.clear()
+        transcript_payload = transcribe_audio(
+            wav_bytes=self._pcm16_to_wav(audio_bytes),
+            language_code=self._transcription_language(),
+            api_key=self.app.config["ELEVEN_LABS_API_KEY"],
+        )
+        transcript = str(transcript_payload.get("text") or "").strip()
+        if transcript:
+            dedupe_key = f"user:elevenlabs:{len(self.conversation_history)}"
+            self._store_and_emit_conversation_line("user", transcript, dedupe_key=dedupe_key)
+        self._send_browser({"type": "input_audio_buffer.committed"})
+
+    @staticmethod
+    def _pcm16_to_wav(audio_bytes: bytes, sample_rate: int = 24000) -> bytes:
+        buffer = io.BytesIO()
+        with wave.open(buffer, "wb") as wav_file:
+            wav_file.setnchannels(1)
+            wav_file.setsampwidth(2)
+            wav_file.setframerate(sample_rate)
+            wav_file.writeframes(audio_bytes)
+        return buffer.getvalue()
+
+    def _transcription_language(self) -> str | None:
+        settings = normalize_realtime_settings(self.character.get("realtime_settings"))
+        value = str(settings.get("input_transcription_language") or "").strip()
+        return value or None
+
+    def _start_elevenlabs_response(self, *, greeting: bool) -> None:
+        with self.response_sequence_lock:
+            self.response_sequence += 1
+            response_id = self.response_sequence
+        self.response_cancel_event = Event()
+        self._send_browser({"type": "response.created"})
+        self.response_thread = Thread(
+            target=self._run_elevenlabs_response,
+            args=(response_id, greeting),
+            daemon=True,
+        )
+        self.response_thread.start()
+
+    def _cancel_elevenlabs_response(self) -> None:
+        self.response_cancel_event.set()
+        self._send_browser({"type": "response.done"})
+
+    def _run_elevenlabs_response(self, response_id: int, greeting: bool) -> None:
+        try:
+            reply_text = self._generate_elevenlabs_reply(greeting=greeting)
+            if not reply_text:
+                raise ValueError("Не удалось сгенерировать ответ.")
+            reply_text, end_reason = self._extract_end_call_marker(reply_text)
+            if reply_text:
+                dedupe_key = f"assistant:elevenlabs:{response_id}"
+                self._store_and_emit_conversation_line("assistant", reply_text, dedupe_key=dedupe_key)
+            if end_reason:
+                self._request_browser_end_call(end_reason)
+
+            settings = normalize_realtime_settings(self.character.get("realtime_settings"))
+            speed = settings.get("output_audio_speed")
+            for chunk in stream_speech(
+                text=reply_text,
+                voice=str(self.character.get("voice") or "").strip(),
+                output_format="pcm_24000",
+                speed=float(speed) if speed not in {None, ""} else None,
+                api_key=self.app.config["ELEVEN_LABS_API_KEY"],
+            ):
+                if self.closed or self.response_cancel_event.is_set() or response_id != self.response_sequence:
+                    break
+                self._send_browser(
+                    {
+                        "type": "response.audio.delta",
+                        "delta": base64.b64encode(chunk).decode("ascii"),
+                    }
+                )
+        except Exception as exc:
+            logging.exception("ElevenLabs response loop failed")
+            self._append_call_session_log(source="server", message=str(exc))
+            if not self.closed:
+                self._send_browser({"type": "error", "message": str(exc)})
+        finally:
+            if not self.closed and response_id == self.response_sequence:
+                self._send_browser({"type": "response.done"})
+
+    def _generate_elevenlabs_reply(self, *, greeting: bool) -> str:
+        system_prompt = build_runtime_instructions(self.character, end_call_mode="marker")
+        messages = [{"role": "system", "content": system_prompt}]
+        for item in self.conversation_history[-20:]:
+            messages.append({"role": item["role"], "content": item["text"]})
+        if greeting:
+            messages.append(
+                {
+                    "role": "user",
+                    "content": self.character.get("greeting_prompt")
+                    or "Начни разговор первым. Коротко поздоровайся по-русски и спроси, чем помочь.",
+                }
+            )
+        return generate_chat_reply(
+            api_key=self.app.config["OPENAI_API_KEY"],
+            model=self.app.config["OPENAI_CHAT_MODEL"],
+            messages=messages,
+        )
+
+    @staticmethod
+    def _extract_end_call_marker(text: str) -> tuple[str, str | None]:
+        marker = "<END_CALL:"
+        function_call_pattern = re.compile(r"\b(?:end_call|endcall)\s*\((?:[^()]|\([^)]*\))*\)\s*$", re.IGNORECASE)
+        function_match = function_call_pattern.search(text.strip())
+        function_reason = None
+        if function_match:
+            function_reason = "разговор завершён"
+            text = text[:function_match.start()].rstrip()
+        start = text.rfind(marker)
+        if start == -1:
+            return text.strip(), function_reason
+        end = text.find(">", start)
+        if end == -1:
+            return text.strip(), function_reason
+        reason = text[start + len(marker):end].strip() or "разговор завершён"
+        cleaned = f"{text[:start]}{text[end + 1:]}".strip()
+        return cleaned, reason
+
+    def _handle_browser_message(self, raw_message: str) -> None:
+        payload = json.loads(raw_message)
+        if self.provider == "elevenlabs":
+            self._handle_elevenlabs_browser_message(payload)
+            return
+        self._handle_openai_browser_message(payload)
+
+    def pump_browser_loop(self) -> None:
         try:
             while not self.closed:
                 raw_message = self.browser_ws.receive()
@@ -430,6 +636,7 @@ class SocketBridge:
         if self.closed:
             return
         self.closed = True
+        self.response_cancel_event.set()
         for item_id in list(self.pending_user_transcripts):
             self._flush_user_transcription(item_id)
         with suppress(Exception):
@@ -447,6 +654,30 @@ class SocketBridge:
             self.browser_ws.close()
             return
 
+        if self.provider == "elevenlabs":
+            if not self.app.config["ELEVEN_LABS_API_KEY"]:
+                self.browser_ws.send(json.dumps({"type": "error", "message": "ELEVEN_LABS_API_KEY is not configured"}))
+                self.browser_ws.close()
+                return
+            if not self.app.config["OPENAI_API_KEY"]:
+                self.browser_ws.send(
+                    json.dumps(
+                        {
+                            "type": "error",
+                            "message": "OPENAI_API_KEY is required for ElevenLabs conversation generation.",
+                        }
+                    )
+                )
+                self.browser_ws.close()
+                return
+            if not str(self.character.get("voice") or "").strip():
+                self.browser_ws.send(json.dumps({"type": "error", "message": "Hero voice is not configured."}))
+                self.browser_ws.close()
+                return
+            self.connect()
+            self.pump_browser_loop()
+            return
+
         if not self.app.config["OPENAI_API_KEY"]:
             self.browser_ws.send(json.dumps({"type": "error", "message": "OPENAI_API_KEY is not configured"}))
             self.browser_ws.close()
@@ -455,4 +686,4 @@ class SocketBridge:
         self.connect()
         upstream_thread = Thread(target=self.pump_openai_to_browser, daemon=True)
         upstream_thread.start()
-        self.pump_browser_to_openai()
+        self.pump_browser_loop()

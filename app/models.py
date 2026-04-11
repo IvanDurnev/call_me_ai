@@ -66,6 +66,8 @@ class Hero(db.Model):
     description = db.Column(db.Text, nullable=False, default="")
     emoji = db.Column(db.String(16), nullable=False, default="AI")
     voice = db.Column(db.String(128), nullable=False, default="alloy")
+    elevenlabs_voice_id = db.Column(db.String(128), nullable=True)
+    elevenlabs_first_message = db.Column(db.Text, nullable=True)
     avatar_path = db.Column(db.String(512), nullable=True)
     knowledge_file_name = db.Column(db.String(255), nullable=True)
     knowledge_file_path = db.Column(db.String(512), nullable=True)

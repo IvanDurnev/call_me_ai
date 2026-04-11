@@ -49,11 +49,50 @@ TRANSCRIPTION_MODEL_OPTIONS = [
 
 NOISE_REDUCTION_OPTIONS = ["none", "near_field", "far_field"]
 
+ELEVENLABS_DEFAULT_LLM = "gpt-4o-mini"
+
 DEFAULT_GREETING_PROMPT = (
     "Начни разговор первым. Коротко поздоровайся по-русски, как будто это живой "
     "телефонный звонок ребёнка любимому сказочному персонажу. Сразу держи роль героя "
     "и ни при каких обстоятельствах не называй себя ИИ, ассистентом, ботом, программой или моделью."
 )
+
+
+def build_runtime_instructions(character: dict[str, Any], *, end_call_mode: str = "function") -> str:
+    settings = normalize_realtime_settings(character.get("realtime_settings"))
+    instructions = (settings.get("instructions_override") or character.get("system_prompt") or "").strip()
+    character_name = (character.get("name") or "сказочный персонаж").strip()
+    character_description = (character.get("description") or "").strip()
+    identity_prompt = build_character_identity_prompt(character)
+    if not instructions:
+        instructions = (
+            f"Ты {character_name}. Общаешься по-русски, как живой человек в телефонном звонке. "
+            f"{character_description}".strip()
+        )
+
+    if end_call_mode == "marker":
+        ending_instructions = (
+            "Если пользователь явно прощается или говорит, что разговор закончен, "
+            "сначала коротко и тепло попрощайся в образе персонажа, а затем в самом конце добавь "
+            "служебный маркер <END_CALL:короткая причина>. Не произноси этот маркер вслух и не объясняй его."
+        )
+    else:
+        ending_instructions = (
+            "Если пользователь явно прощается или говорит, что разговор закончен, "
+            "сначала коротко и тепло попрощайся в образе персонажа, а затем вызови функцию end_call."
+        )
+
+    full_instructions = f"{identity_prompt}\n\n{instructions}\n\n{ending_instructions}"
+
+    knowledge_text = (character.get("knowledge_text") or "").strip()
+    if knowledge_text:
+        full_instructions += (
+            "\n\nИспользуй следующую базу знаний как основной контекст для ответов. "
+            "Если в базе знаний есть факты по теме, опирайся на них в первую очередь.\n\n"
+            f"{knowledge_text}"
+        )
+
+    return full_instructions
 
 
 def build_character_identity_prompt(character: dict[str, Any]) -> str:
@@ -312,33 +351,24 @@ def normalize_realtime_settings(settings: dict[str, Any] | None) -> dict[str, An
     if instructions_override:
         normalized["instructions_override"] = instructions_override
 
+    elevenlabs_agent_id = str(payload.get("elevenlabs_agent_id") or "").strip()
+    if elevenlabs_agent_id:
+        normalized["elevenlabs_agent_id"] = elevenlabs_agent_id
+
+    elevenlabs_llm = str(payload.get("elevenlabs_llm") or "").strip()
+    if elevenlabs_llm:
+        normalized["elevenlabs_llm"] = elevenlabs_llm
+
+    provider = str(payload.get("provider") or "").strip().lower()
+    if provider in {"openai", "elevenlabs"}:
+        normalized["provider"] = provider
+
     return normalized
 
 
 def build_realtime_session_config(character: dict[str, Any], fallback_model: str, fallback_voice: str) -> dict[str, Any]:
     settings = normalize_realtime_settings(character.get("realtime_settings"))
-    instructions = (settings.get("instructions_override") or character.get("system_prompt") or "").strip()
-    character_name = (character.get("name") or "сказочный персонаж").strip()
-    character_description = (character.get("description") or "").strip()
-    identity_prompt = build_character_identity_prompt(character)
-    if not instructions:
-        instructions = (
-            f"Ты {character_name}. Общаешься по-русски, как живой человек в телефонном звонке. "
-            f"{character_description}".strip()
-        )
-    instructions = (
-        f"{identity_prompt}\n\n{instructions}\n\n"
-        "Если пользователь явно прощается или говорит, что разговор закончен, "
-        "сначала коротко и тепло попрощайся в образе персонажа, а затем вызови функцию end_call."
-    )
-
-    knowledge_text = (character.get("knowledge_text") or "").strip()
-    if knowledge_text:
-        instructions += (
-            "\n\nИспользуй следующую базу знаний как основной контекст для ответов. "
-            "Если в базе знаний есть факты по теме, опирайся на них в первую очередь.\n\n"
-            f"{knowledge_text}"
-        )
+    instructions = build_runtime_instructions(character, end_call_mode="function")
 
     model = settings.get("model") or fallback_model
     voice = normalize_realtime_voice(character.get("voice"), fallback_voice)
@@ -404,6 +434,8 @@ def _serialize_hero(hero: Hero) -> dict[str, Any]:
         "description": hero.description or "",
         "emoji": hero.emoji or "AI",
         "voice": hero.voice or "alloy",
+        "elevenlabs_voice_id": hero.elevenlabs_voice_id or "",
+        "elevenlabs_first_message": hero.elevenlabs_first_message or "",
         "avatar_path": hero.avatar_path,
         "knowledge_file_name": hero.knowledge_file_name,
         "knowledge_file_path": hero.knowledge_file_path,
@@ -423,6 +455,8 @@ def _serialize_default_hero(payload: dict[str, Any], index: int) -> dict[str, An
         "description": payload.get("description") or "",
         "emoji": payload.get("emoji") or "AI",
         "voice": payload.get("voice") or "alloy",
+        "elevenlabs_voice_id": payload.get("elevenlabs_voice_id") or "",
+        "elevenlabs_first_message": payload.get("elevenlabs_first_message") or "",
         "avatar_path": payload.get("avatar_path"),
         "knowledge_file_name": payload.get("knowledge_file_name"),
         "knowledge_file_path": payload.get("knowledge_file_path"),

@@ -7,6 +7,7 @@ import re
 import shutil
 import subprocess
 import uuid
+from contextlib import suppress
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
@@ -20,7 +21,10 @@ from werkzeug.utils import secure_filename
 
 from .account_linking import link_max_account, link_telegram_account
 from .characters import (
+    build_realtime_session_config,
+    build_runtime_instructions,
     DEFAULT_GREETING_PROMPT,
+    ELEVENLABS_DEFAULT_LLM,
     NOISE_REDUCTION_OPTIONS,
     OPENAI_VOICE_OPTIONS,
     REALTIME_MODEL_OPTIONS,
@@ -37,9 +41,17 @@ from .services import (
     cancel_cloudpayments_subscription,
     cloudpayments_enabled,
     convert_voice_sample_to_wav,
+    create_agent,
     create_custom_voice,
     create_voice_consent,
     find_payment,
+    get_agent,
+    update_agent,
+    get_conversation_details,
+    get_signed_url,
+    generate_elevenlabs_speech_preview,
+    list_elevenlabs_llms,
+    list_elevenlabs_voices,
     generate_speech_preview,
     issue_email_code,
     verify_cloudpayments_webhook_signature,
@@ -64,6 +76,297 @@ LEGAL_BUSINESS_DETAILS = {
     "phone": "89240254453",
     "email": "info@itd.dev",
 }
+
+
+def _realtime_provider() -> str:
+    return (current_app.config.get("REALTIME_API_PROVIDER") or "openai").strip().lower() or "openai"
+
+
+def _hero_provider(character: dict) -> str:
+    """Return the realtime provider for this hero, falling back to the global env setting."""
+    settings = normalize_realtime_settings(character.get("realtime_settings"))
+    hero_prov = str(settings.get("provider") or "").strip().lower()
+    if hero_prov in {"openai", "elevenlabs"}:
+        return hero_prov
+    return _realtime_provider()
+
+
+def _resolve_elevenlabs_agent_id(character: dict) -> str:
+    settings = normalize_realtime_settings(character.get("realtime_settings"))
+    return str(settings.get("elevenlabs_agent_id") or current_app.config.get("ELEVENLABS_AGENT_ID") or "").strip()
+
+
+def _voice_options() -> dict[str, list[dict[str, str]]]:
+    """Return voice options for both providers as a dict."""
+    el_voices: list[dict[str, str]] = []
+    api_key = (current_app.config.get("ELEVEN_LABS_API_KEY") or "").strip()
+    if api_key:
+        with suppress(Exception):
+            voices = list_elevenlabs_voices(api_key=api_key, limit=100)
+            el_voices = [
+                {
+                    "value": str(item.get("voice_id") or "").strip(),
+                    "label": str(item.get("name") or item.get("voice_id") or "Unnamed voice").strip(),
+                }
+                for item in voices
+                if str(item.get("voice_id") or "").strip()
+            ]
+    return {"openai": list(OPENAI_VOICE_OPTIONS), "elevenlabs": el_voices}
+
+
+def _elevenlabs_llm_options() -> list[dict[str, str]]:
+    api_key = (current_app.config.get("ELEVEN_LABS_API_KEY") or "").strip()
+    if not api_key:
+        return [{"value": ELEVENLABS_DEFAULT_LLM, "label": ELEVENLABS_DEFAULT_LLM}]
+
+    with suppress(Exception):
+        llms = list_elevenlabs_llms(api_key=api_key)
+        options = []
+        for item in llms:
+            value = str(item.get("model_id") or item.get("llm") or item.get("id") or "").strip()
+            label = str(item.get("name") or item.get("display_name") or value).strip()
+            if value:
+                options.append({"value": value, "label": label})
+        if options:
+            return options
+
+    return [{"value": ELEVENLABS_DEFAULT_LLM, "label": ELEVENLABS_DEFAULT_LLM}]
+
+
+def _build_runtime_diagnostics(characters: list[dict]) -> dict[str, dict]:
+    diagnostics: dict[str, dict] = {}
+
+    elevenlabs_chars = []
+    for character in characters:
+        hero_prov = _hero_provider(character)
+        if hero_prov == "elevenlabs":
+            elevenlabs_chars.append(character)
+        else:
+            diagnostics[character["slug"]] = {
+                "provider": hero_prov,
+                "summary": "OpenAI realtime active",
+                "checks": [
+                    {"status": "ok", "label": "Provider", "detail": "Используется OpenAI realtime."},
+                ],
+            }
+
+    if not elevenlabs_chars:
+        return diagnostics
+
+    api_key = (current_app.config.get("ELEVEN_LABS_API_KEY") or "").strip()
+    voices_by_id: dict[str, dict] = {}
+    if api_key:
+        with suppress(Exception):
+            voices = list_elevenlabs_voices(api_key=api_key, limit=100)
+            voices_by_id = {str(item.get("voice_id") or "").strip(): item for item in voices if str(item.get("voice_id") or "").strip()}
+
+    agent_cache: dict[str, dict | None] = {}
+    for character in elevenlabs_chars:
+        slug = character["slug"]
+        checks = []
+        voice_id = str(character.get("elevenlabs_voice_id") or character.get("voice") or "").strip()
+        agent_id = _resolve_elevenlabs_agent_id(character)
+
+        checks.append(
+            {
+                "status": "ok" if api_key else "error",
+                "label": "API key",
+                "detail": "ELEVEN_LABS_API_KEY настроен." if api_key else "Нужен ELEVEN_LABS_API_KEY в .env.",
+            }
+        )
+        checks.append(
+            {
+                "status": "ok" if voice_id else "error",
+                "label": "Voice ID",
+                "detail": voice_id or "У героя не задан ElevenLabs voice_id.",
+            }
+        )
+        if voice_id:
+            checks.append(
+                {
+                    "status": "ok" if voice_id in voices_by_id else "warn",
+                    "label": "Voice lookup",
+                    "detail": (
+                        f"Голос найден: {voices_by_id[voice_id].get('name') or voice_id}."
+                        if voice_id in voices_by_id
+                        else "Такой voice_id не найден в текущем аккаунте ElevenLabs."
+                    ),
+                }
+            )
+
+        checks.append(
+            {
+                "status": "ok" if agent_id else "error",
+                "label": "Agent ID",
+                "detail": agent_id or "Нужен ELEVENLABS_AGENT_ID в .env или у героя.",
+            }
+        )
+
+        agent_payload = None
+        if api_key and agent_id:
+            if agent_id not in agent_cache:
+                try:
+                    agent_cache[agent_id] = get_agent(agent_id=agent_id, api_key=api_key)
+                except Exception:
+                    agent_cache[agent_id] = None
+            agent_payload = agent_cache[agent_id]
+
+        if agent_id:
+            checks.append(
+                {
+                    "status": "ok" if agent_payload else "warn",
+                    "label": "Agent lookup",
+                    "detail": "Агент доступен через API." if agent_payload else "Не удалось получить агента через API.",
+                }
+            )
+        if agent_payload:
+            conversation_config = agent_payload.get("conversation_config") or {}
+            checks.append(
+                {
+                    "status": "ok",
+                    "label": "Agent audio",
+                    "detail": (
+                        f"Input: {(conversation_config.get('asr') or {}).get('user_input_audio_format', 'unknown')}, "
+                        f"output: {(conversation_config.get('tts') or {}).get('agent_output_audio_format', 'unknown')}."
+                    ),
+                }
+            )
+
+        summary = "Ready"
+        if any(item["status"] == "error" for item in checks):
+            summary = "Needs setup"
+        elif any(item["status"] == "warn" for item in checks):
+            summary = "Check settings"
+
+        diagnostics[slug] = {
+            "provider": "elevenlabs",
+            "summary": summary,
+            "checks": checks,
+        }
+
+    return diagnostics
+
+
+def _run_elevenlabs_smoke_test(character: dict) -> dict[str, object]:
+    diagnostics = _build_runtime_diagnostics([character]).get(character["slug"], {})
+    if _hero_provider(character) != "elevenlabs":
+        return diagnostics
+
+    checks = list(diagnostics.get("checks") or [])
+    api_key = (current_app.config.get("ELEVEN_LABS_API_KEY") or "").strip()
+    agent_id = _resolve_elevenlabs_agent_id(character)
+    if api_key and agent_id:
+        try:
+            signed_url = get_signed_url(agent_id=agent_id, api_key=api_key)
+            checks.append(
+                {
+                    "status": "ok",
+                    "label": "Signed URL",
+                    "detail": f"Signed URL получен: {signed_url[:72]}...",
+                }
+            )
+        except Exception as exc:  # noqa: BLE001
+            checks.append(
+                {
+                    "status": "error",
+                    "label": "Signed URL",
+                    "detail": f"Не удалось получить signed URL: {exc}",
+                }
+            )
+
+    summary = "Ready"
+    if any(item["status"] == "error" for item in checks):
+        summary = "Smoke test failed"
+    elif any(item["status"] == "warn" for item in checks):
+        summary = "Smoke test passed with warnings"
+    else:
+        summary = "Smoke test passed"
+
+    diagnostics["checks"] = checks
+    diagnostics["summary"] = summary
+    diagnostics["last_tested_at"] = datetime.utcnow().isoformat()
+    return diagnostics
+
+
+def _build_elevenlabs_agent_payload(character: dict) -> dict[str, object]:
+    full_instructions = build_runtime_instructions(character, end_call_mode="marker")
+    voice_id = str(character.get("elevenlabs_voice_id") or character.get("voice") or "").strip()
+    character_name = (character.get("name") or "Персонаж").strip()
+    tts_model_id = (current_app.config.get("ELEVENLABS_TTS_MODEL") or "eleven_flash_v2_5").strip() or "eleven_flash_v2_5"
+    llm_model = str(normalize_realtime_settings(character.get("realtime_settings")).get("elevenlabs_llm") or ELEVENLABS_DEFAULT_LLM).strip() or ELEVENLABS_DEFAULT_LLM
+    first_message = str(character.get("elevenlabs_first_message") or "").strip()
+    if first_message:
+        full_prompt = full_instructions
+    else:
+        full_prompt = (
+            f"{full_instructions}\n\n"
+            f"Начни разговор первым — поздоровайся по-русски в роли {character_name}, "
+            "как будто это живой телефонный звонок. Каждый раз здоровайся немного по-разному, "
+            "но всегда оставайся в образе персонажа."
+        )
+
+    if not voice_id:
+        raise ValueError("У героя не задан ElevenLabs voice_id.")
+
+    return {
+        "conversation_config": {
+            "agent": {
+                "prompt": {
+                    "prompt": full_prompt,
+                    "llm": llm_model,
+                },
+                "first_message": first_message,
+                "language": "ru",
+            },
+            "tts": {
+                "model_id": tts_model_id,
+                "voice_id": voice_id,
+            },
+        },
+        "name": f"Call Me AI - {character.get('name') or character.get('slug') or 'Hero'}",
+        "tags": ["call_me_ai", str(character.get("slug") or "").strip()],
+    }
+
+
+def _create_and_store_elevenlabs_agent_for_hero(hero: Hero) -> str:
+    api_key = (current_app.config.get("ELEVEN_LABS_API_KEY") or "").strip()
+    if not api_key:
+        raise ValueError("Нужен ELEVEN_LABS_API_KEY в .env.")
+
+    character = _serialize_character_from_model(hero)
+    realtime_settings = normalize_realtime_settings(hero.realtime_settings_json)
+    existing_agent_id = str(realtime_settings.get("elevenlabs_agent_id") or "").strip()
+    if existing_agent_id:
+        return existing_agent_id
+
+    agent_payload = _build_elevenlabs_agent_payload(character)
+    created_agent = create_agent(
+        conversation_config=agent_payload["conversation_config"],
+        name=str(agent_payload["name"]),
+        tags=list(agent_payload["tags"]),
+        api_key=api_key,
+    )
+    agent_id = str(created_agent.get("agent_id") or created_agent.get("id") or "").strip()
+    if not agent_id:
+        raise ValueError("ElevenLabs не вернул agent_id.")
+
+    realtime_settings["elevenlabs_agent_id"] = agent_id
+    hero.realtime_settings_json = realtime_settings
+    return agent_id
+
+
+def _sync_elevenlabs_agent_for_character(character: dict, *, agent_id: str) -> None:
+    api_key = (current_app.config.get("ELEVEN_LABS_API_KEY") or "").strip()
+    if not api_key or not agent_id.strip():
+        return
+
+    agent_payload = _build_elevenlabs_agent_payload(character)
+    update_agent(
+        agent_id=agent_id,
+        conversation_config=agent_payload["conversation_config"],
+        name=str(agent_payload["name"]),
+        api_key=api_key,
+    )
 
 
 def _current_admin() -> AdminUser | None:
@@ -1016,6 +1319,7 @@ def _render_miniapp(slug: str, started_from: str):
         started_from=started_from,
         app_user=app_user,
         call_access_available=access_state["has_call_access"],
+        realtime_provider=_hero_provider(character),
         account_url=url_for("main.account"),
     )
 
@@ -1658,12 +1962,16 @@ def heroes_miniapp():
 @main_bp.get("/admin/heroes")
 @_admin_required(view_mode="html")
 def admin_heroes():
+    heroes = list_characters(include_inactive=True)
     context = {
-        "heroes": _serialize_characters(list_characters(include_inactive=True)),
-        "voice_options": OPENAI_VOICE_OPTIONS,
+        "heroes": _serialize_characters(heroes),
+        "voice_options": _voice_options(),
         "realtime_model_options": REALTIME_MODEL_OPTIONS,
         "transcription_model_options": TRANSCRIPTION_MODEL_OPTIONS,
         "noise_reduction_options": NOISE_REDUCTION_OPTIONS,
+        "elevenlabs_llm_options": _elevenlabs_llm_options(),
+        "realtime_provider": _realtime_provider(),
+        "runtime_diagnostics": _build_runtime_diagnostics(heroes),
     }
     return render_template("heroes.html", initial_state=json.dumps(context, ensure_ascii=False), admin_section="heroes")
 
@@ -1702,15 +2010,19 @@ def max_voices_miniapp():
 @main_bp.get("/api/heroes")
 @_admin_required()
 def heroes_api():
+    heroes = list_characters(include_inactive=True)
     return jsonify(
         {
-            "items": _serialize_characters(list_characters(include_inactive=True)),
+            "items": _serialize_characters(heroes),
             "pricing_plans": [_serialize_pricing_plan(plan) for plan in _list_pricing_plans(include_inactive=True)],
             "pricing_plan_kind_options": _pricing_plan_kind_options(),
-            "voice_options": OPENAI_VOICE_OPTIONS,
+            "voice_options": _voice_options(),
             "realtime_model_options": REALTIME_MODEL_OPTIONS,
             "transcription_model_options": TRANSCRIPTION_MODEL_OPTIONS,
             "noise_reduction_options": NOISE_REDUCTION_OPTIONS,
+            "elevenlabs_llm_options": _elevenlabs_llm_options(),
+            "realtime_provider": _realtime_provider(),
+            "runtime_diagnostics": _build_runtime_diagnostics(heroes),
         }
     )
 
@@ -1733,10 +2045,32 @@ def create_hero_api():
         greeting_prompt=DEFAULT_GREETING_PROMPT,
         sort_order=_next_hero_sort_order(),
         is_active=bool(payload.get("is_active", True)),
+        realtime_settings_json=normalize_realtime_settings({"provider": payload.get("provider")}),
     )
     db.session.add(hero)
-    db.session.commit()
-    return jsonify({"ok": True, "hero": _serialize_character_from_model(hero)})
+    try:
+        db.session.flush()
+        agent_created = False
+        agent_id = ""
+        if _hero_provider(_serialize_character_from_model(hero)) == "elevenlabs":
+            agent_id = _create_and_store_elevenlabs_agent_for_hero(hero)
+            agent_created = bool(agent_id)
+        db.session.commit()
+    except ValueError as exc:
+        db.session.rollback()
+        return jsonify({"ok": False, "error": str(exc)}), 400
+    except Exception as exc:  # noqa: BLE001
+        db.session.rollback()
+        return jsonify({"ok": False, "error": f"Не удалось создать ElevenLabs агента: {exc}"}), 502
+
+    return jsonify(
+        {
+            "ok": True,
+            "hero": _serialize_character_from_model(hero),
+            "agent_created": agent_created,
+            "agent_id": agent_id or None,
+        }
+    )
 
 
 @main_bp.post("/api/pricing-plans")
@@ -1789,31 +2123,130 @@ def update_hero_api(slug: str):
         return jsonify({"ok": False, "error": "Hero not found."}), 404
 
     payload = request.get_json(silent=True) or {}
-    hero.name = (payload.get("name") or hero.name or "").strip() or hero.name
-    hero.emoji = (payload.get("emoji") or hero.emoji or "AI").strip()[:16] or hero.emoji or "AI"
-    hero.description = (payload.get("description") or "").strip()
-    hero.voice = (payload.get("voice") or hero.voice or "alloy").strip()
-    hero.system_prompt = (payload.get("system_prompt") or "").strip() or None
-    hero.greeting_prompt = (payload.get("greeting_prompt") or "").strip() or None
-    hero.is_active = bool(payload.get("is_active", hero.is_active))
+    if "name" in payload:
+        hero.name = (payload.get("name") or hero.name or "").strip() or hero.name
+    if "emoji" in payload:
+        hero.emoji = (payload.get("emoji") or hero.emoji or "AI").strip()[:16] or hero.emoji or "AI"
+    if "description" in payload:
+        hero.description = (payload.get("description") or "").strip()
+    if "voice" in payload:
+        hero.voice = (payload.get("voice") or hero.voice or "alloy").strip() or hero.voice or "alloy"
+    if "elevenlabs_voice_id" in payload:
+        hero.elevenlabs_voice_id = (payload.get("elevenlabs_voice_id") or "").strip() or None
+    if "elevenlabs_first_message" in payload:
+        hero.elevenlabs_first_message = (payload.get("elevenlabs_first_message") or "").strip() or None
+    if "system_prompt" in payload:
+        hero.system_prompt = (payload.get("system_prompt") or "").strip() or None
+    if "greeting_prompt" in payload:
+        hero.greeting_prompt = (payload.get("greeting_prompt") or "").strip() or None
+    if "is_active" in payload:
+        hero.is_active = bool(payload.get("is_active", hero.is_active))
 
-    realtime_settings = normalize_realtime_settings(
-        {
-            "model": payload.get("realtime_model"),
-            "input_transcription_model": payload.get("input_transcription_model"),
-            "input_transcription_language": payload.get("input_transcription_language"),
-            "input_transcription_prompt": payload.get("input_transcription_prompt"),
-            "noise_reduction_type": payload.get("noise_reduction_type"),
-            "max_output_tokens": payload.get("max_output_tokens"),
-            "output_audio_format": payload.get("output_audio_format"),
-            "output_audio_speed": payload.get("output_audio_speed"),
-            "instructions_override": payload.get("instructions_override"),
-        }
-    )
+    realtime_settings = normalize_realtime_settings(hero.realtime_settings_json)
+    realtime_field_map = {
+        "provider": "provider",
+        "realtime_model": "model",
+        "input_transcription_model": "input_transcription_model",
+        "input_transcription_language": "input_transcription_language",
+        "input_transcription_prompt": "input_transcription_prompt",
+        "noise_reduction_type": "noise_reduction_type",
+        "max_output_tokens": "max_output_tokens",
+        "output_audio_format": "output_audio_format",
+        "output_audio_speed": "output_audio_speed",
+        "instructions_override": "instructions_override",
+        "elevenlabs_agent_id": "elevenlabs_agent_id",
+        "elevenlabs_llm": "elevenlabs_llm",
+    }
+    for payload_key, settings_key in realtime_field_map.items():
+        if payload_key not in payload:
+            continue
+        normalized_fragment = normalize_realtime_settings({settings_key: payload.get(payload_key)})
+        if settings_key in normalized_fragment:
+            realtime_settings[settings_key] = normalized_fragment[settings_key]
+        else:
+            realtime_settings.pop(settings_key, None)
+
     hero.realtime_settings_json = realtime_settings or None
 
     db.session.commit()
     return jsonify({"ok": True, "hero": _serialize_character_from_model(hero)})
+
+
+@main_bp.post("/api/heroes/<slug>/test-agent")
+@_admin_required()
+def test_hero_agent_api(slug: str):
+    character = get_character(slug, include_inactive=True)
+    if not character:
+        return jsonify({"ok": False, "error": "Hero not found."}), 404
+    if _hero_provider(character) != "elevenlabs":
+        return jsonify({"ok": False, "error": "Test agent is only available for ElevenLabs provider."}), 400
+
+    diagnostics = _run_elevenlabs_smoke_test(character)
+    return jsonify({"ok": True, "diagnostics": diagnostics})
+
+
+@main_bp.post("/api/heroes/<slug>/create-agent")
+@_admin_required()
+def create_hero_agent_api(slug: str):
+    hero = _get_hero_model(slug)
+    if not hero:
+        return jsonify({"ok": False, "error": "Hero not found."}), 404
+    if _hero_provider(_serialize_character_from_model(hero)) != "elevenlabs":
+        return jsonify({"ok": False, "error": "Create agent is only available for ElevenLabs provider."}), 400
+
+    character = _serialize_character_from_model(hero)
+    realtime_settings = normalize_realtime_settings(hero.realtime_settings_json)
+    existing_agent_id = str(realtime_settings.get("elevenlabs_agent_id") or "").strip()
+    api_key = (current_app.config.get("ELEVEN_LABS_API_KEY") or "").strip()
+
+    if existing_agent_id:
+        try:
+            agent_payload = _build_elevenlabs_agent_payload(character)
+            update_agent(
+                agent_id=existing_agent_id,
+                conversation_config=agent_payload["conversation_config"],
+                name=str(agent_payload["name"]),
+                api_key=api_key,
+            )
+        except ValueError as exc:
+            return jsonify({"ok": False, "error": str(exc)}), 400
+        except Exception as exc:  # noqa: BLE001
+            return jsonify({"ok": False, "error": f"Не удалось обновить агента ElevenLabs: {exc}"}), 502
+
+        updated_character = _serialize_character_from_model(hero)
+        diagnostics = _run_elevenlabs_smoke_test(updated_character)
+        return jsonify(
+            {
+                "ok": True,
+                "created": False,
+                "updated": True,
+                "agent_id": existing_agent_id,
+                "hero": updated_character,
+                "diagnostics": diagnostics,
+            }
+        )
+
+    try:
+        agent_id = _create_and_store_elevenlabs_agent_for_hero(hero)
+    except ValueError as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 400
+    except Exception as exc:  # noqa: BLE001
+        return jsonify({"ok": False, "error": f"Не удалось создать агента ElevenLabs: {exc}"}), 502
+
+    db.session.commit()
+
+    updated_character = _serialize_character_from_model(hero)
+    diagnostics = _run_elevenlabs_smoke_test(updated_character)
+    return jsonify(
+        {
+            "ok": True,
+            "created": True,
+            "updated": False,
+            "agent_id": agent_id,
+            "hero": updated_character,
+            "diagnostics": diagnostics,
+        }
+    )
 
 
 @main_bp.patch("/api/pricing-plans/<code>")
@@ -2012,6 +2445,7 @@ def preview_voice_api() -> Response:
     payload = request.get_json(silent=True) or {}
     voice = (payload.get("voice") or "").strip()
     text = (payload.get("text") or "").strip()
+    provider = str(payload.get("provider") or _realtime_provider()).strip().lower() or "openai"
     if not voice:
         return jsonify({"ok": False, "error": "Voice is required."}), 400
 
@@ -2019,11 +2453,159 @@ def preview_voice_api() -> Response:
         text = "Привет. Я буду говорить именно этим голосом. Если тебе нравится, давай оставим его для персонажа."
 
     try:
-        audio_bytes = generate_speech_preview(text=text, voice=voice)
+        if provider == "elevenlabs":
+            speed = None
+            hero = Hero.query.filter_by(elevenlabs_voice_id=voice).first()
+            if hero and isinstance(hero.realtime_settings_json, dict):
+                speed = hero.realtime_settings_json.get("output_audio_speed")
+            audio_bytes = generate_elevenlabs_speech_preview(text=text, voice=voice, speed=speed)
+        else:
+            audio_bytes = generate_speech_preview(text=text, voice=voice)
     except Exception as exc:  # noqa: BLE001
         return jsonify({"ok": False, "error": str(exc)}), 400
 
     return Response(audio_bytes, mimetype="audio/mpeg")
+
+
+@main_bp.post("/api/call-sessions/start")
+def start_call_session_api():
+    app_user = _current_app_user()
+    if not app_user:
+        return jsonify({"ok": False, "error": "Authentication required."}), 401
+    if not _app_user_ready_for_calls(app_user):
+        return jsonify({"ok": False, "error": "Email verification required."}), 403
+
+    payload = request.get_json(silent=True) or {}
+    slug = str(payload.get("character_slug") or "").strip()
+    started_from = str(payload.get("started_from") or "web").strip() or "web"
+    character = get_character(slug, include_inactive=False)
+    if not character:
+        return jsonify({"ok": False, "error": "Hero not found."}), 404
+
+    access_state = _app_user_access_state(app_user)
+    if not access_state["has_call_access"]:
+        return jsonify({"ok": False, "error": "Доступные минуты исчерпаны. Продлите тариф в личном кабинете."}), 403
+
+    provider = _hero_provider(character)
+    call_session = CallSession(
+        app_user_id=app_user.id,
+        telegram_user_id=payload.get("telegram_user_id"),
+        telegram_username=payload.get("telegram_username"),
+        character_slug=character["slug"],
+        status="active",
+        meta_json={
+            "platform": started_from,
+            "started_from": started_from,
+            "app_user_name": app_user.name,
+            "character_name": character["name"],
+            "provider": provider,
+            "created_at": datetime.utcnow().isoformat(),
+            "conversation_log": [],
+            "technical_log": [],
+        },
+    )
+    db.session.add(call_session)
+    db.session.commit()
+
+    response_payload = {
+        "ok": True,
+        "provider": provider,
+        "call_session_id": call_session.id,
+    }
+
+    if provider == "elevenlabs":
+        agent_id = _resolve_elevenlabs_agent_id(character)
+        if not agent_id:
+            call_session.status = "failed"
+            call_session.ended_at = datetime.utcnow()
+            db.session.commit()
+            return jsonify({"ok": False, "error": "ELEVENLABS_AGENT_ID is not configured for this hero."}), 400
+
+        with suppress(Exception):
+            _sync_elevenlabs_agent_for_character(character, agent_id=agent_id)
+
+        response_payload["signed_url"] = get_signed_url(
+            agent_id=agent_id,
+            api_key=current_app.config["ELEVEN_LABS_API_KEY"],
+        )
+        response_payload["conversation_initiation_client_data"] = {
+            "type": "conversation_initiation_client_data",
+            "conversation_config_override": {},
+            "dynamic_variables": {
+                "character_name": character.get("name") or "",
+                "character_description": character.get("description") or "",
+                "user_name": app_user.name,
+            },
+            "user_id": app_user.user_uuid,
+        }
+        return jsonify(response_payload)
+
+    ws_base = current_app.config["PUBLIC_BASE_URL"]
+    if ws_base.startswith("https://"):
+        ws_base = "wss://" + ws_base.removeprefix("https://")
+    elif ws_base.startswith("http://"):
+        ws_base = "ws://" + ws_base.removeprefix("http://")
+    response_payload["websocket_url"] = f"{ws_base}/ws/call/{character['slug']}"
+    return jsonify(response_payload)
+
+
+@main_bp.post("/api/call-sessions/<int:call_session_id>/finish")
+def finish_call_session_api(call_session_id: int):
+    app_user = _current_app_user()
+    if not app_user:
+        return jsonify({"ok": False, "error": "Authentication required."}), 401
+
+    call_session = db.session.get(CallSession, call_session_id)
+    if not call_session or call_session.app_user_id != app_user.id:
+        return jsonify({"ok": False, "error": "Call session not found."}), 404
+
+    payload = request.get_json(silent=True) or {}
+    provider = str(payload.get("provider") or (call_session.meta_json or {}).get("provider") or _realtime_provider()).strip().lower()
+    conversation_id = str(payload.get("conversation_id") or "").strip()
+    meta = dict(call_session.meta_json or {})
+    meta["ended_by"] = str(payload.get("reason") or "client").strip() or "client"
+    if conversation_id:
+        meta["provider_conversation_id"] = conversation_id
+
+    if provider == "elevenlabs" and conversation_id:
+        try:
+            details = get_conversation_details(
+                conversation_id=conversation_id,
+                api_key=current_app.config["ELEVEN_LABS_API_KEY"],
+            )
+            transcript_items = []
+            for item in details.get("transcript") or []:
+                if not isinstance(item, dict):
+                    continue
+                message = str(item.get("message") or "").strip()
+                role = str(item.get("role") or "").strip()
+                if not message or not role:
+                    continue
+                transcript_items.append({"role": role, "text": message})
+            if transcript_items:
+                meta["conversation_log"] = transcript_items[-200:]
+            meta["provider_conversation_details"] = {
+                "conversation_id": details.get("conversation_id"),
+                "status": details.get("status"),
+                "has_audio": details.get("has_audio"),
+                "has_user_audio": details.get("has_user_audio"),
+                "has_response_audio": details.get("has_response_audio"),
+            }
+        except Exception as exc:  # noqa: BLE001
+            technical_log = list(meta.get("technical_log") or [])
+            technical_log.append(
+                {
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "source": "server",
+                    "message": f"Failed to fetch ElevenLabs transcript: {exc}",
+                }
+            )
+            meta["technical_log"] = technical_log[-200:]
+
+    call_session.meta_json = meta
+    call_session.mark_finished()
+    db.session.commit()
+    return jsonify({"ok": True})
 
 
 def _find_voice_directory(name: str):
@@ -2099,6 +2681,9 @@ def _serialize_character(character: dict) -> dict:
     payload["output_audio_format"] = realtime_settings.get("output_audio_format", "pcm16")
     payload["output_audio_speed"] = realtime_settings.get("output_audio_speed", 1.0)
     payload["instructions_override"] = realtime_settings.get("instructions_override", "")
+    payload["elevenlabs_agent_id"] = realtime_settings.get("elevenlabs_agent_id", "")
+    payload["elevenlabs_llm"] = realtime_settings.get("elevenlabs_llm", ELEVENLABS_DEFAULT_LLM)
+    payload["provider"] = _hero_provider(payload)
     return payload
 
 
@@ -2109,6 +2694,8 @@ def _serialize_character_from_model(hero: Hero) -> dict:
         "description": hero.description or "",
         "emoji": hero.emoji or "AI",
         "voice": hero.voice or "alloy",
+        "elevenlabs_voice_id": hero.elevenlabs_voice_id or "",
+        "elevenlabs_first_message": hero.elevenlabs_first_message or "",
         "avatar_path": hero.avatar_path,
         "knowledge_file_name": hero.knowledge_file_name,
         "knowledge_text": hero.knowledge_text or "",

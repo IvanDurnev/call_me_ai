@@ -52,10 +52,17 @@ class Config:
 
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
     OPENAI_PROXY = os.getenv("OPENAI_PROXY", os.getenv("OPENAI_PROXY_IP", "")).strip()
+    OPENAI_CHAT_MODEL = os.getenv("OPENAI_CHAT_MODEL", "gpt-4o-mini").strip()
     OPENAI_REALTIME_MODEL = os.getenv("OPENAI_REALTIME_MODEL", "gpt-4o-realtime-preview")
     OPENAI_REALTIME_VOICE = os.getenv("OPENAI_REALTIME_VOICE", "alloy")
     OPENAI_REALTIME_URL = f"wss://api.openai.com/v1/realtime?model={OPENAI_REALTIME_MODEL}"
     OPENAI_VOICE_CONSENT_LANGUAGE = os.getenv("OPENAI_VOICE_CONSENT_LANGUAGE", "ru-RU")
+    REALTIME_API_PROVIDER = os.getenv("REALTIME_API_PROVIDER", "openai").strip().lower() or "openai"
+    ELEVEN_LABS_API_KEY = os.getenv("ELEVEN_LABS_API_KEY", os.getenv("ELEVENLABS_API_KEY", "")).strip()
+    ELEVENLABS_API_KEY = ELEVEN_LABS_API_KEY
+    ELEVENLABS_AGENT_ID = os.getenv("ELEVENLABS_AGENT_ID", "").strip()
+    ELEVENLABS_TTS_MODEL = os.getenv("ELEVENLABS_TTS_MODEL", "eleven_flash_v2_5").strip()
+    ELEVENLABS_STT_MODEL = os.getenv("ELEVENLABS_STT_MODEL", "scribe_v2").strip()
 
     @classmethod
     def realtime_url(cls) -> str:

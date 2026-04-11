@@ -41,6 +41,13 @@
                   <span>Эмодзи</span>
                   <input name="emoji" type="text" maxlength="16" placeholder="🦔">
                 </label>
+                <label class="hero-field">
+                  <span>Провайдер</span>
+                  <select name="provider">
+                    <option value="openai">OpenAI</option>
+                    <option value="elevenlabs">ElevenLabs</option>
+                  </select>
+                </label>
                 <button class="call-btn call-btn-primary" type="submit">Добавить</button>
                 <div class="hero-status" id="hero-create-status">Новый герой появится в списке слева.</div>
               </form>
@@ -58,6 +65,6 @@
 
     <script id="heroes-initial-state" type="application/json">{{ initial_state|safe }}</script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="{{ url_for('static', filename='heroes.js', v='20260409minutes-admin') }}"></script>
+    <script src="{{ url_for('static', filename='heroes.js', v='20260411provider-admin6') }}"></script>
   </body>
 </html>

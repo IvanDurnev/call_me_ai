@@ -7,6 +7,7 @@ from typing import Any
 
 from flask import current_app
 
+from .elevenlabs_audio import list_voices as list_elevenlabs_voices
 from .openai_audio import list_voice_consents
 
 
@@ -78,6 +79,36 @@ def convert_voice_sample_to_wav(directory: Path) -> dict[str, Any]:
 
 
 def build_voice_library_payload() -> dict[str, Any]:
+    provider = (current_app.config.get("REALTIME_API_PROVIDER") or "openai").strip().lower() or "openai"
+    if provider == "elevenlabs":
+        api_key = (current_app.config.get("ELEVEN_LABS_API_KEY") or "").strip()
+        items: list[dict[str, Any]] = []
+        error: str | None = None
+        if api_key:
+            try:
+                voices = list_elevenlabs_voices(api_key=api_key, limit=100)
+                items = [
+                    {
+                        "name": item.get("name") or item.get("voice_id") or "Unnamed voice",
+                        "voice_id": item.get("voice_id"),
+                        "category": item.get("category"),
+                        "description": item.get("description"),
+                    }
+                    for item in voices
+                ]
+            except Exception as exc:  # noqa: BLE001
+                error = str(exc)
+        else:
+            error = "ELEVEN_LABS_API_KEY is not configured."
+
+        return {
+            "provider": provider,
+            "items": items,
+            "consents_error": error,
+            "consent_language": None,
+            "api_ready": bool(api_key),
+        }
+
     folders = iter_voice_directories()
     api_key = (current_app.config.get("OPENAI_API_KEY") or "").strip()
 
@@ -109,6 +140,7 @@ def build_voice_library_payload() -> dict[str, Any]:
         )
 
     return {
+        "provider": provider,
         "items": items,
         "consents_error": consents_error,
         "consent_language": current_app.config["OPENAI_VOICE_CONSENT_LANGUAGE"],
