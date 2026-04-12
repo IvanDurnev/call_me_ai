@@ -282,7 +282,12 @@ def _raise_for_status(response: httpx.Response) -> None:
     try:
         response.raise_for_status()
     except httpx.HTTPStatusError as exc:
-        detail = exc.response.text.strip()
+        detail = ""
+        try:
+            exc.response.read()
+            detail = exc.response.text.strip()
+        except Exception:
+            detail = ""
         raise ValueError(detail or f"ElevenLabs request failed with status {exc.response.status_code}.") from exc
 
 
