@@ -430,6 +430,69 @@ class CloudPaymentsRoutesTests(unittest.TestCase):
             self.assertEqual(purchase.next_transaction_at, datetime(2026, 5, 10, 12, 0, 0))
             self.assertIsNotNone(purchase.paid_at)
 
+    def test_confirm_uses_moscow_timezone_for_naive_confirm_date(self) -> None:
+        with self.app.app_context():
+            user = AppUser(
+                email="tz@example.com",
+                phone="+79990000003",
+                name="TZ User",
+                consent_to_personal_data=True,
+                email_verified=True,
+            )
+            plan = PricingPlan(
+                code="unlimited-7",
+                name="Unlimited 7",
+                description="Unlimited weekly",
+                kind="unlimited",
+                price=Decimal("999.00"),
+                currency="RUB",
+                period_days=7,
+                sort_order=0,
+                is_active=True,
+            )
+            db.session.add_all([user, plan])
+            db.session.flush()
+            user_id = user.id
+            purchase = SubscriptionPurchase(
+                app_user_id=user.id,
+                invoice_id="inv-tz-1",
+                plan_code=plan.code,
+                plan_name=plan.name,
+                amount=plan.price,
+                currency=plan.currency,
+                status="created",
+                recurring_interval="Day",
+                recurring_period=7,
+                provider_payload_json={"pricing_plan": {"code": plan.code, "kind": plan.kind, "period_days": 7}},
+            )
+            db.session.add(purchase)
+            db.session.commit()
+
+        with self.client.session_transaction() as session:
+            session[APP_USER_SESSION_KEY] = user_id
+
+        with patch(
+            "app.routes.find_payment",
+            return_value={
+                "Model": {
+                    "Status": "Completed",
+                    "TransactionId": "tx-tz-1",
+                    "Token": "tok-tz-1",
+                    "SubscriptionId": "sub-tz-1",
+                    "ConfirmDateIso": "2026-04-12T12:11:11",
+                }
+            },
+        ):
+            response = self.client.post("/api/account/subscription/confirm", json={"invoiceId": "inv-tz-1"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.get_json()["ok"])
+        with self.app.app_context():
+            purchase = SubscriptionPurchase.query.filter_by(invoice_id="inv-tz-1").first()
+            self.assertIsNotNone(purchase)
+            # 12:11:11 Moscow -> 09:11:11 UTC
+            self.assertEqual(purchase.paid_at, datetime(2026, 4, 12, 9, 11, 11))
+
     def test_account_cancel_disables_autorenew_for_active_subscription(self) -> None:
         with self.app.app_context():
             user = AppUser(
