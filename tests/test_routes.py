@@ -841,6 +841,54 @@ class CallSessionRoutesTests(unittest.TestCase):
             )
             self.assertEqual(session.meta_json["provider_conversation_id"], "conv-1")
 
+    def test_finish_call_session_uses_local_transcript_fallback_when_remote_empty(self) -> None:
+        with self.app.app_context():
+            session = CallSession(
+                app_user_id=self.user_id,
+                character_slug="domovenok-kuzya",
+                status="active",
+                meta_json={"provider": "elevenlabs", "conversation_log": [], "technical_log": []},
+            )
+            db.session.add(session)
+            db.session.commit()
+            session_id = session.id
+
+        with patch(
+            "app.routes.get_conversation_details",
+            return_value={
+                "conversation_id": "conv-1",
+                "status": "done",
+                "has_audio": True,
+                "has_user_audio": True,
+                "has_response_audio": True,
+                "transcript": [],
+            },
+        ):
+            response = self.client.post(
+                f"/api/call-sessions/{session_id}/finish",
+                json={
+                    "provider": "elevenlabs",
+                    "conversation_id": "conv-1",
+                    "reason": "manual",
+                    "local_conversation_log": [
+                        {"role": "user", "text": "Пока"},
+                        {"role": "agent", "text": "До свидания!"},
+                    ],
+                },
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.get_json()["ok"])
+        with self.app.app_context():
+            session = db.session.get(CallSession, session_id)
+            self.assertEqual(
+                session.meta_json["conversation_log"],
+                [
+                    {"role": "user", "text": "Пока"},
+                    {"role": "agent", "text": "До свидания!"},
+                ],
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

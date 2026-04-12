@@ -6,6 +6,7 @@ import hmac
 import re
 import shutil
 import subprocess
+import time
 import uuid
 from contextlib import suppress
 from datetime import datetime, timedelta, timezone
@@ -2562,6 +2563,7 @@ def finish_call_session_api(call_session_id: int):
     payload = request.get_json(silent=True) or {}
     provider = str(payload.get("provider") or (call_session.meta_json or {}).get("provider") or _realtime_provider()).strip().lower()
     conversation_id = str(payload.get("conversation_id") or "").strip()
+    local_conversation_log = payload.get("local_conversation_log") if isinstance(payload.get("local_conversation_log"), list) else []
     meta = dict(call_session.meta_json or {})
     meta["ended_by"] = str(payload.get("reason") or "client").strip() or "client"
     if conversation_id:
@@ -2569,19 +2571,26 @@ def finish_call_session_api(call_session_id: int):
 
     if provider == "elevenlabs" and conversation_id:
         try:
-            details = get_conversation_details(
-                conversation_id=conversation_id,
-                api_key=current_app.config["ELEVEN_LABS_API_KEY"],
-            )
+            details = {}
             transcript_items = []
-            for item in details.get("transcript") or []:
-                if not isinstance(item, dict):
-                    continue
-                message = str(item.get("message") or "").strip()
-                role = str(item.get("role") or "").strip()
-                if not message or not role:
-                    continue
-                transcript_items.append({"role": role, "text": message})
+            for attempt in range(3):
+                details = get_conversation_details(
+                    conversation_id=conversation_id,
+                    api_key=current_app.config["ELEVEN_LABS_API_KEY"],
+                )
+                transcript_items = []
+                for item in details.get("transcript") or []:
+                    if not isinstance(item, dict):
+                        continue
+                    message = str(item.get("message") or "").strip()
+                    role = str(item.get("role") or "").strip()
+                    if not message or not role:
+                        continue
+                    transcript_items.append({"role": role, "text": message})
+                if transcript_items:
+                    break
+                if attempt < 2:
+                    time.sleep(0.6)
             if transcript_items:
                 meta["conversation_log"] = transcript_items[-200:]
             meta["provider_conversation_details"] = {
@@ -2601,6 +2610,19 @@ def finish_call_session_api(call_session_id: int):
                 }
             )
             meta["technical_log"] = technical_log[-200:]
+
+    if provider == "elevenlabs" and not meta.get("conversation_log") and local_conversation_log:
+        normalized_items = []
+        for item in local_conversation_log:
+            if not isinstance(item, dict):
+                continue
+            role = str(item.get("role") or "").strip()
+            text = str(item.get("text") or "").strip()
+            if not role or not text:
+                continue
+            normalized_items.append({"role": role, "text": text})
+        if normalized_items:
+            meta["conversation_log"] = normalized_items[-200:]
 
     call_session.meta_json = meta
     call_session.mark_finished()

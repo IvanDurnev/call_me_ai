@@ -53,6 +53,7 @@ let providerOutputSampleRate = realtimeProvider === "elevenlabs" ? 16000 : 24000
 let callSessionId = null;
 let providerConversationId = null;
 let finishingCallSession = false;
+let localConversationLog = [];
 const playbackQueue = [];
 const CALL_END_PATTERNS = [
   /\b(пока|прощай|прощайте|до свидания|до встречи|до скорого)\b/,
@@ -86,6 +87,27 @@ function logError(text) {
       type: "client.error",
       message: text,
     }));
+  }
+}
+
+function recordConversationLine(role, text, options = {}) {
+  const normalizedText = String(text || "").trim();
+  if (!normalizedText) {
+    return;
+  }
+
+  const { replaceLastSameRole = false } = options;
+  if (replaceLastSameRole && localConversationLog.length) {
+    const lastItem = localConversationLog[localConversationLog.length - 1];
+    if (lastItem?.role === role) {
+      localConversationLog[localConversationLog.length - 1] = { role, text: normalizedText };
+      return;
+    }
+  }
+
+  localConversationLog.push({ role, text: normalizedText });
+  if (localConversationLog.length > 200) {
+    localConversationLog = localConversationLog.slice(-200);
   }
 }
 
@@ -580,6 +602,7 @@ function disableMicrophone() {
 async function startCallSession() {
   finishingCallSession = false;
   providerConversationId = null;
+  localConversationLog = [];
   const response = await fetch("/api/call-sessions/start", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -612,6 +635,7 @@ async function finishCallSession(reason = "client") {
         provider: realtimeProvider,
         conversation_id: providerConversationId,
         reason,
+        local_conversation_log: localConversationLog,
       }),
       keepalive: true,
     });
@@ -693,6 +717,7 @@ function connectOpenAi() {
     if (payload.type === "call.transcript" && payload.transcript) {
       const speaker = payload.role === "user" ? "Вы" : characterName;
       logLine(`${speaker}: ${payload.transcript}`);
+      recordConversationLine(payload.role, payload.transcript);
       if (payload.role === "user" && shouldAutoEndCall(payload.transcript)) {
         logLine("Похоже, вы завершили разговор. Закрываю звонок.");
         endCall("auto-end");
@@ -845,6 +870,7 @@ function connectElevenLabs(sessionPayload) {
     if (payload.type === "user_transcript" && payload.user_transcription_event?.user_transcript) {
       const transcript = payload.user_transcription_event.user_transcript;
       logLine(`Вы: ${transcript}`);
+      recordConversationLine("user", transcript);
       if (shouldAutoEndCall(transcript)) {
         logLine("Похоже, вы завершили разговор. Закрываю звонок.");
         endCall("auto-end");
@@ -856,10 +882,14 @@ function connectElevenLabs(sessionPayload) {
       const { transcript, reason } = extractAssistantEndCall(payload.agent_response_event.agent_response);
       if (transcript) {
         logLine(`${characterName}: ${transcript}`);
+        recordConversationLine("agent", transcript);
       }
       if (reason) {
         logLine(`${characterName} завершает разговор.`);
-        endCall("auto-end");
+        pendingAutoEnd = true;
+        if (!assistantResponseActive && !speaking && !playbackQueue.length) {
+          endCall("auto-end");
+        }
       }
       return;
     }
@@ -868,10 +898,14 @@ function connectElevenLabs(sessionPayload) {
       const { transcript, reason } = extractAssistantEndCall(payload.agent_response_correction_event.corrected_agent_response);
       if (transcript) {
         logLine(`${characterName}: ${transcript}`);
+        recordConversationLine("agent", transcript, { replaceLastSameRole: true });
       }
       if (reason) {
         logLine(`${characterName} завершает разговор.`);
-        endCall("auto-end");
+        pendingAutoEnd = true;
+        if (!assistantResponseActive && !speaking && !playbackQueue.length) {
+          endCall("auto-end");
+        }
       }
       return;
     }
