@@ -416,6 +416,7 @@ def _current_app_user() -> AppUser | None:
 
 
 def _login_app_user(user: AppUser) -> None:
+    session.permanent = True
     session[APP_USER_SESSION_KEY] = user.id
 
 

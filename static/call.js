@@ -9,6 +9,7 @@ const appUserId = Number(body.dataset.appUserId || 0) || null;
 const callAccessAvailable = body.dataset.callAccessAvailable === "true";
 
 const logNode = document.getElementById("call-log");
+const callWaveNode = document.getElementById("call-wave");
 const micButton = document.getElementById("mic-btn");
 const connectionState = document.getElementById("connection-state");
 const statusDot = document.getElementById("status-dot");
@@ -72,6 +73,14 @@ const MIN_TURN_AUDIO_MS = 180;
 const INTERRUPT_LOG_COOLDOWN_MS = 1500;
 const CHUNK_FADE_MS = 0.008;
 let playbackCursorTime = 0;
+const WAVE_BAR_COUNT = 20;
+let waveAnimationFrame = null;
+let waveBars = [];
+let wavePhase = 0;
+let micLevel = 0;
+let micLevelTarget = 0;
+let assistantLevel = 0;
+let assistantLevelTarget = 0;
 
 function logLine(text) {
   const p = document.createElement("p");
@@ -161,7 +170,20 @@ function setMicButtonTone(tone) {
   micButton.classList.toggle("call-btn-danger", tone === "danger");
 }
 
+function updateWaveLiveState(live) {
+  body.classList.toggle("call-live", live);
+  if (!callWaveNode) {
+    return;
+  }
+  if (live) {
+    startWaveAnimation();
+    return;
+  }
+  stopWaveAnimation();
+}
+
 function syncCallControls() {
+  updateWaveLiveState(callActive);
   if (connecting) {
     setMicButtonState("Соединяем…", true);
     setMicButtonTone("primary");
@@ -279,6 +301,10 @@ async function playNextChunk() {
 
   speaking = true;
   const { samples: rawSamples, sampleRate } = playbackQueue.shift();
+  const assistantRms = computeRmsLevel(rawSamples);
+  if (callActive) {
+    assistantLevelTarget = Math.max(assistantLevelTarget, clamp01(assistantRms * 4.6));
+  }
   const samples = applyChunkEnvelope(rawSamples, sampleRate);
   audioContext = audioContext || new AudioContext({ sampleRate });
   assistantGainNode = assistantGainNode || audioContext.createGain();
@@ -338,6 +364,8 @@ function stopAssistantPlayback() {
   }
   speaking = false;
   assistantResponseActive = false;
+  assistantLevel = 0;
+  assistantLevelTarget = 0;
 }
 
 function interruptAssistant(reason = "voice") {
@@ -453,6 +481,88 @@ function parseSampleRate(formatValue) {
   return match ? Number(match[1]) : null;
 }
 
+function clamp01(value) {
+  return Math.max(0, Math.min(1, value));
+}
+
+function computeRmsLevel(samples) {
+  if (!samples?.length) {
+    return 0;
+  }
+  let energy = 0;
+  for (let index = 0; index < samples.length; index += 1) {
+    energy += samples[index] * samples[index];
+  }
+  return Math.sqrt(energy / samples.length);
+}
+
+function ensureWaveBars() {
+  if (!callWaveNode || waveBars.length) {
+    return;
+  }
+  const fragment = document.createDocumentFragment();
+  for (let index = 0; index < WAVE_BAR_COUNT; index += 1) {
+    const bar = document.createElement("span");
+    bar.className = "call-wave-bar";
+    bar.style.height = "18%";
+    bar.style.opacity = "0.45";
+    fragment.appendChild(bar);
+    waveBars.push(bar);
+  }
+  callWaveNode.appendChild(fragment);
+}
+
+function renderWaveFrame() {
+  waveAnimationFrame = window.requestAnimationFrame(renderWaveFrame);
+  if (!waveBars.length) {
+    return;
+  }
+
+  wavePhase += 0.2;
+  micLevel = micLevel + (micLevelTarget - micLevel) * 0.28;
+  assistantLevel = assistantLevel + (assistantLevelTarget - assistantLevel) * 0.3;
+  micLevelTarget *= 0.88;
+  assistantLevelTarget *= 0.86;
+
+  const mixedLevel = Math.max(micLevel, assistantLevel);
+  const floorLevel = callActive ? 0.12 : 0.04;
+  const amplitude = floorLevel + mixedLevel * 0.72;
+
+  for (let index = 0; index < waveBars.length; index += 1) {
+    const harmonicA = Math.sin(wavePhase + index * 0.48);
+    const harmonicB = Math.sin(wavePhase * 0.63 + index * 0.31);
+    const harmonicMix = (harmonicA + harmonicB + 2) / 4;
+    const level = clamp01(amplitude * (0.42 + harmonicMix * 0.88));
+    const heightPercent = 16 + level * 74;
+    const bar = waveBars[index];
+    bar.style.height = `${heightPercent}%`;
+    bar.style.opacity = `${0.4 + level * 0.6}`;
+  }
+}
+
+function startWaveAnimation() {
+  ensureWaveBars();
+  if (waveAnimationFrame !== null) {
+    return;
+  }
+  renderWaveFrame();
+}
+
+function stopWaveAnimation() {
+  if (waveAnimationFrame !== null) {
+    window.cancelAnimationFrame(waveAnimationFrame);
+    waveAnimationFrame = null;
+  }
+  micLevel = 0;
+  micLevelTarget = 0;
+  assistantLevel = 0;
+  assistantLevelTarget = 0;
+  for (const bar of waveBars) {
+    bar.style.height = "18%";
+    bar.style.opacity = "0.45";
+  }
+}
+
 async function ensureAudioPipeline() {
   if (processorNode) {
     return;
@@ -476,6 +586,9 @@ async function ensureAudioPipeline() {
       energy += input[index] * input[index];
     }
     const rms = Math.sqrt(energy / input.length);
+    if (callActive) {
+      micLevelTarget = Math.max(micLevelTarget, clamp01(rms * 5.2));
+    }
     const isSpeech = rms >= SPEECH_THRESHOLD;
     const isInterruptSpeech = rms >= INTERRUPT_THRESHOLD;
     const assistantTalkingNow = speaking || playbackQueue.length > 0 || assistantResponseActive || responseRequested;

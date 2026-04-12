@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ character.name }}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='call.css', v='20260409minutes') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='call.css', v='20260412wave2') }}">
   </head>
   <body
     class="miniapp-page"
@@ -48,6 +48,7 @@
               <p class="log-line">Доступные минуты исчерпаны. Историю разговоров и тарифы можно посмотреть в личном кабинете.</p>
             {% endif %}
           </div>
+          <div class="call-wave" id="call-wave" aria-hidden="true"></div>
 
           <div class="call-actions">
             <button class="call-btn call-btn-primary call-btn-single" id="mic-btn" type="button" {% if not call_access_available %}disabled{% endif %}>
@@ -59,6 +60,6 @@
     </main>
 
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="{{ url_for('static', filename='call.js', v='20260412provider4') }}"></script>
+    <script src="{{ url_for('static', filename='call.js', v='20260412provider6') }}"></script>
   </body>
 </html>
