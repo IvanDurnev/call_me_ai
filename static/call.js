@@ -29,6 +29,7 @@ let processorNode;
 let monitorGain;
 let currentSource;
 let assistantGainNode;
+let assistantCompressorNode;
 let speaking = false;
 let micEnabled = false;
 let awaitingResponse = false;
@@ -70,6 +71,8 @@ const START_SPEECH_FRAMES = Math.max(1, Number(body.dataset.startSpeechFrames ||
 const INTERRUPT_SPEECH_FRAMES = 3;
 const END_SPEECH_MS = Math.max(250, Number(body.dataset.endSpeechMs || 550));
 const MIN_TURN_AUDIO_MS = Math.max(120, Number(body.dataset.minTurnAudioMs || 160));
+const AUDIO_MODE = body.dataset.audioMode || "default";
+const OUTPUT_GAIN = Math.max(1, Math.min(4, Number(body.dataset.outputGain || 1.8)));
 const INTERRUPT_LOG_COOLDOWN_MS = 1500;
 const CHUNK_FADE_MS = 0.008;
 let playbackCursorTime = 0;
@@ -296,6 +299,42 @@ function applyChunkEnvelope(samples, sampleRate = providerOutputSampleRate) {
   return framed;
 }
 
+function buildMicrophoneConstraints() {
+  if (AUDIO_MODE !== "loudspeaker") {
+    return { audio: true };
+  }
+
+  const supported = navigator.mediaDevices?.getSupportedConstraints?.() || {};
+  const audio = {
+    channelCount: 1,
+  };
+  if (supported.echoCancellation) {
+    audio.echoCancellation = false;
+  }
+  if (supported.noiseSuppression) {
+    audio.noiseSuppression = false;
+  }
+  if (supported.autoGainControl) {
+    audio.autoGainControl = false;
+  }
+  return { audio };
+}
+
+function ensureAssistantOutputChain() {
+  if (assistantGainNode && assistantCompressorNode) {
+    return;
+  }
+  assistantGainNode = audioContext.createGain();
+  assistantCompressorNode = audioContext.createDynamicsCompressor();
+  assistantCompressorNode.threshold.value = -26;
+  assistantCompressorNode.knee.value = 12;
+  assistantCompressorNode.ratio.value = 5;
+  assistantCompressorNode.attack.value = 0.003;
+  assistantCompressorNode.release.value = 0.18;
+  assistantGainNode.connect(assistantCompressorNode);
+  assistantCompressorNode.connect(audioContext.destination);
+}
+
 async function playNextChunk() {
   if (speaking || !playbackQueue.length) {
     return;
@@ -309,8 +348,8 @@ async function playNextChunk() {
   }
   const samples = applyChunkEnvelope(rawSamples, sampleRate);
   audioContext = audioContext || new AudioContext({ sampleRate });
-  assistantGainNode = assistantGainNode || audioContext.createGain();
-  assistantGainNode.connect(audioContext.destination);
+  ensureAssistantOutputChain();
+  assistantGainNode.gain.setTargetAtTime(OUTPUT_GAIN, audioContext.currentTime, 0.02);
 
   const buffer = audioContext.createBuffer(1, samples.length, sampleRate);
   buffer.copyToChannel(samples, 0);
@@ -643,7 +682,7 @@ async function ensureAudioPipeline() {
     return;
   }
 
-  mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  mediaStream = await navigator.mediaDevices.getUserMedia(buildMicrophoneConstraints());
   audioContext = audioContext || new AudioContext();
   mediaSource = audioContext.createMediaStreamSource(mediaStream);
   processorNode = audioContext.createScriptProcessor(2048, 1, 1);
