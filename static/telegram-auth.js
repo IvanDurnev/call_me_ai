@@ -38,10 +38,6 @@ async function bootstrapTelegramAuth() {
       throw new Error(payload.error || "Не удалось подключить аккаунт Telegram.");
     }
 
-    if (telegramAuthStatus && payload.user?.name) {
-      telegramAuthStatus.textContent = `Привет, ${payload.user.name}! Открываем приложение…`;
-    }
-
     if (telegramAuthMode === "redirect") {
       window.location.replace(telegramNextUrl);
     }
