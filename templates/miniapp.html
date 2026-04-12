@@ -20,7 +20,8 @@
     data-end-speech-ms="550"
     data-min-turn-audio-ms="160"
     data-audio-mode="{{ 'loudspeaker' if started_from in ['telegram-miniapp', 'max-miniapp'] else 'default' }}"
-    data-output-gain="{{ '3.8' if started_from in ['telegram-miniapp', 'max-miniapp'] else '3.4' }}"
+    data-mobile-output-gain="{{ character.mobile_output_gain or 3.8 }}"
+    data-desktop-output-gain="{{ character.desktop_output_gain or 1.0 }}"
   >
     <main class="call-shell">
       <section class="phone-frame">
@@ -59,6 +60,6 @@
     </main>
 
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="{{ url_for('static', filename='call.js', v='20260412speakerfix2') }}"></script>
+    <script src="{{ url_for('static', filename='call.js', v='20260412speakerfix3') }}"></script>
   </body>
 </html>

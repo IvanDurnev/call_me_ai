@@ -2241,6 +2241,8 @@ def update_hero_api(slug: str):
         "max_output_tokens": "max_output_tokens",
         "output_audio_format": "output_audio_format",
         "output_audio_speed": "output_audio_speed",
+        "mobile_output_gain": "mobile_output_gain",
+        "desktop_output_gain": "desktop_output_gain",
         "instructions_override": "instructions_override",
         "elevenlabs_agent_id": "elevenlabs_agent_id",
         "elevenlabs_llm": "elevenlabs_llm",
@@ -2791,6 +2793,8 @@ def _serialize_character(character: dict) -> dict:
     payload["max_output_tokens"] = realtime_settings.get("max_output_tokens", "inf")
     payload["output_audio_format"] = realtime_settings.get("output_audio_format", "pcm16")
     payload["output_audio_speed"] = realtime_settings.get("output_audio_speed", 1.0)
+    payload["mobile_output_gain"] = realtime_settings.get("mobile_output_gain", 3.8)
+    payload["desktop_output_gain"] = realtime_settings.get("desktop_output_gain", 1.0)
     payload["instructions_override"] = realtime_settings.get("instructions_override", "")
     payload["elevenlabs_agent_id"] = realtime_settings.get("elevenlabs_agent_id", "")
     payload["elevenlabs_llm"] = realtime_settings.get("elevenlabs_llm", ELEVENLABS_DEFAULT_LLM)

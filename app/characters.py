@@ -349,6 +349,14 @@ def normalize_realtime_settings(settings: dict[str, Any] | None) -> dict[str, An
     if output_audio_speed not in {None, ""}:
         normalized["output_audio_speed"] = float(output_audio_speed)
 
+    mobile_output_gain = payload.get("mobile_output_gain")
+    if mobile_output_gain not in {None, ""}:
+        normalized["mobile_output_gain"] = max(1.0, min(6.0, float(mobile_output_gain)))
+
+    desktop_output_gain = payload.get("desktop_output_gain")
+    if desktop_output_gain not in {None, ""}:
+        normalized["desktop_output_gain"] = max(0.5, min(2.0, float(desktop_output_gain)))
+
     instructions_override = str(payload.get("instructions_override") or "").strip()
     if instructions_override:
         normalized["instructions_override"] = instructions_override

@@ -85,6 +85,20 @@ function setStatus(node, message, isError = false) {
   node.classList.toggle("is-error", isError);
 }
 
+function bindRangeValue(inputId, outputId, precision = 2) {
+  const input = document.getElementById(inputId);
+  const output = document.getElementById(outputId);
+  if (!input || !output) {
+    return;
+  }
+  const renderValue = () => {
+    const numeric = Number(input.value);
+    output.textContent = Number.isFinite(numeric) ? numeric.toFixed(precision) : input.value;
+  };
+  input.addEventListener("input", renderValue);
+  renderValue();
+}
+
 function isValidElevenLabsVoiceId(voiceId) {
   const normalized = String(voiceId || "").trim();
   if (normalized.length < 10 || normalized.length > 128) {
@@ -234,7 +248,12 @@ function buildHeroSavePayload(form, hero) {
     noise_reduction_type: hero.noise_reduction_type || "none",
     max_output_tokens: hero.max_output_tokens ?? "inf",
     output_audio_speed: hero.output_audio_speed ?? 1,
+    mobile_output_gain: hero.mobile_output_gain ?? 3.8,
+    desktop_output_gain: hero.desktop_output_gain ?? 1.0,
   };
+
+  payload.mobile_output_gain = formData.has("mobile_output_gain") ? formData.get("mobile_output_gain") : payload.mobile_output_gain;
+  payload.desktop_output_gain = formData.has("desktop_output_gain") ? formData.get("desktop_output_gain") : payload.desktop_output_gain;
 
   if (provider === "elevenlabs") {
     payload.elevenlabs_voice_id = formData.has("elevenlabs_voice_id") ? formData.get("elevenlabs_voice_id") : payload.elevenlabs_voice_id;
@@ -384,6 +403,23 @@ function renderEditor() {
 
       <div class="hero-section">
         <div class="hero-section-head">
+          <h3>Громкость воспроизведения</h3>
+          <p>Применяется в браузерном звонке: отдельно для мобильных и для десктопных устройств.</p>
+        </div>
+        <div class="hero-field-grid">
+          <label class="hero-field hero-field-wide">
+            <span>Mobile gain: <strong id="mobile-output-gain-value">${escapeHtml(Number(hero.mobile_output_gain ?? 3.8).toFixed(2))}</strong></span>
+            <input id="mobile-output-gain" name="mobile_output_gain" type="range" min="1" max="6" step="0.1" value="${escapeHtml(hero.mobile_output_gain ?? 3.8)}">
+          </label>
+          <label class="hero-field hero-field-wide">
+            <span>Desktop gain: <strong id="desktop-output-gain-value">${escapeHtml(Number(hero.desktop_output_gain ?? 1.0).toFixed(2))}</strong></span>
+            <input id="desktop-output-gain" name="desktop_output_gain" type="range" min="0.5" max="2" step="0.05" value="${escapeHtml(hero.desktop_output_gain ?? 1.0)}">
+          </label>
+        </div>
+      </div>
+
+      <div class="hero-section">
+        <div class="hero-section-head">
           <h3>${isElevenLabs ? "ElevenLabs" : "OpenAI"}</h3>
           <p>${isElevenLabs
             ? "Только настройки ElevenLabs: агент, первая фраза, скорость и распознавание."
@@ -497,6 +533,9 @@ function renderEditor() {
   const createAgentButton = document.getElementById("hero-create-agent-btn");
   const testAgentButton = document.getElementById("hero-test-agent-btn");
   const copyChecklistButton = document.getElementById("hero-copy-agent-checklist-btn");
+
+  bindRangeValue("mobile-output-gain", "mobile-output-gain-value", 2);
+  bindRangeValue("desktop-output-gain", "desktop-output-gain-value", 2);
 
   providerSelect?.addEventListener("change", () => {
     updateHero({ ...hero, ...buildHeroSavePayload(form, hero) });

@@ -72,7 +72,12 @@ const INTERRUPT_SPEECH_FRAMES = 3;
 const END_SPEECH_MS = Math.max(250, Number(body.dataset.endSpeechMs || 550));
 const MIN_TURN_AUDIO_MS = Math.max(120, Number(body.dataset.minTurnAudioMs || 160));
 const AUDIO_MODE = body.dataset.audioMode || "default";
-const OUTPUT_GAIN = Math.max(1, Math.min(6, Number(body.dataset.outputGain || 3.4)));
+const IS_MOBILE_BROWSER = /Android|iPhone|iPad|iPod|Mobile|Windows Phone|IEMobile|Opera Mini/i
+  .test(navigator.userAgent || "");
+const ENABLE_MOBILE_LOUDNESS = IS_MOBILE_BROWSER;
+const MOBILE_OUTPUT_GAIN = Math.max(1, Math.min(6, Number(body.dataset.mobileOutputGain || 3.8)));
+const DESKTOP_OUTPUT_GAIN = Math.max(0.5, Math.min(2, Number(body.dataset.desktopOutputGain || 1)));
+const OUTPUT_GAIN = ENABLE_MOBILE_LOUDNESS ? MOBILE_OUTPUT_GAIN : DESKTOP_OUTPUT_GAIN;
 const TARGET_PLAYBACK_RMS = 0.26;
 const MAX_ADAPTIVE_BOOST = 10;
 const INTERRUPT_LOG_COOLDOWN_MS = 1500;
@@ -302,6 +307,9 @@ function applyChunkEnvelope(samples, sampleRate = providerOutputSampleRate) {
 }
 
 function boostAssistantLoudness(samples) {
+  if (!ENABLE_MOBILE_LOUDNESS) {
+    return samples;
+  }
   if (!samples?.length) {
     return samples;
   }
@@ -331,7 +339,8 @@ function boostAssistantLoudness(samples) {
 }
 
 function buildMicrophoneConstraints() {
-  if (AUDIO_MODE !== "loudspeaker") {
+  const effectiveAudioMode = ENABLE_MOBILE_LOUDNESS ? AUDIO_MODE : "default";
+  if (effectiveAudioMode !== "loudspeaker") {
     return { audio: true };
   }
 
@@ -352,10 +361,14 @@ function buildMicrophoneConstraints() {
 }
 
 function ensureAssistantOutputChain() {
-  if (assistantGainNode && assistantCompressorNode) {
+  if (assistantGainNode && (assistantCompressorNode || !ENABLE_MOBILE_LOUDNESS)) {
     return;
   }
   assistantGainNode = audioContext.createGain();
+  if (!ENABLE_MOBILE_LOUDNESS) {
+    assistantGainNode.connect(audioContext.destination);
+    return;
+  }
   assistantCompressorNode = audioContext.createDynamicsCompressor();
   assistantCompressorNode.threshold.value = -32;
   assistantCompressorNode.knee.value = 8;
