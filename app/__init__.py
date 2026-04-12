@@ -44,6 +44,7 @@ def create_app(config_class: type[Config] = Config) -> Flask:
     with app.app_context():
         ensure_default_heroes()
     _maybe_start_background_services(app)
+    _maybe_start_recurring_worker(app)
 
     return app
 
@@ -74,6 +75,17 @@ def _should_autostart_background_services() -> bool:
     if os.environ.get("FLASK_RUN_FROM_CLI") == "true" and "run" in argv:
         return True
     return False
+
+
+def _maybe_start_recurring_worker(app: Flask) -> None:
+    if app.extensions.get("recurring_worker_started"):
+        return
+    if os.environ.get("APP_ENABLE_RECURRING_WORKER", "").strip().lower() not in {"1", "true", "yes", "on"}:
+        return
+    from .services.recurring import start_recurring_worker_once
+
+    start_recurring_worker_once(app)
+    app.extensions["recurring_worker_started"] = True
 
 
 def _register_cli_commands(app: Flask) -> None:

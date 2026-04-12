@@ -877,9 +877,10 @@ def _parse_cloudpayments_datetime(raw_value) -> datetime | None:
         parsed = datetime.fromisoformat(normalized)
     except ValueError:
         return None
-    if parsed.tzinfo is not None:
-        parsed = parsed.astimezone(timezone.utc).replace(tzinfo=None)
-    return parsed
+    if parsed.tzinfo is None:
+        # CloudPayments may return ISO strings without timezone; treat them as Moscow time.
+        parsed = parsed.replace(tzinfo=timezone(timedelta(hours=3)))
+    return parsed.astimezone(timezone.utc).replace(tzinfo=None)
 
 
 def _cloudpayments_payment_datetime(payload: dict | None) -> datetime | None:
