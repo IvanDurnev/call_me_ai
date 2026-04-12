@@ -1800,7 +1800,8 @@ def subscription_confirm():
         "verified_at": datetime.utcnow().isoformat(),
     }
 
-    if provider_status == "Completed":
+    normalized_provider_status = provider_status.lower()
+    if normalized_provider_status in {"completed", "authorized"}:
         purchase.status = "paid"
         purchase.paid_at = purchase.paid_at or datetime.utcnow()
         purchase.cloudpayments_token = (
@@ -1820,7 +1821,7 @@ def subscription_confirm():
             or purchase.next_transaction_at
         )
     elif provider_status:
-        purchase.status = provider_status.lower()
+        purchase.status = normalized_provider_status
     else:
         purchase.status = "unknown"
 
