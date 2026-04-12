@@ -50,6 +50,13 @@ TRANSCRIPTION_MODEL_OPTIONS = [
 NOISE_REDUCTION_OPTIONS = ["none", "near_field", "far_field"]
 
 ELEVENLABS_DEFAULT_LLM = "gpt-4o-mini"
+ELEVENLABS_TURN_EAGERNESS_ALIASES = {
+    "low": "patient",
+    "normal": "normal",
+    "high": "eager",
+    "patient": "patient",
+    "eager": "eager",
+}
 
 DEFAULT_GREETING_PROMPT = (
     "Начни разговор первым. Коротко поздоровайся по-русски, как будто это живой "
@@ -360,8 +367,9 @@ def normalize_realtime_settings(settings: dict[str, Any] | None) -> dict[str, An
         normalized["elevenlabs_llm"] = elevenlabs_llm
 
     elevenlabs_turn_eagerness = str(payload.get("elevenlabs_turn_eagerness") or "").strip().lower()
-    if elevenlabs_turn_eagerness:
-        normalized["elevenlabs_turn_eagerness"] = elevenlabs_turn_eagerness
+    normalized_turn_eagerness = ELEVENLABS_TURN_EAGERNESS_ALIASES.get(elevenlabs_turn_eagerness, "")
+    if normalized_turn_eagerness:
+        normalized["elevenlabs_turn_eagerness"] = normalized_turn_eagerness
 
     provider = str(payload.get("provider") or "").strip().lower()
     if provider in {"openai", "elevenlabs"}:

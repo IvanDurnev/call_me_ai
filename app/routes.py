@@ -136,9 +136,9 @@ def _elevenlabs_llm_options() -> list[dict[str, str]]:
 
 def _elevenlabs_turn_eagerness_options() -> list[dict[str, str]]:
     return [
-        {"value": "low", "label": "Низкая (меньше реакций на шум)"},
+        {"value": "patient", "label": "Низкая (меньше реакций на шум)"},
         {"value": "normal", "label": "Нормальная"},
-        {"value": "high", "label": "Высокая (быстрее реагирует)"},
+        {"value": "eager", "label": "Высокая (быстрее реагирует)"},
     ]
 
 
