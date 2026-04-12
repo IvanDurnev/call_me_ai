@@ -198,6 +198,17 @@ function renderElevenLabsLlmOptions(hero) {
   `).join("");
 }
 
+function renderElevenLabsTurnEagernessOptions(hero) {
+  const currentValue = (hero.elevenlabs_turn_eagerness || "normal").toLowerCase();
+  const options = [...(initialState.elevenlabs_turn_eagerness_options || [])];
+  if (currentValue && !options.some((option) => option.value === currentValue)) {
+    options.unshift({ value: currentValue, label: `${currentValue} (current)` });
+  }
+  return options.map((option) => `
+    <option value="${escapeHtml(option.value)}" ${option.value === currentValue ? "selected" : ""}>${escapeHtml(option.label)}</option>
+  `).join("");
+}
+
 function buildHeroSavePayload(form, hero) {
   const formData = new FormData(form);
   const provider = formData.get("provider") || heroProvider(hero);
@@ -390,7 +401,7 @@ function renderEditor() {
           </label>
           <label class="hero-field">
             <span>Чувствительность к шуму / паузам</span>
-            <input name="elevenlabs_turn_eagerness" type="text" value="${escapeHtml(hero.elevenlabs_turn_eagerness || "normal")}" placeholder="normal">
+            <select name="elevenlabs_turn_eagerness">${renderElevenLabsTurnEagernessOptions(hero)}</select>
           </label>
           <label class="hero-field">
             <span>Язык распознавания</span>
@@ -957,6 +968,7 @@ async function reloadAdminData() {
   initialState.transcription_model_options = payload.transcription_model_options || [];
   initialState.noise_reduction_options = payload.noise_reduction_options || [];
   initialState.elevenlabs_llm_options = payload.elevenlabs_llm_options || [];
+  initialState.elevenlabs_turn_eagerness_options = payload.elevenlabs_turn_eagerness_options || [];
   initialState.runtime_diagnostics = payload.runtime_diagnostics || {};
   if (!heroes.some((hero) => hero.slug === selectedSlug)) {
     selectedSlug = heroes[0]?.slug || null;

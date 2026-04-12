@@ -134,6 +134,14 @@ def _elevenlabs_llm_options() -> list[dict[str, str]]:
     return [{"value": ELEVENLABS_DEFAULT_LLM, "label": ELEVENLABS_DEFAULT_LLM}]
 
 
+def _elevenlabs_turn_eagerness_options() -> list[dict[str, str]]:
+    return [
+        {"value": "low", "label": "Низкая (меньше реакций на шум)"},
+        {"value": "normal", "label": "Нормальная"},
+        {"value": "high", "label": "Высокая (быстрее реагирует)"},
+    ]
+
+
 def _build_runtime_diagnostics(characters: list[dict]) -> dict[str, dict]:
     diagnostics: dict[str, dict] = {}
 
@@ -1976,6 +1984,7 @@ def admin_heroes():
         "transcription_model_options": TRANSCRIPTION_MODEL_OPTIONS,
         "noise_reduction_options": NOISE_REDUCTION_OPTIONS,
         "elevenlabs_llm_options": _elevenlabs_llm_options(),
+        "elevenlabs_turn_eagerness_options": _elevenlabs_turn_eagerness_options(),
         "realtime_provider": _realtime_provider(),
         "runtime_diagnostics": _build_runtime_diagnostics(heroes),
     }
@@ -1993,6 +2002,7 @@ def admin_pricing_plans():
         "realtime_model_options": [],
         "transcription_model_options": [],
         "noise_reduction_options": [],
+        "elevenlabs_turn_eagerness_options": [],
     }
     return render_template("pricing_plans.html", initial_state=json.dumps(context, ensure_ascii=False), admin_section="pricing_plans")
 
@@ -2027,6 +2037,7 @@ def heroes_api():
             "transcription_model_options": TRANSCRIPTION_MODEL_OPTIONS,
             "noise_reduction_options": NOISE_REDUCTION_OPTIONS,
             "elevenlabs_llm_options": _elevenlabs_llm_options(),
+            "elevenlabs_turn_eagerness_options": _elevenlabs_turn_eagerness_options(),
             "realtime_provider": _realtime_provider(),
             "runtime_diagnostics": _build_runtime_diagnostics(heroes),
         }
