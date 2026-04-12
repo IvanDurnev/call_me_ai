@@ -81,6 +81,8 @@ let micLevel = 0;
 let micLevelTarget = 0;
 let assistantLevel = 0;
 let assistantLevelTarget = 0;
+let ringbackActive = false;
+let ringbackTimeouts = [];
 
 function logLine(text) {
   const p = document.createElement("p");
@@ -563,6 +565,79 @@ function stopWaveAnimation() {
   }
 }
 
+function queueRingbackTimeout(callback, delayMs) {
+  const timeoutId = window.setTimeout(() => {
+    ringbackTimeouts = ringbackTimeouts.filter((id) => id !== timeoutId);
+    callback();
+  }, delayMs);
+  ringbackTimeouts.push(timeoutId);
+}
+
+function clearRingbackTimeouts() {
+  for (const timeoutId of ringbackTimeouts) {
+    window.clearTimeout(timeoutId);
+  }
+  ringbackTimeouts = [];
+}
+
+function playRingbackPulse(durationMs = 360) {
+  if (!audioContext || audioContext.state !== "running") {
+    return;
+  }
+  const now = audioContext.currentTime;
+  const oscillator = audioContext.createOscillator();
+  const gain = audioContext.createGain();
+  oscillator.type = "sine";
+  oscillator.frequency.value = 425;
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(0.06, now + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + durationMs / 1000);
+  oscillator.connect(gain);
+  gain.connect(audioContext.destination);
+  oscillator.start(now);
+  oscillator.stop(now + durationMs / 1000 + 0.02);
+  oscillator.onended = () => {
+    oscillator.disconnect();
+    gain.disconnect();
+  };
+}
+
+async function startRingbackTone() {
+  if (ringbackActive) {
+    return;
+  }
+  ringbackActive = true;
+  audioContext = audioContext || new AudioContext();
+  if (audioContext.state === "suspended") {
+    try {
+      await audioContext.resume();
+    } catch {
+      // Best effort: if resume fails, dialing continues without tone.
+    }
+  }
+
+  const runCycle = () => {
+    if (!ringbackActive || !connecting || callActive) {
+      return;
+    }
+    playRingbackPulse(360);
+    queueRingbackTimeout(() => {
+      if (!ringbackActive || !connecting || callActive) {
+        return;
+      }
+      playRingbackPulse(360);
+    }, 700);
+    queueRingbackTimeout(runCycle, 3200);
+  };
+
+  runCycle();
+}
+
+function stopRingbackTone() {
+  ringbackActive = false;
+  clearRingbackTimeouts();
+}
+
 async function ensureAudioPipeline() {
   if (processorNode) {
     return;
@@ -760,6 +835,7 @@ async function finishCallSession(reason = "client") {
 function attachCommonSocketHandlers() {
   socket.addEventListener("close", () => {
     connecting = false;
+    stopRingbackTone();
     callActive = false;
     stopCallTimer();
     micEnabled = false;
@@ -786,6 +862,7 @@ function connectOpenAi() {
 
   socket.addEventListener("open", () => {
     connecting = false;
+    stopRingbackTone();
     callActive = true;
     startCallTimer();
     setConnectionState("На линии", true);
@@ -925,6 +1002,7 @@ function connectElevenLabs(sessionPayload) {
 
   socket.addEventListener("open", () => {
     connecting = false;
+    stopRingbackTone();
     callActive = true;
     startCallTimer();
     setConnectionState("На линии", true);
@@ -1043,6 +1121,7 @@ async function connect() {
   manuallyClosed = false;
   finishingCallSession = false;
   syncCallControls();
+  await startRingbackTone();
 
   if (realtimeProvider === "elevenlabs") {
     const sessionPayload = await startCallSession();
@@ -1056,6 +1135,7 @@ async function connect() {
 function endCall(reason = "manual") {
   manuallyClosed = true;
   pendingAutoEnd = false;
+  stopRingbackTone();
   if (socket?.readyState === WebSocket.OPEN) {
     interruptAssistant(reason);
     if (realtimeProvider === "openai") {
@@ -1106,6 +1186,7 @@ micButton.addEventListener("click", async () => {
     await connect();
   } catch (error) {
     connecting = false;
+    stopRingbackTone();
     syncCallControls();
     setConnectionState("Соединение не удалось", false);
     logLine(error instanceof Error ? error.message : String(error));
