@@ -16,6 +16,9 @@
     data-realtime-provider="{{ realtime_provider }}"
     data-app-user-id="{{ app_user.id }}"
     data-call-access-available="{{ 'true' if call_access_available else 'false' }}"
+    data-start-speech-frames="2"
+    data-end-speech-ms="550"
+    data-min-turn-audio-ms="160"
   >
     <main class="call-shell">
       <section class="phone-frame">
@@ -54,6 +57,6 @@
     </main>
 
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="{{ url_for('static', filename='call.js', v='20260412provider7') }}"></script>
+    <script src="{{ url_for('static', filename='call.js', v='20260412latency1') }}"></script>
   </body>
 </html>

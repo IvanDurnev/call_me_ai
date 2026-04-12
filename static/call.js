@@ -66,10 +66,10 @@ const CALL_END_PATTERNS = [
 ];
 const SPEECH_THRESHOLD = 0.035;
 const INTERRUPT_THRESHOLD = 0.05;
-const START_SPEECH_FRAMES = 3;
+const START_SPEECH_FRAMES = Math.max(1, Number(body.dataset.startSpeechFrames || 2));
 const INTERRUPT_SPEECH_FRAMES = 3;
-const END_SPEECH_MS = 900;
-const MIN_TURN_AUDIO_MS = 180;
+const END_SPEECH_MS = Math.max(250, Number(body.dataset.endSpeechMs || 550));
+const MIN_TURN_AUDIO_MS = Math.max(120, Number(body.dataset.minTurnAudioMs || 160));
 const INTERRUPT_LOG_COOLDOWN_MS = 1500;
 const CHUNK_FADE_MS = 0.008;
 let playbackCursorTime = 0;
@@ -646,7 +646,7 @@ async function ensureAudioPipeline() {
   mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
   audioContext = audioContext || new AudioContext();
   mediaSource = audioContext.createMediaStreamSource(mediaStream);
-  processorNode = audioContext.createScriptProcessor(4096, 1, 1);
+  processorNode = audioContext.createScriptProcessor(2048, 1, 1);
   monitorGain = audioContext.createGain();
   monitorGain.gain.value = 0;
 
