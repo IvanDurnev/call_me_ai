@@ -85,6 +85,14 @@ function setStatus(node, message, isError = false) {
   node.classList.toggle("is-error", isError);
 }
 
+function isValidElevenLabsVoiceId(voiceId) {
+  const normalized = String(voiceId || "").trim();
+  if (normalized.length < 10 || normalized.length > 128) {
+    return false;
+  }
+  return /^[A-Za-z0-9_-]+$/.test(normalized);
+}
+
 function renderHeroList() {
   if (!heroesList) {
     return;
@@ -193,9 +201,6 @@ function renderElevenLabsLlmOptions(hero) {
 function buildHeroSavePayload(form, hero) {
   const formData = new FormData(form);
   const provider = formData.get("provider") || heroProvider(hero);
-  const manualElevenLabsVoiceId = String(formData.get("elevenlabs_voice_id_manual") || "").trim();
-  const selectedElevenLabsVoiceId = String(formData.get("elevenlabs_voice_id") || "").trim();
-  const resolvedElevenLabsVoiceId = manualElevenLabsVoiceId || selectedElevenLabsVoiceId;
   const payload = {
     name: formData.get("name"),
     emoji: formData.get("emoji"),
@@ -220,9 +225,7 @@ function buildHeroSavePayload(form, hero) {
   };
 
   if (provider === "elevenlabs") {
-    if (formData.has("elevenlabs_voice_id_manual") || formData.has("elevenlabs_voice_id")) {
-      payload.elevenlabs_voice_id = resolvedElevenLabsVoiceId;
-    }
+    payload.elevenlabs_voice_id = formData.has("elevenlabs_voice_id") ? formData.get("elevenlabs_voice_id") : payload.elevenlabs_voice_id;
     payload.elevenlabs_first_message = formData.has("elevenlabs_first_message") ? formData.get("elevenlabs_first_message") : payload.elevenlabs_first_message;
     payload.elevenlabs_agent_id = formData.has("elevenlabs_agent_id") ? formData.get("elevenlabs_agent_id") : payload.elevenlabs_agent_id;
     payload.elevenlabs_llm = formData.has("elevenlabs_llm") ? formData.get("elevenlabs_llm") : payload.elevenlabs_llm;
@@ -298,10 +301,13 @@ function renderEditor() {
           <select name="${isElevenLabs ? "elevenlabs_voice_id" : "voice"}" id="hero-voice-select">${renderVoiceOptions(hero)}</select>
         </label>
         ${isElevenLabs ? `
-          <label class="hero-field">
-            <span>Voice ID (ручной)</span>
-            <input name="elevenlabs_voice_id_manual" type="text" value="${escapeHtml(hero.elevenlabs_voice_id || "")}" placeholder="Например, 21m00Tcm4TlvDq8ikWAM">
-          </label>
+          <div class="hero-field">
+            <span>Добавить Voice ID в список</span>
+            <div class="hero-actions">
+              <input name="elevenlabs_voice_id_manual" type="text" value="" placeholder="Например, 21m00Tcm4TlvDq8ikWAM">
+              <button class="call-btn call-btn-secondary" type="button" id="hero-add-voice-id-btn">Добавить</button>
+            </div>
+          </div>
         ` : ""}
         <div class="hero-voice-preview">
           <button class="call-btn call-btn-secondary" type="button" id="voice-preview-btn">Прослушать голос</button>
@@ -469,6 +475,7 @@ function renderEditor() {
   const previewAudio = document.getElementById("voice-preview-audio");
   const voiceSelect = document.getElementById("hero-voice-select");
   const voiceIdManualInput = form.elements.elevenlabs_voice_id_manual || null;
+  const addVoiceIdButton = document.getElementById("hero-add-voice-id-btn");
   const providerSelect = document.getElementById("hero-provider-select");
   const createAgentButton = document.getElementById("hero-create-agent-btn");
   const testAgentButton = document.getElementById("hero-test-agent-btn");
@@ -540,7 +547,7 @@ function renderEditor() {
   });
 
   previewButton.addEventListener("click", async () => {
-    const selectedVoice = (voiceIdManualInput?.value || "").trim() || voiceSelect.value;
+    const selectedVoice = voiceSelect.value;
     if (!selectedVoice) {
       setStatus(statusNode, "Сначала выберите голос.", true);
       return;
@@ -592,8 +599,39 @@ function renderEditor() {
     setStatus(statusNode, "Голос обновлён. Нажмите прослушать.", false);
   });
 
-  voiceIdManualInput?.addEventListener("input", () => {
-    setStatus(statusNode, "Voice ID обновлён. Не забудьте сохранить героя.", false);
+  function addManualVoiceIdToSelect() {
+    if (!voiceIdManualInput || !voiceSelect) {
+      return;
+    }
+    const manualVoiceId = String(voiceIdManualInput.value || "").trim();
+    if (!manualVoiceId) {
+      setStatus(statusNode, "Введите Voice ID, чтобы добавить его в список.", true);
+      return;
+    }
+    if (!isValidElevenLabsVoiceId(manualVoiceId)) {
+      setStatus(statusNode, "Некорректный Voice ID. Используйте только буквы, цифры, '_' или '-'.", true);
+      return;
+    }
+
+    let option = [...voiceSelect.options].find((item) => item.value === manualVoiceId);
+    if (!option) {
+      option = document.createElement("option");
+      option.value = manualVoiceId;
+      option.textContent = `${manualVoiceId} (manual)`;
+      voiceSelect.prepend(option);
+    }
+    voiceSelect.value = manualVoiceId;
+    voiceIdManualInput.value = "";
+    setStatus(statusNode, "Voice ID добавлен в список и выбран. Сохраните героя.", false);
+  }
+
+  addVoiceIdButton?.addEventListener("click", addManualVoiceIdToSelect);
+  voiceIdManualInput?.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter") {
+      return;
+    }
+    event.preventDefault();
+    addManualVoiceIdToSelect();
   });
 
   testAgentButton?.addEventListener("click", async () => {
