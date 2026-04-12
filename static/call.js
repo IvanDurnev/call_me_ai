@@ -72,7 +72,9 @@ const INTERRUPT_SPEECH_FRAMES = 3;
 const END_SPEECH_MS = Math.max(250, Number(body.dataset.endSpeechMs || 550));
 const MIN_TURN_AUDIO_MS = Math.max(120, Number(body.dataset.minTurnAudioMs || 160));
 const AUDIO_MODE = body.dataset.audioMode || "default";
-const OUTPUT_GAIN = Math.max(1, Math.min(4, Number(body.dataset.outputGain || 1.8)));
+const OUTPUT_GAIN = Math.max(1, Math.min(6, Number(body.dataset.outputGain || 3.4)));
+const TARGET_PLAYBACK_RMS = 0.26;
+const MAX_ADAPTIVE_BOOST = 10;
 const INTERRUPT_LOG_COOLDOWN_MS = 1500;
 const CHUNK_FADE_MS = 0.008;
 let playbackCursorTime = 0;
@@ -299,6 +301,35 @@ function applyChunkEnvelope(samples, sampleRate = providerOutputSampleRate) {
   return framed;
 }
 
+function boostAssistantLoudness(samples) {
+  if (!samples?.length) {
+    return samples;
+  }
+
+  let peak = 0;
+  let energy = 0;
+  for (let index = 0; index < samples.length; index += 1) {
+    const absSample = Math.abs(samples[index]);
+    if (absSample > peak) {
+      peak = absSample;
+    }
+    energy += samples[index] * samples[index];
+  }
+
+  const rms = Math.sqrt(energy / samples.length);
+  const rmsBoost = rms > 0 ? TARGET_PLAYBACK_RMS / rms : MAX_ADAPTIVE_BOOST;
+  const peakBoost = peak > 0 ? 0.95 / peak : MAX_ADAPTIVE_BOOST;
+  const boost = Math.max(1, Math.min(MAX_ADAPTIVE_BOOST, rmsBoost, peakBoost));
+  const shaped = new Float32Array(samples.length);
+
+  for (let index = 0; index < samples.length; index += 1) {
+    const boosted = samples[index] * boost;
+    shaped[index] = Math.tanh(boosted * 1.15);
+  }
+
+  return shaped;
+}
+
 function buildMicrophoneConstraints() {
   if (AUDIO_MODE !== "loudspeaker") {
     return { audio: true };
@@ -326,11 +357,11 @@ function ensureAssistantOutputChain() {
   }
   assistantGainNode = audioContext.createGain();
   assistantCompressorNode = audioContext.createDynamicsCompressor();
-  assistantCompressorNode.threshold.value = -26;
-  assistantCompressorNode.knee.value = 12;
-  assistantCompressorNode.ratio.value = 5;
-  assistantCompressorNode.attack.value = 0.003;
-  assistantCompressorNode.release.value = 0.18;
+  assistantCompressorNode.threshold.value = -32;
+  assistantCompressorNode.knee.value = 8;
+  assistantCompressorNode.ratio.value = 10;
+  assistantCompressorNode.attack.value = 0.001;
+  assistantCompressorNode.release.value = 0.22;
   assistantGainNode.connect(assistantCompressorNode);
   assistantCompressorNode.connect(audioContext.destination);
 }
@@ -342,11 +373,12 @@ async function playNextChunk() {
 
   speaking = true;
   const { samples: rawSamples, sampleRate } = playbackQueue.shift();
-  const assistantRms = computeRmsLevel(rawSamples);
+  const boostedSamples = boostAssistantLoudness(rawSamples);
+  const assistantRms = computeRmsLevel(boostedSamples);
   if (callActive) {
     assistantLevelTarget = Math.max(assistantLevelTarget, clamp01(assistantRms * 4.6));
   }
-  const samples = applyChunkEnvelope(rawSamples, sampleRate);
+  const samples = applyChunkEnvelope(boostedSamples, sampleRate);
   audioContext = audioContext || new AudioContext({ sampleRate });
   ensureAssistantOutputChain();
   assistantGainNode.gain.setTargetAtTime(OUTPUT_GAIN, audioContext.currentTime, 0.02);
