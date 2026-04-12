@@ -882,6 +882,82 @@ def _parse_cloudpayments_datetime(raw_value) -> datetime | None:
     return parsed
 
 
+def _cloudpayments_payment_datetime(payload: dict | None) -> datetime | None:
+    return (
+        _parse_cloudpayments_datetime(_cloudpayments_payload_value(payload, "DateTime", "TransactionDateTime"))
+        or _parse_cloudpayments_datetime(_cloudpayments_payload_value(payload, "ConfirmDateIso"))
+        or _parse_cloudpayments_datetime(_cloudpayments_payload_value(payload, "AuthDateIso"))
+        or _parse_cloudpayments_datetime(_cloudpayments_payload_value(payload, "CreatedDateIso"))
+    )
+
+
+def _apply_cloudpayments_payment_state(purchase: SubscriptionPurchase, payment: dict) -> None:
+    provider_status = str(_cloudpayments_payload_value(payment, "Status") or "").strip()
+    transaction_id = _cloudpayments_payload_value(payment, "TransactionId")
+    purchase.transaction_id = str(transaction_id) if transaction_id else purchase.transaction_id
+    purchase.provider_payload_json = {
+        **dict(purchase.provider_payload_json or {}),
+        "payment": payment,
+        "verified_at": datetime.utcnow().isoformat(),
+    }
+
+    normalized_provider_status = provider_status.lower()
+    if normalized_provider_status in {"completed", "authorized"}:
+        purchase.status = "paid"
+        purchase.paid_at = purchase.paid_at or _cloudpayments_payment_datetime(payment) or datetime.utcnow()
+        purchase.cloudpayments_token = (
+            str(_cloudpayments_payload_value(payment, "Token") or purchase.cloudpayments_token or "").strip()
+            or purchase.cloudpayments_token
+        )
+        purchase.cloudpayments_subscription_id = (
+            str(_cloudpayments_payload_value(payment, "SubscriptionId") or purchase.cloudpayments_subscription_id or "").strip()
+            or purchase.cloudpayments_subscription_id
+        )
+        purchase.subscription_status = (
+            str(_cloudpayments_payload_value(payment, "SubscriptionStatus", "Status") or purchase.subscription_status or "").strip()
+            or purchase.subscription_status
+        )
+        purchase.next_transaction_at = (
+            _parse_cloudpayments_datetime(_cloudpayments_payload_value(payment, "NextTransactionDateIso"))
+            or purchase.next_transaction_at
+        )
+    elif provider_status:
+        purchase.status = normalized_provider_status
+    else:
+        purchase.status = "unknown"
+
+
+def _sync_pending_subscription_purchases(user: AppUser, *, limit: int = 5) -> None:
+    if not _cloudpayments_ready():
+        return
+
+    now = datetime.utcnow()
+    lookback = now - timedelta(days=30)
+    pending_purchases = (
+        SubscriptionPurchase.query.filter(
+            SubscriptionPurchase.app_user_id == user.id,
+            SubscriptionPurchase.status.in_(("created", "pending", "unknown", "authorized")),
+            SubscriptionPurchase.created_at >= lookback,
+        )
+        .order_by(SubscriptionPurchase.created_at.desc(), SubscriptionPurchase.id.desc())
+        .limit(max(1, int(limit)))
+        .all()
+    )
+
+    has_updates = False
+    for purchase in pending_purchases:
+        try:
+            payment = find_payment(purchase.invoice_id)
+        except Exception:  # noqa: BLE001
+            continue
+        previous_status = purchase.status
+        _apply_cloudpayments_payment_state(purchase, payment)
+        if purchase.status != previous_status:
+            has_updates = True
+    if has_updates:
+        db.session.commit()
+
+
 def _cloudpayments_json_code(code: int = 0, *, status: int = 200) -> Response:
     return jsonify({"code": code}), status
 
@@ -1642,6 +1718,7 @@ def account():
         call.duration_seconds = duration_seconds
         call.duration_display = _format_call_duration(duration_seconds)
 
+    _sync_pending_subscription_purchases(user)
     access_state = _app_user_access_state(user)
     pricing_plans = [_serialize_pricing_plan(plan) for plan in _list_pricing_plans(include_inactive=False)]
 
@@ -1718,6 +1795,7 @@ def subscription_checkout():
         "currency": plan.currency,
     }
 
+    recurrent_payload = _plan_recurrent_payload(plan)
     invoice_id = f"sub-{user.id}-{uuid.uuid4().hex[:12]}"
     purchase = SubscriptionPurchase(
         app_user_id=user.id,
@@ -1733,6 +1811,7 @@ def subscription_checkout():
             "kind": "cloudpayments_widget",
             "created_at": datetime.utcnow().isoformat(),
             "pricing_plan": _serialize_pricing_plan(plan),
+            "recurrent": recurrent_payload,
             "autopay_consent": consent_snapshot,
             "autopay_consent_history": [consent_snapshot] if recurring_consent_accepted else [],
         },
@@ -1740,28 +1819,26 @@ def subscription_checkout():
     db.session.add(purchase)
     db.session.commit()
 
-    return jsonify(
-        {
-            "ok": True,
-            "checkout": {
-                "publicId": current_app.config.get("CLOUDPAYMENTS_PUBLIC_ID", ""),
-                "description": plan.name,
-                "amount": float(plan.price),
-                "currency": plan.currency,
-                "accountId": str(user.id),
-                "invoiceId": invoice_id,
-                "email": user.email,
-                "skin": "modern",
-                "data": {
-                    "plan_code": plan.code,
-                    "app_user_id": user.id,
-                    "phone": user.phone,
-                    "name": user.name,
-                },
-            },
-            "purchase": _serialize_subscription_purchase(purchase),
-        }
-    )
+    checkout_payload = {
+        "publicId": current_app.config.get("CLOUDPAYMENTS_PUBLIC_ID", ""),
+        "description": plan.name,
+        "amount": float(plan.price),
+        "currency": plan.currency,
+        "accountId": str(user.id),
+        "invoiceId": invoice_id,
+        "email": user.email,
+        "skin": "modern",
+        "data": {
+            "plan_code": plan.code,
+            "app_user_id": user.id,
+            "phone": user.phone,
+            "name": user.name,
+        },
+    }
+    if recurrent_payload:
+        checkout_payload["recurrent"] = recurrent_payload
+
+    return jsonify({"ok": True, "checkout": checkout_payload, "purchase": _serialize_subscription_purchase(purchase)})
 
 
 @main_bp.post("/api/account/subscription/confirm")
@@ -1791,39 +1868,7 @@ def subscription_confirm():
         db.session.commit()
         return jsonify({"ok": False, "error": str(exc)}), 502
 
-    provider_status = str(_cloudpayments_payload_value(payment, "Status") or "").strip()
-    transaction_id = _cloudpayments_payload_value(payment, "TransactionId")
-    purchase.transaction_id = str(transaction_id) if transaction_id else purchase.transaction_id
-    purchase.provider_payload_json = {
-        **dict(purchase.provider_payload_json or {}),
-        "payment": payment,
-        "verified_at": datetime.utcnow().isoformat(),
-    }
-
-    normalized_provider_status = provider_status.lower()
-    if normalized_provider_status in {"completed", "authorized"}:
-        purchase.status = "paid"
-        purchase.paid_at = purchase.paid_at or datetime.utcnow()
-        purchase.cloudpayments_token = (
-            str(_cloudpayments_payload_value(payment, "Token") or purchase.cloudpayments_token or "").strip()
-            or purchase.cloudpayments_token
-        )
-        purchase.cloudpayments_subscription_id = (
-            str(_cloudpayments_payload_value(payment, "SubscriptionId") or purchase.cloudpayments_subscription_id or "").strip()
-            or purchase.cloudpayments_subscription_id
-        )
-        purchase.subscription_status = (
-            str(_cloudpayments_payload_value(payment, "SubscriptionStatus", "Status") or purchase.subscription_status or "").strip()
-            or purchase.subscription_status
-        )
-        purchase.next_transaction_at = (
-            _parse_cloudpayments_datetime(_cloudpayments_payload_value(payment, "NextTransactionDateIso"))
-            or purchase.next_transaction_at
-        )
-    elif provider_status:
-        purchase.status = normalized_provider_status
-    else:
-        purchase.status = "unknown"
+    _apply_cloudpayments_payment_state(purchase, payment)
 
     db.session.commit()
     return jsonify({"ok": True, "purchase": _serialize_subscription_purchase(purchase)})

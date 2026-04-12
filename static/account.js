@@ -208,6 +208,14 @@ async function startSubscriptionCheckout(planCode) {
     }
     const widget = new window.cp.CloudPayments({ language: "ru-RU" });
     closePlanModal();
+    let paymentConfirmed = false;
+    const confirmPaymentOnce = async () => {
+      if (paymentConfirmed) {
+        return;
+      }
+      paymentConfirmed = true;
+      await confirmSubscriptionPayment(checkout.invoiceId);
+    };
 
     widget.pay(
       "charge",
@@ -215,7 +223,7 @@ async function startSubscriptionCheckout(planCode) {
       {
         onSuccess: async () => {
           try {
-            await confirmSubscriptionPayment(checkout.invoiceId);
+            await confirmPaymentOnce();
           } catch (error) {
             setPaymentStatus(error.message, "danger");
           }
@@ -224,7 +232,11 @@ async function startSubscriptionCheckout(planCode) {
           setPaymentStatus(reason || "Оплата не прошла или была отменена.", "danger");
         },
         onComplete: (paymentResult) => {
-          if (paymentResult && paymentResult.success === false) {
+          if (paymentResult && paymentResult.success === true) {
+            void confirmPaymentOnce().catch((error) => {
+              setPaymentStatus(error.message, "danger");
+            });
+          } else if (paymentResult && paymentResult.success === false) {
             setPaymentStatus(paymentResult.message || "CloudPayments вернул отрицательный результат.", "danger");
           }
         },

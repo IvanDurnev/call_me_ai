@@ -13,7 +13,14 @@ from flask import Flask
 
 from app.extensions import db
 from app.models import AdminUser, AppUser, CallSession, Hero, PricingPlan, SubscriptionPurchase
-from app.routes import ADMIN_SESSION_KEY, APP_USER_SESSION_KEY, _apply_pricing_plan_payload, _build_runtime_diagnostics, main_bp
+from app.routes import (
+    ADMIN_SESSION_KEY,
+    APP_USER_SESSION_KEY,
+    _apply_pricing_plan_payload,
+    _build_runtime_diagnostics,
+    _sync_pending_subscription_purchases,
+    main_bp,
+)
 from app.services.recurring import process_due_recurring_purchases
 
 
@@ -74,6 +81,7 @@ class CloudPaymentsRoutesTests(unittest.TestCase):
             TESTING=True,
             SQLALCHEMY_DATABASE_URI="sqlite://",
             SQLALCHEMY_TRACK_MODIFICATIONS=False,
+            PUBLIC_BASE_URL="https://example.test",
             CLOUDPAYMENTS_PUBLIC_ID="pk_test",
             CLOUDPAYMENTS_API_PASSWORD="cp_secret",
         )
@@ -238,6 +246,122 @@ class CloudPaymentsRoutesTests(unittest.TestCase):
             self.assertEqual(purchase.cloudpayments_subscription_id, "sub-confirm-1")
             self.assertEqual(purchase.subscription_status, "Active")
             self.assertEqual(purchase.next_transaction_at, datetime(2026, 5, 10, 11, 30, 0))
+
+    def test_checkout_returns_recurrent_payload_for_unlimited_plan(self) -> None:
+        with self.app.app_context():
+            user = AppUser(
+                email="checkout@example.com",
+                phone="+79990000001",
+                name="Checkout User",
+                consent_to_personal_data=True,
+                email_verified=True,
+            )
+            plan = PricingPlan(
+                code="unlimited-7",
+                name="Unlimited 7",
+                description="Unlimited weekly",
+                kind="unlimited",
+                price=Decimal("999.00"),
+                currency="RUB",
+                period_days=7,
+                sort_order=0,
+                is_active=True,
+            )
+            db.session.add_all([user, plan])
+            db.session.commit()
+            user_id = user.id
+
+        with self.client.session_transaction() as session:
+            session[APP_USER_SESSION_KEY] = user_id
+
+        response = self.client.post(
+            "/api/account/subscription/checkout",
+            json={"plan_code": "unlimited-7", "recurring_consent": True},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertTrue(payload["ok"])
+        checkout = payload["checkout"]
+        self.assertIn("recurrent", checkout)
+        self.assertEqual(checkout["recurrent"]["interval"], "Day")
+        self.assertEqual(checkout["recurrent"]["period"], 7)
+        self.assertTrue(checkout["recurrent"]["startDateIso"].endswith("Z"))
+        with self.app.app_context():
+            purchase = SubscriptionPurchase.query.filter_by(invoice_id=checkout["invoiceId"]).first()
+            self.assertIsNotNone(purchase)
+            self.assertEqual(purchase.recurring_interval, "Day")
+            self.assertEqual(purchase.recurring_period, 7)
+            self.assertEqual((purchase.provider_payload_json or {}).get("recurrent", {}).get("period"), 7)
+
+    def test_sync_pending_purchase_updates_status_from_cloudpayments(self) -> None:
+        with self.app.app_context():
+            user = AppUser(
+                email="sync@example.com",
+                phone="+79990000002",
+                name="Sync User",
+                consent_to_personal_data=True,
+                email_verified=True,
+            )
+            plan = PricingPlan(
+                code="unlimited-30",
+                name="Unlimited 30",
+                description="Unlimited monthly",
+                kind="unlimited",
+                price=Decimal("1999.00"),
+                currency="RUB",
+                period_days=30,
+                sort_order=0,
+                is_active=True,
+            )
+            db.session.add_all([user, plan])
+            db.session.flush()
+            user_id = user.id
+            purchase = SubscriptionPurchase(
+                app_user_id=user.id,
+                invoice_id="inv-sync-1",
+                plan_code=plan.code,
+                plan_name=plan.name,
+                amount=plan.price,
+                currency=plan.currency,
+                status="created",
+                recurring_interval="Day",
+                recurring_period=30,
+                provider_payload_json={"pricing_plan": {"code": plan.code, "kind": plan.kind, "period_days": 30}},
+            )
+            db.session.add(purchase)
+            db.session.commit()
+            user_id = user.id
+
+        with patch(
+            "app.routes.find_payment",
+            return_value={
+                "Model": {
+                    "Status": "Completed",
+                    "TransactionId": "tx-sync-1",
+                    "Token": "tok-sync-1",
+                    "SubscriptionId": "sub-sync-1",
+                    "SubscriptionStatus": "Active",
+                    "NextTransactionDateIso": "2026-05-10T10:00:00Z",
+                    "ConfirmDateIso": "2026-04-10T10:00:00Z",
+                }
+            },
+        ):
+            with self.app.app_context():
+                user = AppUser.query.filter_by(id=user_id).first()
+                self.assertIsNotNone(user)
+                _sync_pending_subscription_purchases(user)
+
+        with self.app.app_context():
+            purchase = SubscriptionPurchase.query.filter_by(invoice_id="inv-sync-1").first()
+            self.assertIsNotNone(purchase)
+            self.assertEqual(purchase.status, "paid")
+            self.assertEqual(purchase.transaction_id, "tx-sync-1")
+            self.assertEqual(purchase.cloudpayments_token, "tok-sync-1")
+            self.assertEqual(purchase.cloudpayments_subscription_id, "sub-sync-1")
+            self.assertEqual(purchase.subscription_status, "Active")
+            self.assertEqual(purchase.next_transaction_at, datetime(2026, 5, 10, 10, 0, 0))
+            self.assertIsNotNone(purchase.paid_at)
 
     def test_confirm_marks_authorized_payment_as_paid(self) -> None:
         with self.app.app_context():
