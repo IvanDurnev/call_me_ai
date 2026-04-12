@@ -1249,7 +1249,7 @@ def redirect_ru_to_index():
 
 @main_bp.get("/max/miniapp")
 def max_index():
-    characters = _serialize_characters(list_characters())
+    characters = [character for character in _serialize_characters(list_characters()) if character.get("is_active", True)]
     items = [{**character, "link": url_for("main.max_miniapp", slug=character["slug"])} for character in characters]
     return render_template("max_picker.html", characters=items, max_auth_url=url_for("main.max_miniapp_auth"))
 
@@ -1362,7 +1362,7 @@ def miniapp(slug: str):
 
 @main_bp.get("/miniapp")
 def telegram_picker():
-    characters = _serialize_characters(list_characters())
+    characters = [character for character in _serialize_characters(list_characters()) if character.get("is_active", True)]
     items = [{**character, "link": url_for("main.miniapp", slug=character["slug"], source="telegram-miniapp")} for character in characters]
     return render_template("telegram_picker.html", characters=items, telegram_auth_url=url_for("main.telegram_miniapp_auth"))
 
