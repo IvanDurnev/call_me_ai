@@ -1337,7 +1337,7 @@ def _render_index(platform: str):
         link = (
             url_for("main.max_miniapp", slug=character["slug"])
             if platform == "max"
-            else url_for("main.miniapp", slug=character["slug"], source="telegram-miniapp")
+            else url_for("main.miniapp", slug=character["slug"])
         )
         items.append({**character, "link": link})
 

@@ -20,6 +20,7 @@ class MiniappPickerVisibilityTests(unittest.TestCase):
         self.app.config.update(
             SECRET_KEY="test-secret",
             TESTING=True,
+            PUBLIC_BASE_URL="https://example.test",
         )
         self.app.register_blueprint(main_bp)
         self.client = self.app.test_client()
@@ -91,6 +92,31 @@ class MiniappPickerVisibilityTests(unittest.TestCase):
         self.assertIn("Active Hero", html)
         self.assertNotIn("Inactive Hero", html)
         self.assertNotIn("Inactive Hero Zero", html)
+
+    def test_index_uses_web_character_links_without_telegram_source(self) -> None:
+        characters = [
+            {
+                "slug": "active-hero",
+                "name": "Active Hero",
+                "description": "Visible character",
+                "emoji": "A",
+                "is_active": True,
+            }
+        ]
+
+        with patch("app.routes.list_characters", return_value=characters):
+            response = self.client.get("/")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn('href="/miniapp/active-hero"', html)
+        self.assertNotIn("source=telegram-miniapp", html)
+
+    def test_anonymous_web_miniapp_redirects_to_login(self) -> None:
+        response = self.client.get("/miniapp/active-hero")
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/login/email", response.headers["Location"])
 
 
 if __name__ == "__main__":

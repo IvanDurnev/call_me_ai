@@ -20,6 +20,10 @@
             <h1>Подключаем аккаунт</h1>
             <p class="lead" id="telegram-auth-status">Проверяем ваш профиль в Telegram и открываем звонок…</p>
           </div>
+          <div class="hero-actions">
+            <a class="call-btn call-btn-secondary call-link-btn" href="{{ url_for('main.register', next=next_url) }}">Регистрация</a>
+            <a class="call-btn call-btn-secondary call-link-btn" href="{{ url_for('main.index') }}">На главную</a>
+          </div>
         </div>
       </section>
     </main>
