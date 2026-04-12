@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ character.name }}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='call.css', v='20260412wave2') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='call.css', v='20260412wave4') }}">
   </head>
   <body
     class="miniapp-page"
@@ -41,13 +41,7 @@
             <p>{{ character.description }}</p>
           </div>
 
-          <div class="call-log" id="call-log">
-            {% if call_access_available %}
-              <p class="log-line">Нажмите «Позвонить», чтобы начать разговор.</p>
-            {% else %}
-              <p class="log-line">Доступные минуты исчерпаны. Историю разговоров и тарифы можно посмотреть в личном кабинете.</p>
-            {% endif %}
-          </div>
+          <div class="call-log" id="call-log" aria-hidden="true"></div>
           <div class="call-wave" id="call-wave" aria-hidden="true"></div>
 
           <div class="call-actions">
