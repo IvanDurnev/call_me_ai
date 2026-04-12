@@ -215,6 +215,7 @@ function buildHeroSavePayload(form, hero) {
     elevenlabs_first_message: hero.elevenlabs_first_message || "",
     elevenlabs_agent_id: hero.elevenlabs_agent_id || "",
     elevenlabs_llm: hero.elevenlabs_llm || "gpt-4o-mini",
+    elevenlabs_turn_eagerness: hero.elevenlabs_turn_eagerness || "normal",
     realtime_model: hero.realtime_model || "",
     input_transcription_model: hero.input_transcription_model || "",
     input_transcription_language: hero.input_transcription_language || "",
@@ -229,6 +230,7 @@ function buildHeroSavePayload(form, hero) {
     payload.elevenlabs_first_message = formData.has("elevenlabs_first_message") ? formData.get("elevenlabs_first_message") : payload.elevenlabs_first_message;
     payload.elevenlabs_agent_id = formData.has("elevenlabs_agent_id") ? formData.get("elevenlabs_agent_id") : payload.elevenlabs_agent_id;
     payload.elevenlabs_llm = formData.has("elevenlabs_llm") ? formData.get("elevenlabs_llm") : payload.elevenlabs_llm;
+    payload.elevenlabs_turn_eagerness = formData.has("elevenlabs_turn_eagerness") ? formData.get("elevenlabs_turn_eagerness") : payload.elevenlabs_turn_eagerness;
     payload.input_transcription_language = formData.has("input_transcription_language") ? formData.get("input_transcription_language") : payload.input_transcription_language;
     payload.output_audio_speed = formData.has("output_audio_speed") ? formData.get("output_audio_speed") : payload.output_audio_speed;
   } else {
@@ -387,6 +389,10 @@ function renderEditor() {
             <select name="elevenlabs_llm">${renderElevenLabsLlmOptions(hero)}</select>
           </label>
           <label class="hero-field">
+            <span>Чувствительность к шуму / паузам</span>
+            <input name="elevenlabs_turn_eagerness" type="text" value="${escapeHtml(hero.elevenlabs_turn_eagerness || "normal")}" placeholder="normal">
+          </label>
+          <label class="hero-field">
             <span>Язык распознавания</span>
             <input name="input_transcription_language" type="text" value="${escapeHtml(hero.input_transcription_language || "")}" placeholder="ru">
           </label>
@@ -494,7 +500,11 @@ function renderEditor() {
     setStatus(statusNode, statusMessage);
     const payload = buildHeroSavePayload(form, hero);
 
-    console.log("[save] payload:", JSON.stringify({ elevenlabs_first_message: payload.elevenlabs_first_message, elevenlabs_llm: payload.elevenlabs_llm }));
+    console.log("[save] payload:", JSON.stringify({
+      elevenlabs_first_message: payload.elevenlabs_first_message,
+      elevenlabs_llm: payload.elevenlabs_llm,
+      elevenlabs_turn_eagerness: payload.elevenlabs_turn_eagerness,
+    }));
     const response = await fetch(`/api/heroes/${hero.slug}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },

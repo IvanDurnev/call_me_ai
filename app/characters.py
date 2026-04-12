@@ -359,6 +359,10 @@ def normalize_realtime_settings(settings: dict[str, Any] | None) -> dict[str, An
     if elevenlabs_llm:
         normalized["elevenlabs_llm"] = elevenlabs_llm
 
+    elevenlabs_turn_eagerness = str(payload.get("elevenlabs_turn_eagerness") or "").strip().lower()
+    if elevenlabs_turn_eagerness:
+        normalized["elevenlabs_turn_eagerness"] = elevenlabs_turn_eagerness
+
     provider = str(payload.get("provider") or "").strip().lower()
     if provider in {"openai", "elevenlabs"}:
         normalized["provider"] = provider

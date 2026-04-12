@@ -295,6 +295,7 @@ def _build_elevenlabs_agent_payload(character: dict) -> dict[str, object]:
     character_name = (character.get("name") or "Персонаж").strip()
     tts_model_id = (current_app.config.get("ELEVENLABS_TTS_MODEL") or "eleven_flash_v2_5").strip() or "eleven_flash_v2_5"
     llm_model = str(normalize_realtime_settings(character.get("realtime_settings")).get("elevenlabs_llm") or ELEVENLABS_DEFAULT_LLM).strip() or ELEVENLABS_DEFAULT_LLM
+    turn_eagerness = str(normalize_realtime_settings(character.get("realtime_settings")).get("elevenlabs_turn_eagerness") or "normal").strip().lower() or "normal"
     first_message = str(character.get("elevenlabs_first_message") or "").strip()
     if first_message:
         full_prompt = full_instructions
@@ -322,6 +323,9 @@ def _build_elevenlabs_agent_payload(character: dict) -> dict[str, object]:
             "tts": {
                 "model_id": tts_model_id,
                 "voice_id": voice_id,
+            },
+            "turn": {
+                "turn_eagerness": turn_eagerness,
             },
         },
         "name": f"Call Me AI - {character.get('name') or character.get('slug') or 'Hero'}",
@@ -2158,6 +2162,7 @@ def update_hero_api(slug: str):
         "instructions_override": "instructions_override",
         "elevenlabs_agent_id": "elevenlabs_agent_id",
         "elevenlabs_llm": "elevenlabs_llm",
+        "elevenlabs_turn_eagerness": "elevenlabs_turn_eagerness",
     }
     for payload_key, settings_key in realtime_field_map.items():
         if payload_key not in payload:
@@ -2706,6 +2711,7 @@ def _serialize_character(character: dict) -> dict:
     payload["instructions_override"] = realtime_settings.get("instructions_override", "")
     payload["elevenlabs_agent_id"] = realtime_settings.get("elevenlabs_agent_id", "")
     payload["elevenlabs_llm"] = realtime_settings.get("elevenlabs_llm", ELEVENLABS_DEFAULT_LLM)
+    payload["elevenlabs_turn_eagerness"] = realtime_settings.get("elevenlabs_turn_eagerness", "normal")
     payload["provider"] = _hero_provider(payload)
     return payload
 
