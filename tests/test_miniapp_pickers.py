@@ -40,6 +40,13 @@ class MiniappPickerVisibilityTests(unittest.TestCase):
                 "emoji": "I",
                 "is_active": False,
             },
+            {
+                "slug": "inactive-hero-string",
+                "name": "Inactive Hero String",
+                "description": "Should be hidden",
+                "emoji": "S",
+                "is_active": "false",
+            },
         ]
 
         with patch("app.routes.list_characters", return_value=characters):
@@ -49,6 +56,7 @@ class MiniappPickerVisibilityTests(unittest.TestCase):
         html = response.get_data(as_text=True)
         self.assertIn("Active Hero", html)
         self.assertNotIn("Inactive Hero", html)
+        self.assertNotIn("Inactive Hero String", html)
 
     def test_max_picker_shows_only_active_characters(self) -> None:
         characters = [
@@ -66,6 +74,13 @@ class MiniappPickerVisibilityTests(unittest.TestCase):
                 "emoji": "I",
                 "is_active": False,
             },
+            {
+                "slug": "inactive-hero-zero",
+                "name": "Inactive Hero Zero",
+                "description": "Should be hidden",
+                "emoji": "Z",
+                "is_active": "0",
+            },
         ]
 
         with patch("app.routes.list_characters", return_value=characters):
@@ -75,6 +90,7 @@ class MiniappPickerVisibilityTests(unittest.TestCase):
         html = response.get_data(as_text=True)
         self.assertIn("Active Hero", html)
         self.assertNotIn("Inactive Hero", html)
+        self.assertNotIn("Inactive Hero Zero", html)
 
 
 if __name__ == "__main__":

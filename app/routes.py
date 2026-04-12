@@ -79,6 +79,22 @@ LEGAL_BUSINESS_DETAILS = {
 }
 
 
+def _coerce_bool(value, *, default: bool = False) -> bool:
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return value != 0
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized in {"1", "true", "yes", "on"}:
+            return True
+        if normalized in {"0", "false", "no", "off", ""}:
+            return False
+    return bool(value)
+
+
 def _realtime_provider() -> str:
     return (current_app.config.get("REALTIME_API_PROVIDER") or "openai").strip().lower() or "openai"
 
@@ -854,7 +870,7 @@ def _apply_pricing_plan_payload(plan: PricingPlan, payload: dict) -> None:
     plan.calls_included = calls_included
     plan.period_days = period_days
     plan.sort_order = sort_order
-    plan.is_active = bool(payload.get("is_active", plan.is_active))
+    plan.is_active = _coerce_bool(payload.get("is_active", plan.is_active), default=plan.is_active)
 
 
 def _plan_recurrent_payload(plan: PricingPlan) -> dict | None:
@@ -1249,7 +1265,11 @@ def redirect_ru_to_index():
 
 @main_bp.get("/max/miniapp")
 def max_index():
-    characters = [character for character in _serialize_characters(list_characters()) if character.get("is_active", True)]
+    characters = [
+        character
+        for character in _serialize_characters(list_characters())
+        if _coerce_bool(character.get("is_active", True), default=True)
+    ]
     items = [{**character, "link": url_for("main.max_miniapp", slug=character["slug"])} for character in characters]
     return render_template("max_picker.html", characters=items, max_auth_url=url_for("main.max_miniapp_auth"))
 
@@ -1362,7 +1382,11 @@ def miniapp(slug: str):
 
 @main_bp.get("/miniapp")
 def telegram_picker():
-    characters = [character for character in _serialize_characters(list_characters()) if character.get("is_active", True)]
+    characters = [
+        character
+        for character in _serialize_characters(list_characters())
+        if _coerce_bool(character.get("is_active", True), default=True)
+    ]
     items = [{**character, "link": url_for("main.miniapp", slug=character["slug"], source="telegram-miniapp")} for character in characters]
     return render_template("telegram_picker.html", characters=items, telegram_auth_url=url_for("main.telegram_miniapp_auth"))
 
@@ -2108,7 +2132,7 @@ def create_hero_api():
         voice=(payload.get("voice") or "alloy").strip() or "alloy",
         greeting_prompt=DEFAULT_GREETING_PROMPT,
         sort_order=_next_hero_sort_order(),
-        is_active=bool(payload.get("is_active", True)),
+        is_active=_coerce_bool(payload.get("is_active", True), default=True),
         realtime_settings_json=normalize_realtime_settings({"provider": payload.get("provider")}),
     )
     db.session.add(hero)
@@ -2154,7 +2178,7 @@ def create_pricing_plan_api():
         price=Decimal("1.00"),
         currency="RUB",
         sort_order=_next_pricing_plan_sort_order(),
-        is_active=bool(payload.get("is_active", True)),
+        is_active=_coerce_bool(payload.get("is_active", True), default=True),
     )
 
     try:
@@ -2204,7 +2228,7 @@ def update_hero_api(slug: str):
     if "greeting_prompt" in payload:
         hero.greeting_prompt = (payload.get("greeting_prompt") or "").strip() or None
     if "is_active" in payload:
-        hero.is_active = bool(payload.get("is_active", hero.is_active))
+        hero.is_active = _coerce_bool(payload.get("is_active"), default=hero.is_active)
 
     realtime_settings = normalize_realtime_settings(hero.realtime_settings_json)
     realtime_field_map = {
@@ -2751,6 +2775,7 @@ def _serialize_characters(characters: list[dict]) -> list[dict]:
 
 def _serialize_character(character: dict) -> dict:
     payload = dict(character)
+    payload["is_active"] = _coerce_bool(payload.get("is_active", True), default=True)
     avatar_path = payload.get("avatar_path")
     avatar_path = _preferred_static_asset(avatar_path)
     payload["avatar_url"] = url_for("static", filename=avatar_path) if avatar_path else None

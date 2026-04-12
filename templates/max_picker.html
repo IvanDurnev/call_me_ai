@@ -17,7 +17,7 @@
           </div>
 
           <div class="voice-list max-picker-list">
-            {% for character in characters %}
+            {% for character in characters if character.is_active %}
               <a class="character-card character-card-rich max-picker-card" href="{{ character.link }}">
                 <span class="character-card-top">
                   <span class="landing-character-avatar{{ ' landing-character-avatar-image' if character.avatar_url else '' }}">
