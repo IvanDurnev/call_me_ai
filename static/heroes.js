@@ -193,6 +193,9 @@ function renderElevenLabsLlmOptions(hero) {
 function buildHeroSavePayload(form, hero) {
   const formData = new FormData(form);
   const provider = formData.get("provider") || heroProvider(hero);
+  const manualElevenLabsVoiceId = String(formData.get("elevenlabs_voice_id_manual") || "").trim();
+  const selectedElevenLabsVoiceId = String(formData.get("elevenlabs_voice_id") || "").trim();
+  const resolvedElevenLabsVoiceId = manualElevenLabsVoiceId || selectedElevenLabsVoiceId;
   const payload = {
     name: formData.get("name"),
     emoji: formData.get("emoji"),
@@ -217,7 +220,9 @@ function buildHeroSavePayload(form, hero) {
   };
 
   if (provider === "elevenlabs") {
-    payload.elevenlabs_voice_id = formData.has("elevenlabs_voice_id") ? formData.get("elevenlabs_voice_id") : payload.elevenlabs_voice_id;
+    if (formData.has("elevenlabs_voice_id_manual") || formData.has("elevenlabs_voice_id")) {
+      payload.elevenlabs_voice_id = resolvedElevenLabsVoiceId;
+    }
     payload.elevenlabs_first_message = formData.has("elevenlabs_first_message") ? formData.get("elevenlabs_first_message") : payload.elevenlabs_first_message;
     payload.elevenlabs_agent_id = formData.has("elevenlabs_agent_id") ? formData.get("elevenlabs_agent_id") : payload.elevenlabs_agent_id;
     payload.elevenlabs_llm = formData.has("elevenlabs_llm") ? formData.get("elevenlabs_llm") : payload.elevenlabs_llm;
@@ -292,6 +297,12 @@ function renderEditor() {
           <span>${isElevenLabs ? "Голос (ElevenLabs)" : "Голос (OpenAI)"}</span>
           <select name="${isElevenLabs ? "elevenlabs_voice_id" : "voice"}" id="hero-voice-select">${renderVoiceOptions(hero)}</select>
         </label>
+        ${isElevenLabs ? `
+          <label class="hero-field">
+            <span>Voice ID (ручной)</span>
+            <input name="elevenlabs_voice_id_manual" type="text" value="${escapeHtml(hero.elevenlabs_voice_id || "")}" placeholder="Например, 21m00Tcm4TlvDq8ikWAM">
+          </label>
+        ` : ""}
         <div class="hero-voice-preview">
           <button class="call-btn call-btn-secondary" type="button" id="voice-preview-btn">Прослушать голос</button>
           <audio id="voice-preview-audio" controls preload="metadata"></audio>
@@ -457,6 +468,7 @@ function renderEditor() {
   const previewButton = document.getElementById("voice-preview-btn");
   const previewAudio = document.getElementById("voice-preview-audio");
   const voiceSelect = document.getElementById("hero-voice-select");
+  const voiceIdManualInput = form.elements.elevenlabs_voice_id_manual || null;
   const providerSelect = document.getElementById("hero-provider-select");
   const createAgentButton = document.getElementById("hero-create-agent-btn");
   const testAgentButton = document.getElementById("hero-test-agent-btn");
@@ -528,7 +540,7 @@ function renderEditor() {
   });
 
   previewButton.addEventListener("click", async () => {
-    const selectedVoice = voiceSelect.value;
+    const selectedVoice = (voiceIdManualInput?.value || "").trim() || voiceSelect.value;
     if (!selectedVoice) {
       setStatus(statusNode, "Сначала выберите голос.", true);
       return;
@@ -578,6 +590,10 @@ function renderEditor() {
     previewAudio.removeAttribute("src");
     previewAudio.load();
     setStatus(statusNode, "Голос обновлён. Нажмите прослушать.", false);
+  });
+
+  voiceIdManualInput?.addEventListener("input", () => {
+    setStatus(statusNode, "Voice ID обновлён. Не забудьте сохранить героя.", false);
   });
 
   testAgentButton?.addEventListener("click", async () => {
