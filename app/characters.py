@@ -286,18 +286,16 @@ def get_character(slug: str, *, include_inactive: bool = True) -> dict | None:
 
 def ensure_default_heroes() -> None:
     try:
-        existing = {hero.slug: hero for hero in Hero.query.all()}
+        # Seed defaults only for a brand-new database.
+        # If an admin deleted a default hero intentionally, we should not recreate it on restart.
+        if Hero.query.count() > 0:
+            return
     except (OperationalError, ProgrammingError) as exc:
         logging.warning("Skipping hero seeding until migrations are applied: %s", exc)
         db.session.rollback()
         return
 
-    created = False
     for index, payload in enumerate(DEFAULT_HEROES):
-        hero = existing.get(payload["slug"])
-        if hero:
-            continue
-
         hero = Hero(
             slug=payload["slug"],
             name=payload["name"],
@@ -311,10 +309,7 @@ def ensure_default_heroes() -> None:
             is_active=True,
         )
         db.session.add(hero)
-        created = True
-
-    if created:
-        db.session.commit()
+    db.session.commit()
 
 
 def normalize_realtime_settings(settings: dict[str, Any] | None) -> dict[str, Any]:

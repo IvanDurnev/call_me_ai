@@ -541,12 +541,19 @@ body {
 }
 
 .call-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 0;
   border-radius: 999px;
   padding: 16px 18px;
+  min-height: 52px;
   color: white;
   font-size: 16px;
   font-weight: 700;
+  line-height: 1;
+  text-decoration: none;
+  cursor: pointer;
   transition: opacity 160ms ease, transform 160ms ease;
 }
 
@@ -565,15 +572,13 @@ body {
 }
 
 .call-btn-secondary {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(241, 246, 255, 0.92));
+  border: 1px solid rgba(123, 164, 209, 0.36);
+  box-shadow: 0 10px 20px rgba(96, 130, 173, 0.14);
   color: var(--text);
 }
 
 .call-link-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   text-decoration: none;
 }
 
