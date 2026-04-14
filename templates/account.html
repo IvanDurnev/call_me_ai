@@ -291,8 +291,16 @@
             <label class="consent-check" id="recurring-consent-block" hidden>
               <input id="recurring-consent-checkbox" type="checkbox">
               <span>
-                Я согласен на автоматические списания согласно условиям
-                <a href="{{ url_for('main.public_offer') }}" target="_blank" rel="noreferrer">оферты</a>
+                <span id="recurring-consent-short-text">Даю согласие на автоматические списания по условиям подписки.</span>
+                <a href="{{ url_for('main.public_offer') }}" target="_blank" rel="noreferrer">Оферта</a>
+                <span class="consent-hover-wrap" tabindex="0" aria-label="Показать полный текст согласия">
+                  <span class="consent-hover-trigger" aria-hidden="true">i</span>
+                  <span class="consent-hover-card" id="recurring-consent-full-text" role="tooltip">
+                    Даю согласие на безакцептные рекуррентные списания с банковской карты, привязанной при оплате,
+                    в размере стоимости выбранного тарифа, с периодичностью выбранной подписки, начиная с даты первой оплаты,
+                    до отмены подписки. Подписку можно отменить до следующего списания в личном кабинете или через поддержку.
+                  </span>
+                </span>
               </span>
             </label>
             <p class="voice-meta" id="recurring-consent-hint">
@@ -307,6 +315,6 @@
       </div>
     {% endif %}
     <script src="https://widget.cloudpayments.ru/bundles/cloudpayments"></script>
-    <script src="{{ url_for('static', filename='account.js', v='20260410recurring') }}"></script>
+    <script src="{{ url_for('static', filename='account.js', v='20260414recurringconsent') }}"></script>
   </body>
 </html>

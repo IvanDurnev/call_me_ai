@@ -12,6 +12,8 @@ const recurringConsentBlock = document.getElementById("recurring-consent-block")
 const recurringConsentCheckbox = document.getElementById("recurring-consent-checkbox");
 const recurringConsentHint = document.getElementById("recurring-consent-hint");
 const paymentFrequencyText = document.getElementById("payment-frequency-text");
+const recurringConsentShortText = document.getElementById("recurring-consent-short-text");
+const recurringConsentFullText = document.getElementById("recurring-consent-full-text");
 const cancelSubscriptionButton = document.getElementById("subscription-cancel-btn");
 const resumeSubscriptionButton = document.getElementById("subscription-resume-btn");
 
@@ -44,6 +46,26 @@ function planRequiresRecurringConsent(plan) {
   return Boolean(plan && plan.kind === "unlimited");
 }
 
+function formatRuDate(date) {
+  return new Intl.DateTimeFormat("ru-RU", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(date);
+}
+
+function getRecurringSchedule(plan) {
+  const periodDays = plan?.periodDays > 0 ? plan.periodDays : 7;
+  const firstChargeDate = new Date();
+  const nextChargeDate = new Date(firstChargeDate);
+  nextChargeDate.setDate(firstChargeDate.getDate() + periodDays);
+  return {
+    periodDays,
+    firstChargeLabel: formatRuDate(firstChargeDate),
+    nextChargeLabel: formatRuDate(nextChargeDate),
+  };
+}
+
 function formatRecurringTerms(plan) {
   if (!plan) {
     return "Выберите тариф, чтобы увидеть условия списаний.";
@@ -53,8 +75,25 @@ function formatRecurringTerms(plan) {
     return `Тариф «${plan.name}» оплачивается разово без автоматических списаний.`;
   }
 
-  const periodLabel = plan.periodDays > 0 ? `каждые ${plan.periodDays} дн.` : "по периоду выбранного тарифа";
-  return `Подписка «${plan.name}»: ${plan.price} ${plan.currency}, автосписание ${periodLabel}. Повторное списание выполняется в дату продления с 00:00 до 23:59 по Москве.`;
+  const schedule = getRecurringSchedule(plan);
+  return `Подписка «${plan.name}»: ${plan.price} ${plan.currency}, автосписание каждые ${schedule.periodDays} дней. Следующее списание — ${schedule.nextChargeLabel}.`;
+}
+
+function formatRecurringConsentShort(plan) {
+  if (!plan || !planRequiresRecurringConsent(plan)) {
+    return "Даю согласие на автоматические списания по условиям подписки.";
+  }
+  const schedule = getRecurringSchedule(plan);
+  return `Даю согласие на автоматические списания ${plan.price} ${plan.currency} каждые ${schedule.periodDays} дней до отмены подписки.`;
+}
+
+function formatRecurringConsentFull(plan) {
+  if (!plan || !planRequiresRecurringConsent(plan)) {
+    return "Даю согласие на безакцептные рекуррентные списания с банковской карты, привязанной при оплате, в размере стоимости выбранного тарифа, с периодичностью выбранной подписки, начиная с даты первой оплаты, до отмены подписки. Подписку можно отменить до следующего списания в личном кабинете или через поддержку.";
+  }
+
+  const schedule = getRecurringSchedule(plan);
+  return `Даю согласие на безакцептные рекуррентные списания: ${plan.price} ${plan.currency} 1 (один) раз в ${schedule.periodDays} календарных дней с банковской карты, привязанной при оплате, начиная с ${schedule.firstChargeLabel}, до отмены подписки. Следующее списание — ${schedule.nextChargeLabel}. Подписку можно отменить до следующего списания в личном кабинете или через поддержку.`;
 }
 
 function syncPlanPaymentTerms() {
@@ -66,6 +105,12 @@ function syncPlanPaymentTerms() {
   }
   if (recurringConsentBlock) {
     recurringConsentBlock.hidden = !requiresConsent;
+  }
+  if (recurringConsentShortText) {
+    recurringConsentShortText.textContent = formatRecurringConsentShort(plan);
+  }
+  if (recurringConsentFullText) {
+    recurringConsentFullText.textContent = formatRecurringConsentFull(plan);
   }
   if (recurringConsentHint) {
     recurringConsentHint.textContent = requiresConsent

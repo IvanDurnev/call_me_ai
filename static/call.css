@@ -938,6 +938,54 @@ body {
   color: var(--accent-strong);
 }
 
+.consent-hover-wrap {
+  position: relative;
+  display: inline-flex;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+.consent-hover-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(45, 53, 87, 0.25);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1;
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.consent-hover-card {
+  position: absolute;
+  z-index: 4;
+  left: 0;
+  bottom: calc(100% + 10px);
+  width: min(420px, calc(100vw - 70px));
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 10px 24px rgba(45, 53, 87, 0.16);
+  color: var(--text);
+  font-size: 0.86rem;
+  line-height: 1.45;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(4px);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.consent-hover-wrap:hover .consent-hover-card,
+.consent-hover-wrap:focus-within .consent-hover-card {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
 .account-transcript {
   border: 1px solid var(--line);
   border-radius: 18px;
