@@ -227,6 +227,7 @@ function buildHeroSavePayload(form, hero) {
   const formData = new FormData(form);
   const provider = formData.get("provider") || heroProvider(hero);
   const payload = {
+    slug: formData.get("slug"),
     name: formData.get("name"),
     emoji: formData.get("emoji"),
     description: formData.get("description"),
@@ -308,6 +309,10 @@ function renderEditor() {
           <p>Это влияет на карточку героя и его общий образ в звонке.</p>
         </div>
         <div class="hero-field-grid">
+          <label class="hero-field">
+            <span>Slug</span>
+            <input name="slug" type="text" value="${escapeHtml(hero.slug)}" maxlength="64" required pattern="[a-z0-9-]+">
+          </label>
           <label class="hero-field">
             <span>Имя</span>
             <input name="name" type="text" value="${escapeHtml(hero.name)}" maxlength="255" required>
@@ -555,7 +560,7 @@ function renderEditor() {
       elevenlabs_llm: payload.elevenlabs_llm,
       elevenlabs_turn_eagerness: payload.elevenlabs_turn_eagerness,
     }));
-    const response = await fetch(`/api/heroes/${hero.slug}`, {
+    const response = await fetch(`/api/heroes/${encodeURIComponent(hero.slug)}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -565,7 +570,8 @@ function renderEditor() {
       throw new Error(result.error || "Не удалось сохранить героя.");
     }
 
-    heroes = heroes.map((entry) => entry.slug === result.hero.slug ? result.hero : entry);
+    updateHero(result.hero, hero.slug);
+    selectedSlug = result.hero.slug;
     if (rerender) {
       await reloadAdminData();
       const refreshedStatusNode = document.getElementById("hero-status");
@@ -591,7 +597,7 @@ function renderEditor() {
 
     setStatus(statusNode, "Удаляю героя...");
     try {
-      const response = await fetch(`/api/heroes/${hero.slug}`, { method: "DELETE" });
+      const response = await fetch(`/api/heroes/${encodeURIComponent(hero.slug)}`, { method: "DELETE" });
       const result = await response.json();
       if (!response.ok || !result.ok) {
         throw new Error(result.error || "Не удалось удалить героя.");
@@ -702,7 +708,7 @@ function renderEditor() {
         statusMessage: "Сохраняю настройки перед проверкой агента...",
         rerender: false,
       });
-      const response = await fetch(`/api/heroes/${hero.slug}/test-agent`, {
+      const response = await fetch(`/api/heroes/${encodeURIComponent(selectedSlug || hero.slug)}/test-agent`, {
         method: "POST",
       });
       const result = await response.json();
@@ -710,7 +716,7 @@ function renderEditor() {
         throw new Error(result.error || "Не удалось проверить агента.");
       }
       initialState.runtime_diagnostics = initialState.runtime_diagnostics || {};
-      initialState.runtime_diagnostics[hero.slug] = result.diagnostics;
+      initialState.runtime_diagnostics[selectedSlug || hero.slug] = result.diagnostics;
       await reloadAdminData();
       const refreshedStatusNode = document.getElementById("hero-status");
       setStatus(refreshedStatusNode, result.diagnostics?.summary || "Проверка завершена.");
@@ -729,7 +735,7 @@ function renderEditor() {
         statusMessage: "Сохраняю настройки перед обновлением агента...",
         rerender: false,
       });
-      const response = await fetch(`/api/heroes/${hero.slug}/create-agent`, {
+      const response = await fetch(`/api/heroes/${encodeURIComponent(selectedSlug || hero.slug)}/create-agent`, {
         method: "POST",
       });
       const result = await response.json();
@@ -742,7 +748,7 @@ function renderEditor() {
       }
       if (result.diagnostics) {
         initialState.runtime_diagnostics = initialState.runtime_diagnostics || {};
-        initialState.runtime_diagnostics[hero.slug] = result.diagnostics;
+        initialState.runtime_diagnostics[selectedSlug || hero.slug] = result.diagnostics;
       }
       await reloadAdminData();
 
@@ -774,7 +780,7 @@ function renderEditor() {
     if (!knowledgeInput.files?.length) {
       return;
     }
-    await uploadFile(hero.slug, knowledgeInput.files[0], "knowledge", statusNode);
+    await uploadFile(selectedSlug || hero.slug, knowledgeInput.files[0], "knowledge", statusNode);
     knowledgeInput.value = "";
   });
 
@@ -782,7 +788,7 @@ function renderEditor() {
     if (!avatarInput.files?.length) {
       return;
     }
-    await uploadFile(hero.slug, avatarInput.files[0], "avatar", statusNode);
+    await uploadFile(selectedSlug || hero.slug, avatarInput.files[0], "avatar", statusNode);
     avatarInput.value = "";
   });
 }
@@ -955,7 +961,7 @@ async function uploadFile(slug, file, kind, statusNode) {
   formData.append("file", file);
 
   try {
-    const response = await fetch(`/api/heroes/${slug}/${kind}`, {
+    const response = await fetch(`/api/heroes/${encodeURIComponent(slug)}/${kind}`, {
       method: "POST",
       body: formData,
     });
@@ -972,8 +978,12 @@ async function uploadFile(slug, file, kind, statusNode) {
   }
 }
 
-function updateHero(updatedHero) {
-  heroes = heroes.map((hero) => hero.slug === updatedHero.slug ? updatedHero : hero);
+function updateHero(updatedHero, previousSlug = null) {
+  const sourceSlug = previousSlug || updatedHero.slug;
+  heroes = heroes.map((hero) => hero.slug === sourceSlug ? updatedHero : hero);
+  if (selectedSlug === sourceSlug) {
+    selectedSlug = updatedHero.slug;
+  }
   render();
 }
 

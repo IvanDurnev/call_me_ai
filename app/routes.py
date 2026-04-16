@@ -2228,7 +2228,15 @@ def update_hero_api(slug: str):
     if not hero:
         return jsonify({"ok": False, "error": "Hero not found."}), 404
 
+    original_slug = hero.slug
     payload = request.get_json(silent=True) or {}
+    if "slug" in payload:
+        requested_slug = _normalize_slug_value(payload.get("slug"))
+        if not requested_slug:
+            return jsonify({"ok": False, "error": "Slug can contain only latin letters, numbers and hyphen."}), 400
+        if requested_slug != hero.slug and _get_hero_model(requested_slug):
+            return jsonify({"ok": False, "error": "Slug is already in use."}), 400
+        hero.slug = requested_slug
     if "name" in payload:
         hero.name = (payload.get("name") or hero.name or "").strip() or hero.name
     if "emoji" in payload:
@@ -2276,6 +2284,15 @@ def update_hero_api(slug: str):
             realtime_settings.pop(settings_key, None)
 
     hero.realtime_settings_json = realtime_settings or None
+    if hero.slug != original_slug:
+        try:
+            _rename_hero_uploads(original_slug, hero.slug)
+        except ValueError as exc:
+            return jsonify({"ok": False, "error": str(exc)}), 400
+        hero.avatar_path = _replace_hero_upload_slug(hero.avatar_path, old_slug=original_slug, new_slug=hero.slug)
+        hero.knowledge_file_path = _replace_hero_upload_slug(
+            hero.knowledge_file_path, old_slug=original_slug, new_slug=hero.slug
+        )
 
     db.session.commit()
     return jsonify({"ok": True, "hero": _serialize_character_from_model(hero)})
@@ -2768,7 +2785,7 @@ def _build_unique_pricing_plan_code(raw_value: str) -> str:
 
 
 def _build_unique_slug(raw_value: str) -> str:
-    base = re.sub(r"[^a-z0-9]+", "-", secure_filename(raw_value).lower()).strip("-")
+    base = _normalize_slug_value(raw_value)
     if not base:
         base = "hero"
 
@@ -2853,6 +2870,7 @@ def _save_uploaded_file(slug: str, kind: str, filename: str, raw_bytes: bytes) -
 def _save_avatar_image(slug: str, filename: str, raw_bytes: bytes) -> str:
     target_dir = Path(current_app.static_folder) / "uploads" / "heroes" / slug
     target_dir.mkdir(parents=True, exist_ok=True)
+    _delete_avatar_files_in_dir(target_dir)
 
     original_suffix = Path(filename).suffix.lower() or ".png"
     source_path = target_dir / f"avatar-upload{original_suffix}"
@@ -2881,6 +2899,44 @@ def _safe_uploaded_name(original_filename: str, suffix: str) -> str:
     if safe_name and Path(safe_name).suffix.lower() == suffix:
         return safe_name
     return f"upload-{uuid.uuid4().hex}{suffix}"
+
+
+def _normalize_slug_value(raw_value: str | None) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", secure_filename(str(raw_value or "")).lower()).strip("-")
+
+
+def _replace_hero_upload_slug(relative_path: str | None, *, old_slug: str, new_slug: str) -> str | None:
+    if not relative_path:
+        return relative_path
+    old_prefix = f"uploads/heroes/{old_slug}/"
+    if not relative_path.startswith(old_prefix):
+        return relative_path
+    return f"uploads/heroes/{new_slug}/{relative_path[len(old_prefix):]}"
+
+
+def _rename_hero_uploads(old_slug: str, new_slug: str) -> None:
+    if old_slug == new_slug:
+        return
+
+    uploads_root = Path(current_app.static_folder) / "uploads" / "heroes"
+    old_dir = uploads_root / old_slug
+    if not old_dir.exists():
+        return
+
+    new_dir = uploads_root / new_slug
+    if new_dir.exists():
+        if any(new_dir.iterdir()):
+            raise ValueError("Cannot rename slug because destination upload folder already exists.")
+        new_dir.rmdir()
+
+    uploads_root.mkdir(parents=True, exist_ok=True)
+    old_dir.rename(new_dir)
+
+
+def _delete_avatar_files_in_dir(target_dir: Path) -> None:
+    for item in target_dir.glob("avatar*"):
+        if item.is_file():
+            item.unlink()
 
 
 def _preferred_static_asset(relative_path: str | None) -> str | None:

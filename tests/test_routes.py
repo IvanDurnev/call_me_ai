@@ -3,8 +3,11 @@ from __future__ import annotations
 import base64
 import hashlib
 import hmac
+import io
 from datetime import datetime
 from decimal import Decimal
+from pathlib import Path
+import tempfile
 import unittest
 from urllib.parse import urlencode
 from unittest.mock import patch
@@ -1072,6 +1075,71 @@ class CallSessionRoutesTests(unittest.TestCase):
             self.assertEqual(hero.elevenlabs_voice_id, "voice-keep")
             self.assertEqual(hero.elevenlabs_first_message, "Привет")
             self.assertEqual((hero.realtime_settings_json or {}).get("elevenlabs_agent_id"), "agent-keep")
+
+    def test_update_hero_allows_slug_change_and_rewrites_upload_paths(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_static_dir:
+            self.app.static_folder = temp_static_dir
+            old_dir = Path(temp_static_dir) / "uploads" / "heroes" / "domovenok-kuzya"
+            old_dir.mkdir(parents=True, exist_ok=True)
+            avatar = old_dir / "avatar.png"
+            knowledge = old_dir / "knowledge.txt"
+            avatar.write_bytes(b"avatar")
+            knowledge.write_text("knowledge", encoding="utf-8")
+
+            with self.app.app_context():
+                hero = Hero.query.filter_by(slug="domovenok-kuzya").first()
+                self.assertIsNotNone(hero)
+                hero.avatar_path = "uploads/heroes/domovenok-kuzya/avatar.png"
+                hero.knowledge_file_path = "uploads/heroes/domovenok-kuzya/knowledge.txt"
+                db.session.commit()
+
+            with self.client.session_transaction() as session:
+                session[ADMIN_SESSION_KEY] = self.admin_id
+
+            response = self.client.patch(
+                "/api/heroes/domovenok-kuzya",
+                json={"slug": "kuzya-renamed", "name": "Домовёнок Кузя"},
+            )
+
+            self.assertEqual(response.status_code, 200)
+            payload = response.get_json()
+            self.assertTrue(payload["ok"])
+            self.assertEqual(payload["hero"]["slug"], "kuzya-renamed")
+            self.assertFalse(old_dir.exists())
+            self.assertTrue((Path(temp_static_dir) / "uploads" / "heroes" / "kuzya-renamed" / "avatar.png").exists())
+            self.assertTrue((Path(temp_static_dir) / "uploads" / "heroes" / "kuzya-renamed" / "knowledge.txt").exists())
+
+            with self.app.app_context():
+                hero = Hero.query.filter_by(slug="kuzya-renamed").first()
+                self.assertIsNotNone(hero)
+                self.assertEqual(hero.avatar_path, "uploads/heroes/kuzya-renamed/avatar.png")
+                self.assertEqual(hero.knowledge_file_path, "uploads/heroes/kuzya-renamed/knowledge.txt")
+
+    def test_upload_avatar_replaces_previous_avatar_file(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_static_dir:
+            self.app.static_folder = temp_static_dir
+            hero_dir = Path(temp_static_dir) / "uploads" / "heroes" / "domovenok-kuzya"
+            hero_dir.mkdir(parents=True, exist_ok=True)
+            old_avatar = hero_dir / "avatar.png"
+            old_avatar.write_bytes(b"old-avatar")
+
+            with self.client.session_transaction() as session:
+                session[ADMIN_SESSION_KEY] = self.admin_id
+
+            response = self.client.post(
+                "/api/heroes/domovenok-kuzya/avatar",
+                data={"file": (io.BytesIO(b"new-avatar"), "new-avatar.jpg")},
+                content_type="multipart/form-data",
+            )
+
+            self.assertEqual(response.status_code, 200)
+            payload = response.get_json()
+            self.assertTrue(payload["ok"])
+
+            avatar_files = sorted(item.name for item in hero_dir.glob("avatar*") if item.is_file())
+            self.assertEqual(len(avatar_files), 1)
+            self.assertNotIn("avatar.png", avatar_files)
+            self.assertTrue(payload["hero"]["avatar_url"])
 
     def test_create_hero_auto_creates_agent_for_elevenlabs_provider(self) -> None:
         with self.client.session_transaction() as session:
