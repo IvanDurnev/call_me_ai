@@ -288,6 +288,17 @@
           <div class="payment-terms-card" id="payment-terms-card">
             <p class="payment-terms-title">Условия оплаты</p>
             <p class="voice-meta" id="payment-frequency-text">Выберите тариф, чтобы увидеть условия списаний.</p>
+            <label class="consent-check" id="legal-consent-block" hidden>
+              <input id="legal-consent-checkbox" type="checkbox">
+              <span>
+                Подтверждаю согласие с
+                <a href="{{ url_for('main.public_offer') }}" target="_blank" rel="noreferrer">Публичной офертой</a>,
+                <a href="{{ url_for('main.user_agreement') }}" target="_blank" rel="noreferrer">Пользовательским соглашением</a>,
+                <a href="{{ url_for('main.privacy_policy') }}" target="_blank" rel="noreferrer">Политикой конфиденциальности</a>
+                и
+                <a href="{{ url_for('main.personal_data_consent') }}" target="_blank" rel="noreferrer">Согласием на обработку персональных данных</a>.
+              </span>
+            </label>
             <label class="consent-check" id="recurring-consent-block" hidden>
               <input id="recurring-consent-checkbox" type="checkbox">
               <span>
@@ -315,6 +326,6 @@
       </div>
     {% endif %}
     <script src="https://widget.cloudpayments.ru/bundles/cloudpayments"></script>
-    <script src="{{ url_for('static', filename='account.js', v='20260414recurringconsent') }}"></script>
+    <script src="{{ url_for('static', filename='account.js', v='20260416doubleconsent') }}"></script>
   </body>
 </html>

@@ -8,6 +8,8 @@ const planModalCancelButton = document.getElementById("plan-modal-cancel");
 const planModalSubmitButton = document.getElementById("plan-modal-submit");
 const paymentHistoryToggle = document.getElementById("payment-history-toggle");
 const paymentHistoryList = document.getElementById("payment-history-list");
+const legalConsentBlock = document.getElementById("legal-consent-block");
+const legalConsentCheckbox = document.getElementById("legal-consent-checkbox");
 const recurringConsentBlock = document.getElementById("recurring-consent-block");
 const recurringConsentCheckbox = document.getElementById("recurring-consent-checkbox");
 const recurringConsentHint = document.getElementById("recurring-consent-hint");
@@ -103,6 +105,9 @@ function syncPlanPaymentTerms() {
   if (paymentFrequencyText) {
     paymentFrequencyText.textContent = formatRecurringTerms(plan);
   }
+  if (legalConsentBlock) {
+    legalConsentBlock.hidden = !requiresConsent;
+  }
   if (recurringConsentBlock) {
     recurringConsentBlock.hidden = !requiresConsent;
   }
@@ -117,6 +122,12 @@ function syncPlanPaymentTerms() {
       ? "Отменить автопродление можно по запросу на info@itd.dev или по телефону 89240254453 до следующего периода списания."
       : "Для разовых пакетов минут автоматические списания не применяются.";
   }
+  if (legalConsentCheckbox) {
+    legalConsentCheckbox.disabled = !requiresConsent;
+  }
+  if (!requiresConsent && legalConsentCheckbox) {
+    legalConsentCheckbox.checked = false;
+  }
   if (recurringConsentCheckbox) {
     recurringConsentCheckbox.disabled = !requiresConsent;
   }
@@ -124,7 +135,9 @@ function syncPlanPaymentTerms() {
     recurringConsentCheckbox.checked = false;
   }
   if (planModalSubmitButton) {
-    planModalSubmitButton.disabled = !plan || (requiresConsent && !recurringConsentCheckbox?.checked);
+    const legalAccepted = Boolean(legalConsentCheckbox?.checked);
+    const recurringAccepted = Boolean(recurringConsentCheckbox?.checked);
+    planModalSubmitButton.disabled = !plan || (requiresConsent && (!legalAccepted || !recurringAccepted));
   }
 }
 
@@ -219,8 +232,13 @@ async function startSubscriptionCheckout(planCode) {
     return;
   }
 
+  if (planRequiresRecurringConsent(plan) && !legalConsentCheckbox?.checked) {
+    setPaymentStatus("Подтвердите согласие с правовыми документами.", "danger");
+    return;
+  }
+
   if (planRequiresRecurringConsent(plan) && !recurringConsentCheckbox?.checked) {
-    setPaymentStatus("Подтвердите согласие на автоматические списания по оферте.", "danger");
+    setPaymentStatus("Подтвердите согласие на условия продления подписки.", "danger");
     return;
   }
 
@@ -240,7 +258,8 @@ async function startSubscriptionCheckout(planCode) {
   try {
     const data = await postJson("/api/account/subscription/checkout", {
       plan_code: planCode,
-      recurring_consent: Boolean(recurringConsentCheckbox?.checked),
+      legal_consent: Boolean(legalConsentCheckbox?.checked),
+      recurring_terms_consent: Boolean(recurringConsentCheckbox?.checked),
     });
     const checkout = data.checkout || {};
     const checkoutPayload = { ...checkout };
@@ -328,6 +347,7 @@ document.querySelectorAll('input[name="pricing_plan"]').forEach((input) => {
 });
 
 recurringConsentCheckbox?.addEventListener("change", syncPlanPaymentTerms);
+legalConsentCheckbox?.addEventListener("change", syncPlanPaymentTerms);
 
 paymentHistoryToggle?.addEventListener("click", () => {
   if (!paymentHistoryList) {

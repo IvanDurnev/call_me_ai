@@ -1799,18 +1799,36 @@ def subscription_checkout():
         return jsonify({"ok": False, "error": "Тариф не найден или выключен."}), 404
 
     recurring_consent_required = plan.kind == "unlimited"
-    recurring_consent_accepted = bool(payload.get("recurring_consent"))
-    if recurring_consent_required and not recurring_consent_accepted:
-        return jsonify({"ok": False, "error": "Для подписки нужно согласиться на автоматические списания по оферте."}), 400
+    legal_consent_accepted = bool(payload.get("legal_consent"))
+    recurring_terms_accepted = bool(payload.get("recurring_terms_consent") or payload.get("recurring_consent"))
+    if recurring_consent_required and not legal_consent_accepted:
+        return jsonify({"ok": False, "error": "Для подписки нужно подтвердить согласие с правовыми документами."}), 400
+    if recurring_consent_required and not recurring_terms_accepted:
+        return jsonify({"ok": False, "error": "Для подписки нужно согласиться на условия автоматических продлений."}), 400
 
     offer_url = _absolute_url(current_app.config["PUBLIC_BASE_URL"], url_for("main.public_offer"))
+    user_agreement_url = _absolute_url(current_app.config["PUBLIC_BASE_URL"], url_for("main.user_agreement"))
+    privacy_policy_url = _absolute_url(current_app.config["PUBLIC_BASE_URL"], url_for("main.privacy_policy"))
+    personal_data_consent_url = _absolute_url(current_app.config["PUBLIC_BASE_URL"], url_for("main.personal_data_consent"))
     consent_snapshot = {
         "required": recurring_consent_required,
-        "accepted": recurring_consent_accepted,
-        "accepted_at": datetime.utcnow().isoformat() if recurring_consent_accepted else None,
+        "accepted": legal_consent_accepted and recurring_terms_accepted,
+        "accepted_at": datetime.utcnow().isoformat() if legal_consent_accepted and recurring_terms_accepted else None,
         "ip_address": _request_client_ip(),
         "user_agent": (request.headers.get("User-Agent") or "")[:500],
-        "text": "Я согласен на автоматические списания согласно условиям оферты",
+        "legal_consent": {
+            "accepted": legal_consent_accepted,
+            "text": "Подтверждаю согласие с Публичной офертой, Пользовательским соглашением, Политикой конфиденциальности и Согласием на обработку персональных данных",
+            "offer_url": offer_url,
+            "user_agreement_url": user_agreement_url,
+            "privacy_policy_url": privacy_policy_url,
+            "personal_data_consent_url": personal_data_consent_url,
+        },
+        "recurring_terms_consent": {
+            "accepted": recurring_terms_accepted,
+            "text": "Даю согласие на автоматические списания с периодичностью выбранной подписки до ее отмены",
+            "offer_url": offer_url,
+        },
         "offer_url": offer_url,
         "plan_code": plan.code,
         "plan_name": plan.name,
@@ -1838,7 +1856,7 @@ def subscription_checkout():
             "pricing_plan": _serialize_pricing_plan(plan),
             "recurrent": recurrent_payload,
             "autopay_consent": consent_snapshot,
-            "autopay_consent_history": [consent_snapshot] if recurring_consent_accepted else [],
+            "autopay_consent_history": [consent_snapshot] if legal_consent_accepted and recurring_terms_accepted else [],
         },
     )
     db.session.add(purchase)

@@ -276,7 +276,11 @@ class CloudPaymentsRoutesTests(unittest.TestCase):
 
         response = self.client.post(
             "/api/account/subscription/checkout",
-            json={"plan_code": "unlimited-7", "recurring_consent": True},
+            json={
+                "plan_code": "unlimited-7",
+                "legal_consent": True,
+                "recurring_terms_consent": True,
+            },
         )
 
         self.assertEqual(response.status_code, 200)
@@ -293,6 +297,50 @@ class CloudPaymentsRoutesTests(unittest.TestCase):
             self.assertEqual(purchase.recurring_interval, "Day")
             self.assertEqual(purchase.recurring_period, 7)
             self.assertEqual((purchase.provider_payload_json or {}).get("recurrent", {}).get("period"), 7)
+            autopay_consent = (purchase.provider_payload_json or {}).get("autopay_consent", {})
+            self.assertTrue((autopay_consent.get("legal_consent") or {}).get("accepted"))
+            self.assertTrue((autopay_consent.get("recurring_terms_consent") or {}).get("accepted"))
+
+    def test_checkout_requires_both_consents_for_unlimited_plan(self) -> None:
+        with self.app.app_context():
+            user = AppUser(
+                email="checkout-consents@example.com",
+                phone="+79990000011",
+                name="Checkout Consents User",
+                consent_to_personal_data=True,
+                email_verified=True,
+            )
+            plan = PricingPlan(
+                code="unlimited-7-consents",
+                name="Unlimited 7 Consents",
+                description="Unlimited weekly",
+                kind="unlimited",
+                price=Decimal("999.00"),
+                currency="RUB",
+                period_days=7,
+                sort_order=0,
+                is_active=True,
+            )
+            db.session.add_all([user, plan])
+            db.session.commit()
+            user_id = user.id
+
+        with self.client.session_transaction() as session:
+            session[APP_USER_SESSION_KEY] = user_id
+
+        response_missing_legal = self.client.post(
+            "/api/account/subscription/checkout",
+            json={"plan_code": "unlimited-7-consents", "recurring_terms_consent": True},
+        )
+        self.assertEqual(response_missing_legal.status_code, 400)
+        self.assertIn("правовыми документами", response_missing_legal.get_json()["error"])
+
+        response_missing_recurring = self.client.post(
+            "/api/account/subscription/checkout",
+            json={"plan_code": "unlimited-7-consents", "legal_consent": True},
+        )
+        self.assertEqual(response_missing_recurring.status_code, 400)
+        self.assertIn("автоматических продлений", response_missing_recurring.get_json()["error"])
 
     def test_sync_pending_purchase_updates_status_from_cloudpayments(self) -> None:
         with self.app.app_context():
