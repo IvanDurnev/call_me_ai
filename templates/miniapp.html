@@ -4,10 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ character.name }}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='call.css', v='20260412wave4') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='call.css', v='20260416videocall17') }}">
   </head>
   <body
-    class="miniapp-page"
+    class="miniapp-page{% if character.video_call_enabled and (character.video_interior_spline_url or character.video_character_spline_url) %} video-spline-enabled{% endif %}"
     data-character-slug="{{ character.slug }}"
     data-character-name="{{ character.name }}"
     data-character-description="{{ character.description }}"
@@ -16,6 +16,12 @@
     data-realtime-provider="{{ realtime_provider }}"
     data-app-user-id="{{ app_user.id }}"
     data-call-access-available="{{ 'true' if call_access_available else 'false' }}"
+    data-video-call-enabled="{{ 'true' if character.video_call_enabled else 'false' }}"
+    data-video-interior-spline-url="{{ character.video_interior_spline_url or '' }}"
+    data-video-character-spline-url="{{ character.video_character_spline_url or '' }}"
+    data-video-character-zoom="{{ character.video_character_zoom or 0.38 }}"
+    data-video-mouth-open-object-name="{{ character.video_mouth_open_object_name or 'MouthOpen' }}"
+    data-video-mouth-closed-object-name="{{ character.video_mouth_closed_object_name or 'MouthClosed' }}"
     data-start-speech-frames="2"
     data-end-speech-ms="550"
     data-min-turn-audio-ms="160"
@@ -34,12 +40,37 @@
             <span class="call-timer" id="call-timer">00:00</span>
           </div>
 
-          <div class="avatar-orb{% if character.avatar_url %} avatar-orb-image{% endif %}">
-            {% if character.avatar_url %}
-              <img src="{{ character.avatar_url }}" alt="{{ character.name }}">
-            {% else %}
-              <span>{{ character.emoji }}</span>
+          <div class="character-video-stage" id="character-video-stage">
+            {% if character.video_call_enabled and (character.video_interior_spline_url or character.video_character_spline_url) %}
+              <div
+                class="spline-stage"
+                aria-hidden="true"
+                style="--video-interior-scale: {{ character.video_interior_scale or 0.72 }}; --video-interior-zoom: {{ character.video_interior_zoom or 1.0 }}; --video-character-scale: {{ character.video_character_scale or 0.62 }}; --video-character-offset-y: {{ character.video_character_offset_y or 0.0 }}%;"
+              >
+                {% if character.video_interior_spline_url %}
+                  {% if '.splinecode' in character.video_interior_spline_url %}
+                    <canvas class="spline-layer spline-layer-interior" id="spline-interior-canvas" data-scene-url="{{ character.video_interior_spline_url }}"></canvas>
+                  {% else %}
+                    <iframe class="spline-layer spline-layer-interior spline-iframe" src="{{ character.video_interior_spline_url }}" loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+                  {% endif %}
+                {% endif %}
+                {% if character.video_character_spline_url %}
+                  {% if '.splinecode' in character.video_character_spline_url %}
+                    <canvas class="spline-layer spline-layer-character" id="spline-character-canvas" data-scene-url="{{ character.video_character_spline_url }}"></canvas>
+                  {% else %}
+                    <iframe class="spline-layer spline-layer-character spline-iframe" src="{{ character.video_character_spline_url }}" loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+                  {% endif %}
+                {% endif %}
+              </div>
             {% endif %}
+            <div class="avatar-orb{% if character.avatar_url %} avatar-orb-image{% endif %}">
+              {% if character.avatar_url %}
+                <img src="{{ character.avatar_url }}" alt="{{ character.name }}">
+              {% else %}
+                <span>{{ character.emoji }}</span>
+              {% endif %}
+              <span class="avatar-mouth" aria-hidden="true"></span>
+            </div>
           </div>
 
           <div class="call-title">
@@ -60,6 +91,9 @@
     </main>
 
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="{{ url_for('static', filename='call.js', v='20260412speakerfix3') }}"></script>
+    {% if character.video_call_enabled and (('.splinecode' in (character.video_interior_spline_url or '')) or ('.splinecode' in (character.video_character_spline_url or ''))) %}
+      <script type="module" src="{{ url_for('static', filename='spline-runtime.js', v='20260416spline-runtime5') }}"></script>
+    {% endif %}
+    <script src="{{ url_for('static', filename='call.js', v='20260416videocall16') }}"></script>
   </body>
 </html>

@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Admin</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='call.css', v='20260416admin-users') }}">
+  </head>
+  <body class="miniapp-page heroes-page">
+    <main class="call-shell heroes-shell">
+      <section class="phone-frame">
+        <div class="phone-screen heroes-screen">
+          <div class="voices-header admin-header">
+            <div>
+              <p class="eyebrow">Admin</p>
+              <h1>Список пользователей</h1>
+              <p class="lead">Всего пользователей: {{ total_users }}. Показаны записи {{ ((page - 1) * per_page) + 1 if total_users else 0 }}-{{ ((page - 1) * per_page) + (users|length) if total_users else 0 }}.</p>
+            </div>
+            <form action="{{ url_for('main.admin_logout') }}" method="post">
+              <button class="call-btn call-btn-secondary" type="submit">Выйти</button>
+            </form>
+          </div>
+
+          <nav class="admin-nav">
+            <a class="admin-nav-link{% if admin_section == 'heroes' %} is-active{% endif %}" href="{{ url_for('main.admin_heroes') }}">Персонажи</a>
+            <a class="admin-nav-link{% if admin_section == 'pricing_plans' %} is-active{% endif %}" href="{{ url_for('main.admin_pricing_plans') }}">Тарифы</a>
+            <a class="admin-nav-link{% if admin_section == 'users' %} is-active{% endif %}" href="{{ url_for('main.admin_users') }}">Пользователи</a>
+          </nav>
+
+          <section class="hero-form users-table-card">
+            <div class="users-table-wrap">
+              <table class="users-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Имя</th>
+                    <th>Email</th>
+                    <th>Телефон</th>
+                    <th>Подтв. почта</th>
+                    <th>Telegram</th>
+                    <th>MAX</th>
+                    <th>Создан</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for user in users %}
+                    <tr>
+                      <td>{{ user.id }}</td>
+                      <td>{{ user.name }}</td>
+                      <td>{{ user.email }}</td>
+                      <td>{{ user.phone }}</td>
+                      <td>{% if user.email_verified %}Да{% else %}Нет{% endif %}</td>
+                      <td>
+                        {% if user.telegram_user_id %}
+                          {{ user.telegram_user_id }}{% if user.telegram_username %} (@{{ user.telegram_username }}){% endif %}
+                        {% else %}
+                          -
+                        {% endif %}
+                      </td>
+                      <td>{% if user.max_user_id %}{{ user.max_user_id }}{% else %}-{% endif %}</td>
+                      <td>{{ user.created_at.strftime("%Y-%m-%d %H:%M") if user.created_at else "-" }}</td>
+                    </tr>
+                  {% else %}
+                    <tr>
+                      <td colspan="8">Пользователи пока не найдены.</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+
+            <div class="users-pagination">
+              <a
+                class="call-btn call-btn-secondary{% if page <= 1 %} is-disabled{% endif %}"
+                href="{% if page > 1 %}{{ url_for('main.admin_users', page=page - 1, per_page=per_page) }}{% else %}#{% endif %}"
+                {% if page <= 1 %}aria-disabled="true"{% endif %}
+              >Назад</a>
+              <p class="hero-meta">Страница {{ page }} из {{ total_pages }}</p>
+              <a
+                class="call-btn call-btn-secondary{% if page >= total_pages %} is-disabled{% endif %}"
+                href="{% if page < total_pages %}{{ url_for('main.admin_users', page=page + 1, per_page=per_page) }}{% else %}#{% endif %}"
+                {% if page >= total_pages %}aria-disabled="true"{% endif %}
+              >Вперёд</a>
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

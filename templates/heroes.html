@@ -24,6 +24,7 @@
           <nav class="admin-nav">
             <a class="admin-nav-link{% if admin_section == 'heroes' %} is-active{% endif %}" href="{{ url_for('main.admin_heroes') }}">Персонажи</a>
             <a class="admin-nav-link{% if admin_section == 'pricing_plans' %} is-active{% endif %}" href="{{ url_for('main.admin_pricing_plans') }}">Тарифы</a>
+            <a class="admin-nav-link{% if admin_section == 'users' %} is-active{% endif %}" href="{{ url_for('main.admin_users') }}">Пользователи</a>
           </nav>
 
           <div class="heroes-layout">
@@ -65,6 +66,6 @@
 
     <script id="heroes-initial-state" type="application/json">{{ initial_state|safe }}</script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="{{ url_for('static', filename='heroes.js', v='20260416slugavatar') }}"></script>
+    <script src="{{ url_for('static', filename='heroes.js', v='20260416splineupload1') }}"></script>
   </body>
 </html>

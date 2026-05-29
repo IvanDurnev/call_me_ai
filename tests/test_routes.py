@@ -76,6 +76,61 @@ class PricingPlanPayloadTests(unittest.TestCase):
         self.assertEqual(plan.sort_order, 0)
 
 
+class AdminUsersRoutesTests(unittest.TestCase):
+    def setUp(self) -> None:
+        project_root = Path(__file__).resolve().parents[1]
+        self.app = Flask(
+            __name__,
+            template_folder=str(project_root / "templates"),
+            static_folder=str(project_root / "static"),
+        )
+        self.app.config.update(
+            SECRET_KEY="test-secret",
+            TESTING=True,
+            SQLALCHEMY_DATABASE_URI="sqlite://",
+            SQLALCHEMY_TRACK_MODIFICATIONS=False,
+        )
+        db.init_app(self.app)
+        self.app.register_blueprint(main_bp)
+        with self.app.app_context():
+            db.create_all()
+            admin = AdminUser(username="admin", is_active=True)
+            admin.set_password("secret")
+            user = AppUser(
+                email="admin-users@example.com",
+                phone="+79998887766",
+                name="Admin Users Test",
+                consent_to_personal_data=True,
+                email_verified=True,
+            )
+            db.session.add_all([admin, user])
+            db.session.commit()
+            self.admin_id = admin.id
+        self.client = self.app.test_client()
+
+    def tearDown(self) -> None:
+        with self.app.app_context():
+            db.session.remove()
+            db.drop_all()
+
+    def test_admin_users_requires_auth(self) -> None:
+        response = self.client.get("/admin/users", follow_redirects=False)
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/admin/login", response.headers["Location"])
+
+    def test_admin_users_page_shows_users_table(self) -> None:
+        with self.client.session_transaction() as session:
+            session[ADMIN_SESSION_KEY] = self.admin_id
+
+        response = self.client.get("/admin/users")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn("Список пользователей", html)
+        self.assertIn("admin-users@example.com", html)
+
+
 class CloudPaymentsRoutesTests(unittest.TestCase):
     def setUp(self) -> None:
         self.app = Flask(__name__)

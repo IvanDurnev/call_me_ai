@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from typing import Any
 
 from sqlalchemy.exc import OperationalError, ProgrammingError
@@ -63,6 +64,41 @@ DEFAULT_GREETING_PROMPT = (
     "телефонный звонок ребёнка любимому сказочному персонажу. Сразу держи роль героя "
     "и ни при каких обстоятельствах не называй себя ИИ, ассистентом, ботом, программой или моделью."
 )
+
+SPLINE_SCENE_URL_RE = re.compile(
+    r"https?://[^\"'\s>]+/[^\"'\s>/]+\.splinecode(?:\?[^\"'\s>]*)?",
+    re.IGNORECASE,
+)
+SPLINE_MY_SHARE_RE = re.compile(
+    r"https?://my\.spline\.design/([A-Za-z0-9_-]+-)?(?P<scene_id>[A-Za-z0-9_-]{8,})/?(?:\?[^\"'\s>]*)?$",
+    re.IGNORECASE,
+)
+URL_IN_TEXT_RE = re.compile(r"https?://[^\"'\s>]+", re.IGNORECASE)
+
+
+def _extract_spline_scene_url(value: Any) -> str | None:
+    raw = str(value or "").strip()
+    if not raw:
+        return None
+    if ".splinecode" in raw.lower() and raw.lower().startswith(("/", "./", "../", "static/")):
+        return raw
+    match = SPLINE_SCENE_URL_RE.search(raw)
+    if match:
+        return match.group(0)
+
+    share_match = SPLINE_MY_SHARE_RE.search(raw)
+    if not share_match:
+        for candidate in URL_IN_TEXT_RE.findall(raw):
+            share_match = SPLINE_MY_SHARE_RE.search(candidate)
+            if share_match:
+                break
+    if share_match:
+        return share_match.group(0)
+
+    if raw.lower().startswith(("http://", "https://")):
+        # Keep arbitrary direct URL to avoid dropping user input on save.
+        return raw
+    return None
 
 
 def build_runtime_instructions(character: dict[str, Any], *, end_call_mode: str = "function") -> str:
@@ -377,6 +413,47 @@ def normalize_realtime_settings(settings: dict[str, Any] | None) -> dict[str, An
     provider = str(payload.get("provider") or "").strip().lower()
     if provider in {"openai", "elevenlabs"}:
         normalized["provider"] = provider
+
+    if "video_call_enabled" in payload:
+        raw_video_call_enabled = payload.get("video_call_enabled")
+        if isinstance(raw_video_call_enabled, str):
+            video_call_enabled = raw_video_call_enabled.strip().lower() in {"1", "true", "yes", "on"}
+        else:
+            video_call_enabled = bool(raw_video_call_enabled)
+        if video_call_enabled:
+            normalized["video_call_enabled"] = True
+
+    interior_spline_url = _extract_spline_scene_url(payload.get("video_interior_spline_url"))
+    if interior_spline_url:
+        normalized["video_interior_spline_url"] = interior_spline_url
+
+    character_spline_url = _extract_spline_scene_url(payload.get("video_character_spline_url"))
+    if character_spline_url:
+        normalized["video_character_spline_url"] = character_spline_url
+
+    video_interior_scale = payload.get("video_interior_scale")
+    if video_interior_scale not in {None, ""}:
+        normalized["video_interior_scale"] = max(0.2, min(3.0, float(video_interior_scale)))
+
+    video_interior_zoom = payload.get("video_interior_zoom")
+    if video_interior_zoom not in {None, ""}:
+        normalized["video_interior_zoom"] = max(0.5, min(4.0, float(video_interior_zoom)))
+
+    video_character_scale = payload.get("video_character_scale")
+    if video_character_scale not in {None, ""}:
+        normalized["video_character_scale"] = max(0.2, min(3.0, float(video_character_scale)))
+
+    video_character_offset_y = payload.get("video_character_offset_y")
+    if video_character_offset_y not in {None, ""}:
+        normalized["video_character_offset_y"] = max(-80.0, min(80.0, float(video_character_offset_y)))
+
+    video_mouth_open_object_name = str(payload.get("video_mouth_open_object_name") or "").strip()
+    if video_mouth_open_object_name:
+        normalized["video_mouth_open_object_name"] = video_mouth_open_object_name
+
+    video_mouth_closed_object_name = str(payload.get("video_mouth_closed_object_name") or "").strip()
+    if video_mouth_closed_object_name:
+        normalized["video_mouth_closed_object_name"] = video_mouth_closed_object_name
 
     return normalized
 

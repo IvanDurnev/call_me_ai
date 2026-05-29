@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ character.name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='call.css', v='20260529webmessenger2') }}">
+  </head>
+  <body
+    class="web-page"
+    data-character-slug="{{ character.slug }}"
+    data-character-name="{{ character.name }}"
+    data-character-description="{{ character.description }}"
+    data-started-from="{{ started_from }}"
+    data-websocket-url="{{ websocket_url }}"
+    data-realtime-provider="{{ realtime_provider }}"
+    data-app-user-id="{{ app_user.id }}"
+    data-call-access-available="{{ 'true' if call_access_available else 'false' }}"
+    data-video-call-enabled="{{ 'true' if character.video_call_enabled else 'false' }}"
+    data-video-interior-spline-url="{{ character.video_interior_spline_url or '' }}"
+    data-video-character-spline-url="{{ character.video_character_spline_url or '' }}"
+    data-video-character-zoom="{{ character.video_character_zoom or 0.38 }}"
+    data-video-mouth-open-object-name="{{ character.video_mouth_open_object_name or 'MouthOpen' }}"
+    data-video-mouth-closed-object-name="{{ character.video_mouth_closed_object_name or 'MouthClosed' }}"
+    data-start-speech-frames="2"
+    data-end-speech-ms="550"
+    data-min-turn-audio-ms="160"
+    data-audio-mode="default"
+    data-mobile-output-gain="{{ character.mobile_output_gain or 3.8 }}"
+    data-desktop-output-gain="{{ character.desktop_output_gain or 1.0 }}"
+  >
+    <script id="web-characters-data" type="application/json">{{ characters | tojson }}</script>
+    <main class="web-shell">
+      <section class="web-layout">
+        <aside class="web-sidebar">
+          <header class="web-sidebar-header">
+            <h1>Беседы</h1>
+            <a class="web-sidebar-account" href="{{ account_url }}" aria-label="Личный кабинет">
+              <span>{{ (app_user.name or app_user.email or "U")[:1] | upper }}</span>
+            </a>
+          </header>
+
+          <div class="web-search">
+            <input type="text" value="" placeholder="Поиск" aria-label="Поиск по чатам">
+          </div>
+
+          <nav class="web-contact-list" aria-label="Список персонажей">
+            {% for item in characters %}
+              <div
+                class="web-contact-card{% if item.slug == character.slug %} is-active{% endif %}"
+                type="button"
+                data-character-card
+                data-character-slug="{{ item.slug }}"
+              >
+                <span class="web-contact-avatar{% if item.avatar_url %} web-contact-avatar-image{% endif %}">
+                  {% if item.avatar_url %}
+                    <img src="{{ item.avatar_url }}" alt="{{ item.name }}">
+                  {% else %}
+                    <span>{{ item.emoji }}</span>
+                  {% endif %}
+                </span>
+                <span class="web-contact-copy">
+                  <span class="web-contact-row">
+                    <strong>{{ item.name }}</strong>
+                    <span class="web-contact-time">now</span>
+                  </span>
+                  <span class="web-contact-preview">{{ item.description }}</span>
+                </span>
+              </div>
+            {% endfor %}
+          </nav>
+        </aside>
+
+        <section class="web-chat-panel">
+          <header class="web-chat-header">
+            <div class="web-chat-persona">
+              <button id="web-chat-back" class="web-chat-back" type="button" aria-label="Назад">‹</button>
+              <div class="web-chat-avatar{% if character.avatar_url %} web-chat-avatar-image{% endif %}" id="web-chat-avatar">
+                <img
+                  src="{{ character.avatar_url or '' }}"
+                  alt="{{ character.name }}"
+                  id="web-chat-avatar-image"
+                  {% if not character.avatar_url %}hidden{% endif %}
+                >
+                <span id="web-chat-avatar-fallback" {% if character.avatar_url %}hidden{% endif %}>{{ character.emoji }}</span>
+              </div>
+              <div class="web-chat-persona-copy">
+                <strong id="web-chat-title">{{ character.name }}</strong>
+                <span class="web-chat-meta">
+                  <span id="connection-state"></span>
+                  <span id="call-timer" hidden>00:00</span>
+                </span>
+              </div>
+            </div>
+
+            <div class="web-chat-tools">
+              <button id="web-chat-search-toggle" class="web-icon-btn" type="button" aria-label="Поиск по чату">⌕</button>
+              <button
+                class="web-icon-btn web-call-icon call-btn call-btn-primary"
+                id="mic-btn"
+                data-icon-mode="true"
+                type="button"
+                {% if not call_access_available %}disabled{% endif %}
+                aria-label="{% if call_access_available %}Позвонить{% else %}Минуты закончились{% endif %}"
+              >
+                <span class="web-icon-btn-glyph">📞</span>
+                <span class="sr-only btn-label">{% if call_access_available %}Позвонить{% else %}Минуты закончились{% endif %}</span>
+              </button>
+<!--              <button class="web-icon-btn" type="button" aria-label="Меню">⋮</button>-->
+            </div>
+          </header>
+          <div class="web-chat-search" id="web-chat-search" hidden>
+            <input id="web-chat-search-input" type="text" value="" placeholder="Search in conversation" aria-label="Поиск в чате">
+            <button id="web-chat-search-clear" class="web-chat-search-clear" type="button" aria-label="Очистить поиск">✕</button>
+          </div>
+
+          <div class="web-chat-stage">
+            <div class="call-log web-chat-log" id="call-log">
+              <p class="log-line log-line-system">Сегодня</p>
+              <p class="log-line log-line-character" id="web-chat-greeting">Привет! 🙂 Чем помочь?</p>
+            </div>
+          </div>
+
+          <footer class="web-chat-footer">
+            <div class="call-wave web-call-wave" id="call-wave" aria-hidden="true"></div>
+            <div class="web-composer">
+              <button class="web-composer-icon" type="button" aria-label="Вложения">⌘</button>
+              <input id="web-chat-input" type="text" value="" placeholder="Message" aria-label="Сообщение">
+              <button id="web-chat-send" class="web-composer-send" type="button" aria-label="Отправить">↑</button>
+            </div>
+          </footer>
+        </section>
+      </section>
+    </main>
+
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="{{ url_for('static', filename='call.js', v='20260529webmessenger2') }}"></script>
+  </body>
+</html>

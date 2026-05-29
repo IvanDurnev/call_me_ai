@@ -1,12 +1,13 @@
 const body = document.body;
-const websocketUrl = body.dataset.websocketUrl;
-const realtimeProvider = body.dataset.realtimeProvider || "openai";
-const characterSlug = body.dataset.characterSlug;
-const characterName = body.dataset.characterName;
-const characterDescription = body.dataset.characterDescription || "";
+let websocketUrl = body.dataset.websocketUrl;
+let realtimeProvider = body.dataset.realtimeProvider || "openai";
+let characterSlug = body.dataset.characterSlug;
+let characterName = body.dataset.characterName;
+let characterDescription = body.dataset.characterDescription || "";
 const startedFrom = body.dataset.startedFrom || "web";
 const appUserId = Number(body.dataset.appUserId || 0) || null;
 const callAccessAvailable = body.dataset.callAccessAvailable === "true";
+let videoCallEnabled = body.dataset.videoCallEnabled === "true";
 
 const logNode = document.getElementById("call-log");
 const callWaveNode = document.getElementById("call-wave");
@@ -14,6 +15,19 @@ const micButton = document.getElementById("mic-btn");
 const connectionState = document.getElementById("connection-state");
 const statusDot = document.getElementById("status-dot");
 const callTimerNode = document.getElementById("call-timer");
+const webCharactersNode = document.getElementById("web-characters-data");
+const webChatTitleNode = document.getElementById("web-chat-title");
+const webChatAvatarNode = document.getElementById("web-chat-avatar");
+const webChatAvatarImageNode = document.getElementById("web-chat-avatar-image");
+const webChatAvatarFallbackNode = document.getElementById("web-chat-avatar-fallback");
+const webCharacterCardNodes = Array.from(document.querySelectorAll("[data-character-card]"));
+const webChatInputNode = document.getElementById("web-chat-input");
+const webChatSendNode = document.getElementById("web-chat-send");
+const webChatSearchToggleNode = document.getElementById("web-chat-search-toggle");
+const webChatSearchNode = document.getElementById("web-chat-search");
+const webChatSearchInputNode = document.getElementById("web-chat-search-input");
+const webChatSearchClearNode = document.getElementById("web-chat-search-clear");
+const webChatBackNode = document.getElementById("web-chat-back");
 
 const tg = window.Telegram?.WebApp;
 if (tg) {
@@ -93,13 +107,346 @@ let assistantLevel = 0;
 let assistantLevelTarget = 0;
 let ringbackActive = false;
 let ringbackTimeouts = [];
+const webCharacters = parseWebCharacters();
+const WEB_CHAT_STORAGE_KEY = "call_me_ai.web_chat_histories.v1";
+const webChatHistories = loadWebChatHistories();
+let webChatSending = false;
+const hasWebTextChat = Boolean(webChatInputNode);
+let webChatSearchQuery = "";
+const mobileWebChatMedia = window.matchMedia("(max-width: 920px)");
+
+function parseWebCharacters() {
+  if (!webCharactersNode?.textContent) {
+    return [];
+  }
+  try {
+    const payload = JSON.parse(webCharactersNode.textContent);
+    return Array.isArray(payload) ? payload : [];
+  } catch {
+    return [];
+  }
+}
+
+function defaultChatHistory(character) {
+  return [
+    {
+      role: "assistant",
+      text: `Привет! Я ${character?.name || "герой"}. Чем помочь?`,
+    },
+  ];
+}
+
+function normalizeStoredHistory(items) {
+  if (!Array.isArray(items)) {
+    return [];
+  }
+  return items
+    .filter((item) => item && typeof item === "object")
+    .map((item) => ({
+      role: String(item.role || "").trim().toLowerCase(),
+      text: String(item.text || "").trim(),
+    }))
+    .filter((item) => ["user", "assistant"].includes(item.role) && item.text)
+    .slice(-40);
+}
+
+function loadWebChatHistories() {
+  const histories = new Map();
+  for (const item of webCharacters) {
+    histories.set(item.slug, defaultChatHistory(item));
+  }
+
+  try {
+    const raw = window.localStorage.getItem(WEB_CHAT_STORAGE_KEY);
+    if (!raw) {
+      return histories;
+    }
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") {
+      return histories;
+    }
+    for (const [slug, messages] of Object.entries(parsed)) {
+      const normalized = normalizeStoredHistory(messages);
+      if (normalized.length) {
+        histories.set(slug, normalized);
+      }
+    }
+  } catch {
+    // Ignore malformed localStorage payloads.
+  }
+
+  return histories;
+}
+
+function persistWebChatHistories() {
+  try {
+    const payload = {};
+    for (const [slug, messages] of webChatHistories.entries()) {
+      payload[slug] = messages.slice(-40);
+    }
+    window.localStorage.setItem(WEB_CHAT_STORAGE_KEY, JSON.stringify(payload));
+  } catch {
+    // Ignore storage quota and privacy mode failures.
+  }
+}
+
+function currentWebChatHistory() {
+  if (!webChatHistories.has(characterSlug)) {
+    const currentCharacter = webCharacters.find((item) => item.slug === characterSlug);
+    webChatHistories.set(characterSlug, defaultChatHistory(currentCharacter));
+  }
+  return webChatHistories.get(characterSlug) || [];
+}
+
+function setIdleConnectionState() {
+  if (!hasWebTextChat || callActive || connecting || webChatSending) {
+    return;
+  }
+  setConnectionState("", false);
+}
+
+function closeWebChatSearch({ keepQuery = false } = {}) {
+  if (!webChatSearchNode) {
+    return;
+  }
+  webChatSearchNode.hidden = true;
+  if (!keepQuery) {
+    webChatSearchQuery = "";
+    if (webChatSearchInputNode) {
+      webChatSearchInputNode.value = "";
+    }
+    renderWebChatIntro();
+  }
+}
+
+function openWebChatSearch() {
+  if (!webChatSearchNode) {
+    return;
+  }
+  webChatSearchNode.hidden = false;
+  webChatSearchInputNode?.focus();
+  webChatSearchInputNode?.select();
+}
+
+function openMobileWebChat() {
+  if (!mobileWebChatMedia.matches) {
+    return;
+  }
+  body.classList.add("web-mobile-chat-open");
+}
+
+function closeMobileWebChat() {
+  if (!mobileWebChatMedia.matches) {
+    return;
+  }
+  body.classList.remove("web-mobile-chat-open");
+}
+
+function syncMobileWebLayout() {
+  if (!mobileWebChatMedia.matches) {
+    body.classList.remove("web-mobile-chat-open");
+  }
+}
+
+function scrollChatToBottom() {
+  if (!logNode) {
+    return;
+  }
+  const scrollContainer = logNode.parentElement;
+  if (!scrollContainer) {
+    return;
+  }
+  requestAnimationFrame(() => {
+    scrollContainer.scrollTop = scrollContainer.scrollHeight;
+  });
+}
+
+function setCurrentWebChatHistory(messages) {
+  webChatHistories.set(characterSlug, normalizeStoredHistory(messages));
+  persistWebChatHistories();
+}
+
+function renderWebChatIntro() {
+  if (!logNode) {
+    return;
+  }
+  const history = currentWebChatHistory();
+  const normalizedQuery = webChatSearchQuery.trim().toLowerCase();
+  const visibleMessages = normalizedQuery
+    ? history.filter((item) => item.text.toLowerCase().includes(normalizedQuery))
+    : history;
+
+  logNode.innerHTML = `<p class="log-line log-line-system">Сегодня</p>`;
+  if (!visibleMessages.length) {
+    const emptyNode = document.createElement("p");
+    emptyNode.className = "log-line log-line-system log-line-search-empty";
+    emptyNode.textContent = "Ничего не найдено";
+    logNode.appendChild(emptyNode);
+    scrollChatToBottom();
+    return;
+  }
+
+  for (const item of visibleMessages) {
+    const p = document.createElement("p");
+    p.className = `log-line ${item.role === "user" ? "log-line-user" : "log-line-character"}`;
+    p.textContent = item.text;
+    logNode.appendChild(p);
+  }
+  scrollChatToBottom();
+}
+
+function switchWebCharacter(nextSlug) {
+  if (!nextSlug || nextSlug === characterSlug) {
+    openMobileWebChat();
+    return;
+  }
+  if (connecting || callActive) {
+    return;
+  }
+
+  const nextCharacter = webCharacters.find((item) => item.slug === nextSlug);
+  if (!nextCharacter) {
+    return;
+  }
+
+  characterSlug = nextCharacter.slug;
+  characterName = nextCharacter.name || "";
+  characterDescription = nextCharacter.description || "";
+  realtimeProvider = nextCharacter.realtime_provider || "openai";
+  websocketUrl = nextCharacter.websocket_url || "";
+  videoCallEnabled = Boolean(nextCharacter.video_call_enabled);
+  providerInputSampleRate = realtimeProvider === "elevenlabs" ? 16000 : 24000;
+  providerOutputSampleRate = realtimeProvider === "elevenlabs" ? 16000 : 24000;
+  localConversationLog = [];
+  renderWebChatIntro();
+
+  body.dataset.characterSlug = characterSlug;
+  body.dataset.characterName = characterName;
+  body.dataset.characterDescription = characterDescription;
+  body.dataset.realtimeProvider = realtimeProvider;
+  body.dataset.websocketUrl = websocketUrl;
+  body.dataset.videoCallEnabled = videoCallEnabled ? "true" : "false";
+
+  if (webChatTitleNode) {
+    webChatTitleNode.textContent = characterName;
+  }
+
+  if (webChatAvatarNode) {
+    if (nextCharacter.avatar_url) {
+      webChatAvatarNode.classList.add("web-chat-avatar-image");
+      if (webChatAvatarImageNode) {
+        webChatAvatarImageNode.src = nextCharacter.avatar_url;
+        webChatAvatarImageNode.alt = characterName;
+        webChatAvatarImageNode.hidden = false;
+      }
+      if (webChatAvatarFallbackNode) {
+        webChatAvatarFallbackNode.hidden = true;
+      }
+    } else {
+      webChatAvatarNode.classList.remove("web-chat-avatar-image");
+      if (webChatAvatarImageNode) {
+        webChatAvatarImageNode.hidden = true;
+      }
+      if (webChatAvatarFallbackNode) {
+        webChatAvatarFallbackNode.textContent = nextCharacter.emoji || "•";
+        webChatAvatarFallbackNode.hidden = false;
+      }
+    }
+  }
+
+  webCharacterCardNodes.forEach((node) => {
+    node.classList.toggle("is-active", node.dataset.characterSlug === characterSlug);
+  });
+
+  setIdleConnectionState();
+  updateCallTimer();
+  syncCallControls();
+  updateWebChatComposerState();
+  openMobileWebChat();
+}
+
+function updateWebChatComposerState() {
+  if (!webChatInputNode || !webChatSendNode) {
+    return;
+  }
+  const hasText = Boolean(String(webChatInputNode.value || "").trim());
+  const interactionLocked = webChatSending || callActive || connecting;
+  webChatInputNode.disabled = interactionLocked;
+  webChatSendNode.disabled = interactionLocked || !hasText;
+}
+
+async function sendWebChatMessage() {
+  if (!webChatInputNode || webChatSending || callActive || connecting) {
+    return;
+  }
+
+  const text = String(webChatInputNode.value || "").trim();
+  if (!text) {
+    updateWebChatComposerState();
+    return;
+  }
+
+  const nextHistory = [...currentWebChatHistory(), { role: "user", text }].slice(-40);
+  setCurrentWebChatHistory(nextHistory);
+  renderWebChatIntro();
+  webChatInputNode.value = "";
+  webChatSending = true;
+  setConnectionState("Печатает...", false);
+  updateWebChatComposerState();
+
+  try {
+    const response = await fetch("/api/web-chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        character_slug: characterSlug,
+        messages: nextHistory,
+      }),
+    });
+    const payload = await response.json().catch(() => ({ ok: false, error: "Invalid server response." }));
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || "Не удалось отправить сообщение.");
+    }
+
+    const updatedHistory = [...nextHistory, {
+      role: "assistant",
+      text: String(payload.message?.text || "").trim() || "…",
+    }].slice(-40);
+    setCurrentWebChatHistory(updatedHistory);
+    renderWebChatIntro();
+  } catch (error) {
+    const failedHistory = [...nextHistory, {
+      role: "assistant",
+      text: error instanceof Error ? error.message : String(error),
+    }].slice(-40);
+    setCurrentWebChatHistory(failedHistory);
+    renderWebChatIntro();
+  } finally {
+    webChatSending = false;
+    setIdleConnectionState();
+    updateWebChatComposerState();
+    webChatInputNode?.focus();
+  }
+}
 
 function logLine(text) {
+  const raw = String(text || "").trim();
+  if (!raw) {
+    return;
+  }
+
+  let kind = "system";
+  if (raw.startsWith("Вы:")) {
+    kind = "user";
+  } else if (characterName && raw.startsWith(`${characterName}:`)) {
+    kind = "character";
+  }
+
   const p = document.createElement("p");
-  p.className = "log-line";
-  p.textContent = text;
+  p.className = `log-line log-line-${kind}`;
+  p.textContent = raw;
   logNode.appendChild(p);
-  logNode.scrollTop = logNode.scrollHeight;
+  scrollChatToBottom();
 }
 
 function logError(text) {
@@ -173,7 +520,16 @@ function extractAssistantEndCall(text) {
 }
 
 function setMicButtonState(text, disabled = false) {
-  micButton.textContent = text;
+  const label = String(text || "").trim();
+  if (micButton.dataset.iconMode === "true") {
+    const labelNode = micButton.querySelector(".btn-label");
+    if (labelNode) {
+      labelNode.textContent = label;
+    }
+    micButton.setAttribute("aria-label", label);
+  } else {
+    micButton.textContent = label;
+  }
   micButton.disabled = disabled;
 }
 
@@ -194,8 +550,23 @@ function updateWaveLiveState(live) {
   stopWaveAnimation();
 }
 
+function syncCharacterVideoState() {
+  body.classList.toggle("video-call-enabled", videoCallEnabled);
+  body.classList.toggle("character-speaking", videoCallEnabled && callActive && speaking);
+  body.classList.toggle("character-listening", videoCallEnabled && callActive && micEnabled && !speaking);
+  window.dispatchEvent(new CustomEvent("call:speaking-state", {
+    detail: {
+      speaking: videoCallEnabled && callActive && speaking,
+      callActive,
+      videoCallEnabled,
+    },
+  }));
+}
+
 function syncCallControls() {
   updateWaveLiveState(callActive);
+  syncCharacterVideoState();
+  updateWebChatComposerState();
   if (connecting) {
     setMicButtonState("Соединяем…", true);
     setMicButtonTone("primary");
@@ -220,7 +591,9 @@ function syncCallControls() {
 
 function setConnectionState(text, live = false) {
   connectionState.textContent = text;
-  statusDot.classList.toggle("live", live);
+  if (statusDot) {
+    statusDot.classList.toggle("live", live);
+  }
 }
 
 function formatCallTimer(totalSeconds) {
@@ -238,6 +611,7 @@ function updateCallTimer() {
   if (!callTimerNode) {
     return;
   }
+  callTimerNode.hidden = !callStartedAt;
   if (!callStartedAt) {
     callTimerNode.textContent = "00:00";
     return;
@@ -259,6 +633,8 @@ function stopCallTimer() {
     window.clearInterval(callTimerInterval);
     callTimerInterval = null;
   }
+  callStartedAt = null;
+  updateCallTimer();
 }
 
 function base64FromArrayBuffer(arrayBuffer) {
@@ -385,6 +761,7 @@ async function playNextChunk() {
   }
 
   speaking = true;
+  syncCharacterVideoState();
   const { samples: rawSamples, sampleRate } = playbackQueue.shift();
   const boostedSamples = boostAssistantLoudness(rawSamples);
   const assistantRms = computeRmsLevel(boostedSamples);
@@ -427,6 +804,7 @@ async function playNextChunk() {
       }
     }
     speaking = false;
+    syncCharacterVideoState();
     if (pendingAutoEnd && !playbackQueue.length && !assistantResponseActive) {
       endCall("auto-end");
       return;
@@ -449,6 +827,7 @@ function stopAssistantPlayback() {
     currentSource = null;
   }
   speaking = false;
+  syncCharacterVideoState();
   assistantResponseActive = false;
   assistantLevel = 0;
   assistantLevelTarget = 0;
@@ -960,6 +1339,7 @@ function connectOpenAi() {
       started_from: startedFrom,
     }));
     logLine(`Соединение с ${characterName} установлено.`);
+    syncCharacterVideoState();
   });
 
   socket.addEventListener("message", async (event) => {
@@ -1095,6 +1475,7 @@ function connectElevenLabs(sessionPayload) {
     console.log("[ElevenLabs] sending init:", initPayload);
     socket.send(initPayload);
     logLine(`Соединение с ${characterName} установлено.`);
+    syncCharacterVideoState();
   });
 
   socket.addEventListener("close", (event) => {
@@ -1232,6 +1613,7 @@ function endCall(reason = "manual") {
   if (socket?.readyState === WebSocket.CONNECTING) {
     socket.close();
   }
+  syncCharacterVideoState();
 }
 
 micButton.addEventListener("click", async () => {
@@ -1284,3 +1666,75 @@ syncCallControls();
 if (!callAccessAvailable) {
   setConnectionState("Доступные минуты исчерпаны", false);
 }
+
+webCharacterCardNodes.forEach((node) => {
+  node.addEventListener("click", () => {
+    closeWebChatSearch();
+    switchWebCharacter(node.dataset.characterSlug || "");
+  });
+});
+
+if (webChatInputNode) {
+  webChatInputNode.addEventListener("input", () => {
+    updateWebChatComposerState();
+  });
+  webChatInputNode.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      void sendWebChatMessage();
+    }
+  });
+}
+
+if (webChatSendNode) {
+  webChatSendNode.addEventListener("click", () => {
+    void sendWebChatMessage();
+  });
+}
+
+if (webChatSearchToggleNode) {
+  webChatSearchToggleNode.addEventListener("click", () => {
+    if (webChatSearchNode?.hidden) {
+      openWebChatSearch();
+      return;
+    }
+    closeWebChatSearch();
+  });
+}
+
+if (webChatSearchInputNode) {
+  webChatSearchInputNode.addEventListener("input", () => {
+    webChatSearchQuery = String(webChatSearchInputNode.value || "").trim();
+    renderWebChatIntro();
+  });
+  webChatSearchInputNode.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeWebChatSearch();
+      webChatInputNode?.focus();
+    }
+  });
+}
+
+if (webChatSearchClearNode) {
+  webChatSearchClearNode.addEventListener("click", () => {
+    closeWebChatSearch();
+    webChatInputNode?.focus();
+  });
+}
+
+if (webChatBackNode) {
+  webChatBackNode.addEventListener("click", () => {
+    closeMobileWebChat();
+  });
+}
+
+if (mobileWebChatMedia.addEventListener) {
+  mobileWebChatMedia.addEventListener("change", syncMobileWebLayout);
+} else if (mobileWebChatMedia.addListener) {
+  mobileWebChatMedia.addListener(syncMobileWebLayout);
+}
+
+renderWebChatIntro();
+updateWebChatComposerState();
+syncMobileWebLayout();

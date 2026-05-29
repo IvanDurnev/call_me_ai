@@ -50,6 +50,7 @@ from .services import (
     update_agent,
     get_conversation_details,
     get_signed_url,
+    generate_chat_reply,
     generate_elevenlabs_speech_preview,
     list_elevenlabs_llms,
     list_elevenlabs_voices,
@@ -1257,6 +1258,16 @@ def index():
     return _render_index("telegram")
 
 
+@main_bp.get("/web")
+def web_messenger_index():
+    return _render_web_messenger()
+
+
+@main_bp.get("/web/<slug>")
+def web_messenger(slug: str):
+    return redirect(url_for("main.web_messenger_index"), code=302)
+
+
 @main_bp.get("/ru")
 @main_bp.get("/ru/")
 def redirect_ru_to_index():
@@ -1372,6 +1383,52 @@ def _render_index(platform: str):
         max_bot_link=max_bot_link,
         public_base_url=public_base_url,
         current_user=current_user,
+    )
+
+
+def _render_web_messenger():
+    app_user = _current_app_user()
+    if not app_user:
+        return redirect(url_for("main.login_email", next=request.url))
+    if not _app_user_ready_for_calls(app_user):
+        return redirect(url_for("main.verify_email", email=app_user.email, purpose="verify_email", next=request.url))
+
+    characters = [
+        character
+        for character in _serialize_characters(list_characters())
+        if _coerce_bool(character.get("is_active", True), default=True)
+    ]
+    if not characters:
+        abort(404)
+
+    ws_base = current_app.config["PUBLIC_BASE_URL"]
+    if ws_base.startswith("https://"):
+        ws_base = "wss://" + ws_base.removeprefix("https://")
+    elif ws_base.startswith("http://"):
+        ws_base = "ws://" + ws_base.removeprefix("http://")
+
+    characters = [
+        {
+            **character,
+            "realtime_provider": _hero_provider(character),
+            "websocket_url": f"{ws_base}/ws/call/{character['slug']}",
+        }
+        for character in characters
+    ]
+    selected_character = characters[0]
+
+    access_state = _app_user_access_state(app_user)
+
+    return render_template(
+        "web.html",
+        characters=characters,
+        character=selected_character,
+        websocket_url=f"{ws_base}/ws/call/{selected_character['slug']}",
+        started_from="web",
+        app_user=app_user,
+        call_access_available=access_state["has_call_access"],
+        realtime_provider=_hero_provider(selected_character),
+        account_url=url_for("main.account"),
     )
 
 
@@ -2096,6 +2153,40 @@ def admin_pricing_plans():
     return render_template("pricing_plans.html", initial_state=json.dumps(context, ensure_ascii=False), admin_section="pricing_plans")
 
 
+@main_bp.get("/admin/users")
+@_admin_required(view_mode="html")
+def admin_users():
+    try:
+        page = int(request.args.get("page", 1))
+    except (TypeError, ValueError):
+        page = 1
+    if page < 1:
+        page = 1
+
+    try:
+        per_page = int(request.args.get("per_page", 50))
+    except (TypeError, ValueError):
+        per_page = 50
+    per_page = min(max(per_page, 1), 200)
+
+    users_query = AppUser.query.order_by(AppUser.created_at.desc(), AppUser.id.desc())
+    total_users = users_query.count()
+    total_pages = (total_users + per_page - 1) // per_page if total_users else 1
+    if page > total_pages:
+        page = total_pages
+
+    users = users_query.offset((page - 1) * per_page).limit(per_page).all()
+    return render_template(
+        "admin_users.html",
+        users=users,
+        admin_section="users",
+        page=page,
+        per_page=per_page,
+        total_users=total_users,
+        total_pages=total_pages,
+    )
+
+
 @main_bp.get("/max/miniapp/heroes")
 def max_heroes_miniapp():
     return heroes_miniapp()
@@ -2259,6 +2350,15 @@ def update_hero_api(slug: str):
     realtime_settings = normalize_realtime_settings(hero.realtime_settings_json)
     realtime_field_map = {
         "provider": "provider",
+        "video_call_enabled": "video_call_enabled",
+        "video_interior_spline_url": "video_interior_spline_url",
+        "video_character_spline_url": "video_character_spline_url",
+        "video_interior_scale": "video_interior_scale",
+        "video_interior_zoom": "video_interior_zoom",
+        "video_character_scale": "video_character_scale",
+        "video_character_offset_y": "video_character_offset_y",
+        "video_mouth_open_object_name": "video_mouth_open_object_name",
+        "video_mouth_closed_object_name": "video_mouth_closed_object_name",
         "realtime_model": "model",
         "input_transcription_model": "input_transcription_model",
         "input_transcription_language": "input_transcription_language",
@@ -2476,6 +2576,52 @@ def upload_hero_avatar_api(slug: str):
 
     relative_path = _save_avatar_image(slug, filename, raw_bytes)
     hero.avatar_path = relative_path
+    db.session.commit()
+
+    return jsonify({"ok": True, "hero": _serialize_character_from_model(hero)})
+
+
+@main_bp.post("/api/heroes/<slug>/spline-interior")
+@_admin_required()
+def upload_hero_spline_interior_api(slug: str):
+    return _upload_hero_spline_scene(slug, scene_kind="interior")
+
+
+@main_bp.post("/api/heroes/<slug>/spline-character")
+@_admin_required()
+def upload_hero_spline_character_api(slug: str):
+    return _upload_hero_spline_scene(slug, scene_kind="character")
+
+
+def _upload_hero_spline_scene(slug: str, *, scene_kind: str):
+    hero = _get_hero_model(slug)
+    if not hero:
+        return jsonify({"ok": False, "error": "Hero not found."}), 404
+
+    uploaded = request.files.get("file")
+    if not uploaded or not uploaded.filename:
+        return jsonify({"ok": False, "error": "Spline scene file is required."}), 400
+
+    original_filename = uploaded.filename
+    suffix = Path(original_filename).suffix.lower()
+    if suffix != ".splinecode":
+        return jsonify({"ok": False, "error": "Use a .splinecode file exported from Spline Code panel."}), 400
+
+    raw_bytes = uploaded.read()
+    if not raw_bytes:
+        return jsonify({"ok": False, "error": "The uploaded .splinecode file is empty."}), 400
+
+    file_stem = "scene-interior" if scene_kind == "interior" else "scene-character"
+    relative_path = _save_uploaded_file(slug, file_stem, f"{file_stem}.splinecode", raw_bytes)
+
+    realtime_settings = normalize_realtime_settings(hero.realtime_settings_json)
+    scene_url = url_for("static", filename=relative_path)
+    if scene_kind == "interior":
+        realtime_settings["video_interior_spline_url"] = scene_url
+    else:
+        realtime_settings["video_character_spline_url"] = scene_url
+
+    hero.realtime_settings_json = realtime_settings
     db.session.commit()
 
     return jsonify({"ok": True, "hero": _serialize_character_from_model(hero)})
@@ -2755,6 +2901,72 @@ def finish_call_session_api(call_session_id: int):
     return jsonify({"ok": True})
 
 
+@main_bp.post("/api/web-chat")
+def web_chat_api():
+    app_user = _current_app_user()
+    if not app_user:
+        return jsonify({"ok": False, "error": "Authentication required."}), 401
+    if not _app_user_ready_for_calls(app_user):
+        return jsonify({"ok": False, "error": "Email verification required."}), 403
+    if not current_app.config.get("OPENAI_API_KEY"):
+        return jsonify({"ok": False, "error": "OPENAI_API_KEY is not configured."}), 503
+
+    payload = request.get_json(silent=True) or {}
+    slug = str(payload.get("character_slug") or "").strip()
+    character = get_character(slug, include_inactive=False)
+    if not character:
+        return jsonify({"ok": False, "error": "Hero not found."}), 404
+
+    raw_messages = payload.get("messages")
+    if not isinstance(raw_messages, list):
+        return jsonify({"ok": False, "error": "Messages list is required."}), 400
+
+    normalized_messages: list[dict[str, str]] = []
+    for item in raw_messages[-24:]:
+        if not isinstance(item, dict):
+            continue
+        role = str(item.get("role") or "").strip().lower()
+        text = str(item.get("text") or item.get("content") or "").strip()
+        if role not in {"user", "assistant"} or not text:
+            continue
+        normalized_messages.append({"role": role, "content": text[:4000]})
+
+    if not normalized_messages:
+        return jsonify({"ok": False, "error": "At least one user message is required."}), 400
+    if normalized_messages[-1]["role"] != "user":
+        return jsonify({"ok": False, "error": "Last message must be from the user."}), 400
+
+    system_prompt = (
+        f"{build_runtime_instructions(character, end_call_mode='function')}\n\n"
+        "Сейчас общение происходит в текстовом чате на сайте. "
+        "Отвечай по-русски естественно, тепло и кратко, как в мессенджере. "
+        "Не говори о телефонном звонке, микрофоне или голосовой сессии, если пользователь сам не переводит разговор туда."
+    )
+
+    reply_text = generate_chat_reply(
+        api_key=current_app.config["OPENAI_API_KEY"],
+        model=current_app.config["OPENAI_CHAT_MODEL"],
+        messages=[
+            {"role": "system", "content": system_prompt},
+            *normalized_messages,
+        ],
+    )
+
+    return jsonify(
+        {
+            "ok": True,
+            "character": {
+                "slug": character["slug"],
+                "name": character["name"],
+            },
+            "message": {
+                "role": "assistant",
+                "text": reply_text,
+            },
+        }
+    )
+
+
 def _find_voice_directory(name: str):
     target = normalize_voice_name(name)
     for directory in iter_voice_directories():
@@ -2834,6 +3046,15 @@ def _serialize_character(character: dict) -> dict:
     payload["elevenlabs_agent_id"] = realtime_settings.get("elevenlabs_agent_id", "")
     payload["elevenlabs_llm"] = realtime_settings.get("elevenlabs_llm", ELEVENLABS_DEFAULT_LLM)
     payload["elevenlabs_turn_eagerness"] = realtime_settings.get("elevenlabs_turn_eagerness", "normal")
+    payload["video_call_enabled"] = bool(realtime_settings.get("video_call_enabled"))
+    payload["video_interior_spline_url"] = realtime_settings.get("video_interior_spline_url", "")
+    payload["video_character_spline_url"] = realtime_settings.get("video_character_spline_url", "")
+    payload["video_interior_scale"] = realtime_settings.get("video_interior_scale", 0.72)
+    payload["video_interior_zoom"] = realtime_settings.get("video_interior_zoom", 1.0)
+    payload["video_character_scale"] = realtime_settings.get("video_character_scale", 0.62)
+    payload["video_character_offset_y"] = realtime_settings.get("video_character_offset_y", 0.0)
+    payload["video_mouth_open_object_name"] = realtime_settings.get("video_mouth_open_object_name", "MouthOpen")
+    payload["video_mouth_closed_object_name"] = realtime_settings.get("video_mouth_closed_object_name", "MouthClosed")
     payload["provider"] = _hero_provider(payload)
     return payload
 

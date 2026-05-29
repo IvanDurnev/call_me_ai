@@ -36,16 +36,20 @@
             <p class="cta-title">Позвонить через</p>
             <div class="cta-row">
               {% if telegram_bot_link %}
-                <a class="cta-button cta-button-primary" href="{{ telegram_bot_link }}" target="_blank" rel="noreferrer">
+                <span class="cta-button cta-button-primary cta-button-disabled" aria-disabled="true">
                   Telegram
-                </a>
+                </span>
               {% endif %}
 
               {% if max_bot_link %}
-                <a class="cta-button cta-button-secondary" href="{{ max_bot_link }}" target="_blank" rel="noreferrer">
+                <span class="cta-button cta-button-secondary cta-button-disabled" aria-disabled="true">
                   Max
-                </a>
+                </span>
               {% endif %}
+
+              <a class="cta-button cta-button-secondary" href="{{ url_for('main.web_messenger_index') }}">
+                Веб-версия
+              </a>
             </div>
           </div>
 
@@ -70,13 +74,13 @@
         </div>
 
         <aside class="landing-panel">
-          <div class="panel-topline">
-            <p>Выберите персонажа и начните маленькое путешествие.</p>
-          </div>
+<!--          <div class="panel-topline">-->
+<!--            <p>Свяжись с любимым персонажем лично.</p>-->
+<!--          </div>-->
 
           <div class="cards cards-grid-compact">
             {% for character in characters %}
-              <a class="character-card character-card-rich" href="{{ character.link }}">
+              <article class="character-card character-card-rich character-card-static">
                 <span class="character-card-top">
                   <span class="landing-character-avatar{{ ' landing-character-avatar-image' if character.avatar_url else '' }}">
                     {% if character.avatar_url %}
@@ -88,7 +92,7 @@
                 </span>
                 <strong>{{ character.name }}</strong>
                 <span>{{ character.description }}</span>
-              </a>
+              </article>
             {% endfor %}
 
             <a class="character-card character-card-rich landing-account-card" href="{{ url_for('main.account') if current_user else url_for('main.login_email') }}">

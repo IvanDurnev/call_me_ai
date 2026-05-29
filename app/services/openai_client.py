@@ -11,7 +11,8 @@ from openai import OpenAI
 def get_openai_proxy_url() -> str:
     if not has_app_context():
         return ""
-    return (current_app.config.get("OPENAI_PROXY") or "").strip()
+    raw_value = (current_app.config.get("OPENAI_PROXY") or "").strip()
+    return _normalize_proxy_url(raw_value)
 
 
 def build_openai_client(api_key: str, timeout_seconds: float) -> OpenAI:
@@ -61,3 +62,12 @@ def _build_httpx_client(proxy_url: str, timeout_seconds: float) -> httpx.Client:
             "https://": proxy_url,
         }
         return httpx.Client(proxies=proxies, timeout=timeout_seconds)
+
+
+def _normalize_proxy_url(raw_value: str) -> str:
+    candidate = str(raw_value or "").strip()
+    if not candidate:
+        return ""
+    if "://" not in candidate:
+        return f"http://{candidate}"
+    return candidate

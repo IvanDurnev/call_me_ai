@@ -232,6 +232,15 @@ function buildHeroSavePayload(form, hero) {
     emoji: formData.get("emoji"),
     description: formData.get("description"),
     provider,
+    video_call_enabled: formData.get("video_call_enabled") === "on",
+    video_interior_spline_url: formData.get("video_interior_spline_url") || "",
+    video_character_spline_url: formData.get("video_character_spline_url") || "",
+    video_interior_scale: formData.get("video_interior_scale") || "",
+    video_interior_zoom: formData.get("video_interior_zoom") || "",
+    video_character_scale: formData.get("video_character_scale") || "",
+    video_character_offset_y: formData.get("video_character_offset_y") || "",
+    video_mouth_open_object_name: formData.get("video_mouth_open_object_name") || "",
+    video_mouth_closed_object_name: formData.get("video_mouth_closed_object_name") || "",
     is_active: formData.get("is_active") === "on",
     greeting_prompt: formData.get("greeting_prompt"),
     system_prompt: formData.get("system_prompt"),
@@ -354,6 +363,44 @@ function renderEditor() {
           <input name="is_active" type="checkbox" ${hero.is_active ? "checked" : ""}>
           <span>Герой активен и показывается в /start</span>
         </label>
+        <label class="hero-field hero-field-inline">
+          <input name="video_call_enabled" type="checkbox" ${hero.video_call_enabled ? "checked" : ""}>
+          <span>Видеозвонок (показывать говорящего персонажа во время созвона)</span>
+        </label>
+        <label class="hero-field">
+          <span>Spline интерьер (URL или вставка кода)</span>
+          <textarea name="video_interior_spline_url" rows="2" placeholder="https://prod.spline.design/.../scene.splinecode">${escapeHtml(hero.video_interior_spline_url || "")}</textarea>
+        </label>
+        <label class="hero-field">
+          <span>Spline персонаж (URL или вставка кода)</span>
+          <textarea name="video_character_spline_url" rows="2" placeholder="https://prod.spline.design/.../scene.splinecode">${escapeHtml(hero.video_character_spline_url || "")}</textarea>
+        </label>
+        <div class="hero-field-grid">
+          <label class="hero-field">
+            <span>Масштаб интерьера</span>
+            <input name="video_interior_scale" type="number" min="0.2" max="3" step="0.05" value="${escapeHtml(Number(hero.video_interior_scale ?? 0.72).toFixed(2))}">
+          </label>
+          <label class="hero-field">
+            <span>Зум интерьера (больше = дальше)</span>
+            <input name="video_interior_zoom" type="number" min="0.5" max="4" step="0.05" value="${escapeHtml(Number(hero.video_interior_zoom ?? 1).toFixed(2))}">
+          </label>
+          <label class="hero-field">
+            <span>Масштаб персонажа</span>
+            <input name="video_character_scale" type="number" min="0.2" max="3" step="0.05" value="${escapeHtml(Number(hero.video_character_scale ?? 0.62).toFixed(2))}">
+          </label>
+          <label class="hero-field">
+            <span>Сдвиг персонажа по Y (%)</span>
+            <input name="video_character_offset_y" type="number" min="-80" max="80" step="1" value="${escapeHtml(Number(hero.video_character_offset_y ?? 0).toFixed(0))}">
+          </label>
+          <label class="hero-field">
+            <span>Имя объекта рта (открыт)</span>
+            <input name="video_mouth_open_object_name" type="text" value="${escapeHtml(hero.video_mouth_open_object_name || "MouthOpen")}">
+          </label>
+          <label class="hero-field">
+            <span>Имя объекта рта (закрыт)</span>
+            <input name="video_mouth_closed_object_name" type="text" value="${escapeHtml(hero.video_mouth_closed_object_name || "MouthClosed")}">
+          </label>
+        </div>
       </div>
 
       <div class="hero-section">
@@ -382,6 +429,28 @@ function renderEditor() {
             <label class="call-btn call-btn-secondary hero-upload-btn">
               <input id="avatar-upload" type="file" accept=".jpg,.jpeg,.png,.webp,.gif" hidden>
               Загрузить картинку
+            </label>
+          </div>
+          <div class="hero-upload-card">
+            <div class="hero-upload-copy">
+              <strong>Spline интерьер (.splinecode)</strong>
+              <span>${hero.video_interior_spline_url ? "Сцена интерьера загружена" : "Файл интерьера ещё не загружен"}</span>
+              <p>Загрузите экспорт из Spline: Export -> Code -> .splinecode.</p>
+            </div>
+            <label class="call-btn call-btn-secondary hero-upload-btn">
+              <input id="spline-interior-upload" type="file" accept=".splinecode" hidden>
+              Загрузить интерьер
+            </label>
+          </div>
+          <div class="hero-upload-card">
+            <div class="hero-upload-copy">
+              <strong>Spline персонаж (.splinecode)</strong>
+              <span>${hero.video_character_spline_url ? "Сцена персонажа загружена" : "Файл персонажа ещё не загружен"}</span>
+              <p>Загрузите отдельную сцену персонажа для управления ртом через API.</p>
+            </div>
+            <label class="call-btn call-btn-secondary hero-upload-btn">
+              <input id="spline-character-upload" type="file" accept=".splinecode" hidden>
+              Загрузить персонажа
             </label>
           </div>
         </div>
@@ -528,6 +597,8 @@ function renderEditor() {
   const statusNode = document.getElementById("hero-status");
   const knowledgeInput = document.getElementById("knowledge-upload");
   const avatarInput = document.getElementById("avatar-upload");
+  const splineInteriorInput = document.getElementById("spline-interior-upload");
+  const splineCharacterInput = document.getElementById("spline-character-upload");
   const deleteButton = document.getElementById("hero-delete-btn");
   const previewButton = document.getElementById("voice-preview-btn");
   const previewAudio = document.getElementById("voice-preview-audio");
@@ -791,6 +862,22 @@ function renderEditor() {
     await uploadFile(selectedSlug || hero.slug, avatarInput.files[0], "avatar", statusNode);
     avatarInput.value = "";
   });
+
+  splineInteriorInput?.addEventListener("change", async () => {
+    if (!splineInteriorInput.files?.length) {
+      return;
+    }
+    await uploadFile(selectedSlug || hero.slug, splineInteriorInput.files[0], "spline-interior", statusNode);
+    splineInteriorInput.value = "";
+  });
+
+  splineCharacterInput?.addEventListener("change", async () => {
+    if (!splineCharacterInput.files?.length) {
+      return;
+    }
+    await uploadFile(selectedSlug || hero.slug, splineCharacterInput.files[0], "spline-character", statusNode);
+    splineCharacterInput.value = "";
+  });
 }
 
 function renderPlanKindOptions(currentValue) {
@@ -956,7 +1043,13 @@ function renderPlanEditor() {
 }
 
 async function uploadFile(slug, file, kind, statusNode) {
-  setStatus(statusNode, kind === "knowledge" ? "Загружаю базу знаний..." : "Загружаю аватар...");
+  const uploadingMessage = {
+    knowledge: "Загружаю базу знаний...",
+    avatar: "Загружаю аватар...",
+    "spline-interior": "Загружаю .splinecode интерьера...",
+    "spline-character": "Загружаю .splinecode персонажа...",
+  }[kind] || "Загружаю файл...";
+  setStatus(statusNode, uploadingMessage);
   const formData = new FormData();
   formData.append("file", file);
 
@@ -972,7 +1065,13 @@ async function uploadFile(slug, file, kind, statusNode) {
 
     updateHero(result.hero);
     await reloadAdminData();
-    setStatus(statusNode, kind === "knowledge" ? "База знаний обновлена." : "Аватар обновлён.");
+    const successMessage = {
+      knowledge: "База знаний обновлена.",
+      avatar: "Аватар обновлён.",
+      "spline-interior": "Spline интерьер загружен и привязан к герою.",
+      "spline-character": "Spline персонаж загружен и привязан к герою.",
+    }[kind] || "Файл загружен.";
+    setStatus(statusNode, successMessage);
   } catch (error) {
     setStatus(statusNode, error.message || "Ошибка загрузки файла.", true);
   }
