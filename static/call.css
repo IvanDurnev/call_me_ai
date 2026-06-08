@@ -1025,10 +1025,6 @@ body {
   line-height: 1;
 }
 
-.web-call-icon-label {
-  display: none;
-}
-
 .web-chat-search {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 36px;
@@ -2101,22 +2097,6 @@ body {
 
   .web-page.web-mobile-chat-open .web-chat-panel {
     display: flex;
-  }
-
-  .web-page.web-call-active .web-call-icon {
-    width: auto;
-    min-width: 122px;
-    padding: 0 14px;
-    gap: 8px;
-    background: #ef4444;
-    color: #fff;
-  }
-
-  .web-page.web-call-active .web-call-icon-label {
-    display: inline;
-    font-size: 14px;
-    font-weight: 700;
-    line-height: 1;
   }
 
   .heroes-layout {
