@@ -29,6 +29,7 @@ const webChatSearchInputNode = document.getElementById("web-chat-search-input");
 const webChatSearchClearNode = document.getElementById("web-chat-search-clear");
 const webChatBackNode = document.getElementById("web-chat-back");
 const webCallIconGlyphNode = document.getElementById("web-call-icon-glyph");
+const webCallIconLabelNode = document.getElementById("web-call-icon-label");
 
 const tg = window.Telegram?.WebApp;
 if (tg) {
@@ -527,6 +528,9 @@ function setMicButtonState(text, disabled = false) {
     if (labelNode) {
       labelNode.textContent = label;
     }
+    if (webCallIconLabelNode) {
+      webCallIconLabelNode.textContent = label === "Завершить" ? "Завершить" : "";
+    }
     if (webCallIconGlyphNode) {
       if (label === "Завершить") {
         webCallIconGlyphNode.textContent = "✕";
@@ -577,6 +581,7 @@ function syncCallControls() {
   updateWaveLiveState(callActive);
   syncCharacterVideoState();
   updateWebChatComposerState();
+  body.classList.toggle("web-call-active", callActive);
   if (connecting) {
     setMicButtonState("Соединяем…", true);
     setMicButtonTone("primary");
