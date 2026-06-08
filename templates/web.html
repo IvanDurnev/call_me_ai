@@ -103,7 +103,7 @@
                 {% if not call_access_available %}disabled{% endif %}
                 aria-label="{% if call_access_available %}Позвонить{% else %}Минуты закончились{% endif %}"
               >
-                <span class="web-icon-btn-glyph">📞</span>
+                <span id="web-call-icon-glyph" class="web-icon-btn-glyph">📞</span>
                 <span class="sr-only btn-label">{% if call_access_available %}Позвонить{% else %}Минуты закончились{% endif %}</span>
               </button>
 <!--              <button class="web-icon-btn" type="button" aria-label="Меню">⋮</button>-->

@@ -28,6 +28,7 @@ const webChatSearchNode = document.getElementById("web-chat-search");
 const webChatSearchInputNode = document.getElementById("web-chat-search-input");
 const webChatSearchClearNode = document.getElementById("web-chat-search-clear");
 const webChatBackNode = document.getElementById("web-chat-back");
+const webCallIconGlyphNode = document.getElementById("web-call-icon-glyph");
 
 const tg = window.Telegram?.WebApp;
 if (tg) {
@@ -525,6 +526,15 @@ function setMicButtonState(text, disabled = false) {
     const labelNode = micButton.querySelector(".btn-label");
     if (labelNode) {
       labelNode.textContent = label;
+    }
+    if (webCallIconGlyphNode) {
+      if (label === "Завершить") {
+        webCallIconGlyphNode.textContent = "✕";
+      } else if (label === "Соединяем…") {
+        webCallIconGlyphNode.textContent = "…";
+      } else {
+        webCallIconGlyphNode.textContent = "📞";
+      }
     }
     micButton.setAttribute("aria-label", label);
   } else {
