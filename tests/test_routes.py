@@ -4,7 +4,7 @@ import base64
 import hashlib
 import hmac
 import io
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
 import tempfile
@@ -14,8 +14,8 @@ from unittest.mock import patch
 
 from flask import Flask
 
-from app.extensions import db
-from app.models import AdminUser, AppUser, CallSession, Hero, PricingPlan, SubscriptionPurchase
+from app.extensions import db, mail
+from app.models import AdminUser, AppUser, CallSession, ChatMessage, EmailCode, Hero, MobileAuthToken, PricingPlan, SubscriptionPurchase
 from app.routes import (
     ADMIN_SESSION_KEY,
     APP_USER_SESSION_KEY,
@@ -91,6 +91,7 @@ class AdminUsersRoutesTests(unittest.TestCase):
             SQLALCHEMY_TRACK_MODIFICATIONS=False,
         )
         db.init_app(self.app)
+        mail.init_app(self.app)
         self.app.register_blueprint(main_bp)
         with self.app.app_context():
             db.create_all()
@@ -144,6 +145,7 @@ class CloudPaymentsRoutesTests(unittest.TestCase):
             CLOUDPAYMENTS_API_PASSWORD="cp_secret",
         )
         db.init_app(self.app)
+        mail.init_app(self.app)
         self.app.register_blueprint(main_bp)
         with self.app.app_context():
             db.create_all()
@@ -844,6 +846,7 @@ class CallSessionRoutesTests(unittest.TestCase):
             OPENAI_REALTIME_VOICE="alloy",
         )
         db.init_app(self.app)
+        mail.init_app(self.app)
         self.app.register_blueprint(main_bp)
         with self.app.app_context():
             db.create_all()
@@ -1313,6 +1316,298 @@ class CallSessionRoutesTests(unittest.TestCase):
                     {"role": "agent", "text": "До свидания!"},
                 ],
             )
+
+
+class MobileAuthRoutesTests(unittest.TestCase):
+    def setUp(self) -> None:
+        project_root = Path(__file__).resolve().parents[1]
+        self.app = Flask(
+            __name__,
+            template_folder=str(project_root / "templates"),
+            static_folder=str(project_root / "static"),
+        )
+        self.app.config.update(
+            SECRET_KEY="test-secret",
+            TESTING=True,
+            SQLALCHEMY_DATABASE_URI="sqlite://",
+            SQLALCHEMY_TRACK_MODIFICATIONS=False,
+            MAIL_SUPPRESS_SEND=True,
+            MAIL_DEFAULT_SENDER="test@example.com",
+            EMAIL_VERIFICATION_CODE_TTL_MINUTES=10,
+            EMAIL_VERIFICATION_RESEND_INTERVAL_SECONDS=0,
+            MOBILE_ACCESS_TOKEN_TTL_SECONDS=3600,
+            MOBILE_REFRESH_TOKEN_TTL_DAYS=30,
+            TRY_CALLS_NUMBER=1,
+        )
+        db.init_app(self.app)
+        mail.init_app(self.app)
+        self.app.register_blueprint(main_bp)
+        with self.app.app_context():
+            db.create_all()
+        self.client = self.app.test_client()
+
+    def tearDown(self) -> None:
+        with self.app.app_context():
+            db.session.remove()
+            db.drop_all()
+
+    def test_request_code_creates_email_user_and_returns_masked_destination(self) -> None:
+        response = self.client.post("/api/mobile/auth/request-code", json={"login": "new-user@example.com"})
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertTrue(payload["ok"])
+        self.assertEqual(payload["channel"], "email")
+        self.assertEqual(payload["masked_destination"], "n***@example.com")
+
+        with self.app.app_context():
+            user = AppUser.query.filter_by(email="new-user@example.com").first()
+            self.assertIsNotNone(user)
+            self.assertFalse(user.email_verified)
+            code = EmailCode.query.filter_by(email="new-user@example.com", purpose="mobile_login").first()
+            self.assertIsNotNone(code)
+
+    def test_verify_code_returns_mobile_tokens_and_marks_email_verified(self) -> None:
+        self.client.post("/api/mobile/auth/request-code", json={"login": "verify-me@example.com"})
+        with self.app.app_context():
+            code_entry = (
+                EmailCode.query.filter_by(email="verify-me@example.com", purpose="mobile_login")
+                .order_by(EmailCode.id.desc())
+                .first()
+            )
+            self.assertIsNotNone(code_entry)
+            code_entry.code_hash = EmailCode.hash_code("123456")
+            db.session.commit()
+
+        response = self.client.post(
+            "/api/mobile/auth/verify-code",
+            json={
+                "login": "verify-me@example.com",
+                "code": "123456",
+                "purpose": "mobile_login",
+                "device_name": "QA iPhone",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertTrue(payload["ok"])
+        self.assertTrue(payload["access_token"])
+        self.assertTrue(payload["refresh_token"])
+        self.assertEqual(payload["user"]["email"], "verify-me@example.com")
+        self.assertTrue(payload["user"]["email_verified"])
+
+        with self.app.app_context():
+            user = AppUser.query.filter_by(email="verify-me@example.com").first()
+            self.assertIsNotNone(user)
+            self.assertTrue(user.email_verified)
+            token = MobileAuthToken.query.filter_by(app_user_id=user.id).first()
+            self.assertIsNotNone(token)
+            self.assertEqual(token.device_name, "QA iPhone")
+
+    def test_mobile_me_requires_bearer_token_and_returns_user(self) -> None:
+        self.client.post("/api/mobile/auth/request-code", json={"login": "me@example.com"})
+        with self.app.app_context():
+            code_entry = (
+                EmailCode.query.filter_by(email="me@example.com", purpose="mobile_login")
+                .order_by(EmailCode.id.desc())
+                .first()
+            )
+            self.assertIsNotNone(code_entry)
+            code_entry.code_hash = EmailCode.hash_code("654321")
+            db.session.commit()
+
+        verify_response = self.client.post(
+            "/api/mobile/auth/verify-code",
+            json={"login": "me@example.com", "code": "654321", "purpose": "mobile_login"},
+        )
+        access_token = verify_response.get_json()["access_token"]
+
+        unauthorized_response = self.client.get("/api/mobile/me")
+        self.assertEqual(unauthorized_response.status_code, 401)
+
+        authorized_response = self.client.get(
+            "/api/mobile/me",
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+        self.assertEqual(authorized_response.status_code, 200)
+        payload = authorized_response.get_json()
+        self.assertTrue(payload["ok"])
+        self.assertEqual(payload["user"]["email"], "me@example.com")
+
+
+class MobileChatRoutesTests(unittest.TestCase):
+    def setUp(self) -> None:
+        project_root = Path(__file__).resolve().parents[1]
+        self.app = Flask(
+            __name__,
+            template_folder=str(project_root / "templates"),
+            static_folder=str(project_root / "static"),
+        )
+        self.app.config.update(
+            SECRET_KEY="test-secret",
+            TESTING=True,
+            SQLALCHEMY_DATABASE_URI="sqlite://",
+            SQLALCHEMY_TRACK_MODIFICATIONS=False,
+            MAIL_SUPPRESS_SEND=True,
+            MAIL_DEFAULT_SENDER="test@example.com",
+            OPENAI_API_KEY="test-openai-key",
+            OPENAI_CHAT_MODEL="gpt-4o-mini",
+            TRY_CALLS_NUMBER=1,
+        )
+        db.init_app(self.app)
+        mail.init_app(self.app)
+        self.app.register_blueprint(main_bp)
+        with self.app.app_context():
+            db.create_all()
+            self.user = AppUser(
+                email="mobile-chat@example.com",
+                phone="",
+                name="Mobile Chat",
+                consent_to_personal_data=True,
+                email_verified=True,
+            )
+            db.session.add(self.user)
+            db.session.commit()
+            self.user_id = self.user.id
+            self.access_token = "mobile-access-token"
+            token = MobileAuthToken(
+                app_user_id=self.user_id,
+                access_token_hash=MobileAuthToken.hash_token(self.access_token),
+                refresh_token_hash=MobileAuthToken.hash_token("mobile-refresh-token"),
+                access_expires_at=datetime.utcnow() + timedelta(hours=1),
+                refresh_expires_at=datetime.utcnow() + timedelta(days=30),
+            )
+            db.session.add(token)
+            db.session.commit()
+        self.client = self.app.test_client()
+        self.auth_headers = {"Authorization": f"Bearer {self.access_token}"}
+
+    def tearDown(self) -> None:
+        with self.app.app_context():
+            db.session.remove()
+            db.drop_all()
+
+    def test_chat_list_returns_characters_for_mobile_user(self) -> None:
+        response = self.client.get("/api/mobile/chats", headers=self.auth_headers)
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertTrue(payload["ok"])
+        self.assertTrue(payload["items"])
+        first_item = payload["items"][0]
+        self.assertIn("character_slug", first_item)
+        self.assertIn("last_message", first_item)
+        self.assertIn("can_call", first_item)
+
+    def test_chat_messages_returns_empty_list_when_history_is_empty(self) -> None:
+        response = self.client.get("/api/mobile/chats/domovenok-kuzya/messages", headers=self.auth_headers)
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertTrue(payload["ok"])
+        self.assertEqual(payload["character"]["slug"], "domovenok-kuzya")
+        self.assertEqual(payload["items"], [])
+
+    def test_send_message_persists_user_and_assistant_messages(self) -> None:
+        with patch("app.routes.generate_chat_reply", return_value="Привет! Я рядом.") as reply_mock:
+            response = self.client.post(
+                "/api/mobile/chats/domovenok-kuzya/messages",
+                headers=self.auth_headers,
+                json={"text": "Привет!"},
+            )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertTrue(payload["ok"])
+        self.assertEqual(payload["user_message"]["role"], "user")
+        self.assertEqual(payload["assistant_message"]["role"], "assistant")
+        reply_mock.assert_called_once()
+
+        with self.app.app_context():
+            messages = (
+                ChatMessage.query.filter_by(app_user_id=self.user_id, character_slug="domovenok-kuzya")
+                .order_by(ChatMessage.id.asc())
+                .all()
+            )
+            self.assertEqual(len(messages), 2)
+            self.assertEqual(messages[0].text, "Привет!")
+            self.assertEqual(messages[1].text, "Привет! Я рядом.")
+
+    def test_send_message_uses_web_aligned_default_reply_timeout(self) -> None:
+        captured_kwargs: dict[str, object] = {}
+
+        def fake_generate_chat_reply(**kwargs):
+            captured_kwargs.update(kwargs)
+            return "Привет! Я рядом."
+
+        with patch("app.routes.generate_chat_reply", side_effect=fake_generate_chat_reply):
+            response = self.client.post(
+                "/api/mobile/chats/domovenok-kuzya/messages",
+                headers=self.auth_headers,
+                json={"text": "Привет!"},
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(captured_kwargs["timeout_seconds"], 60.0)
+
+    def test_send_message_sends_latest_mobile_history_to_reply_generator(self) -> None:
+        with self.app.app_context():
+            for index in range(15):
+                db.session.add(
+                    ChatMessage(
+                        app_user_id=self.user_id,
+                        character_slug="domovenok-kuzya",
+                        role="user",
+                        text=f"Старый вопрос {index}",
+                        source="mobile",
+                    )
+                )
+                db.session.add(
+                    ChatMessage(
+                        app_user_id=self.user_id,
+                        character_slug="domovenok-kuzya",
+                        role="assistant",
+                        text=f"Старый ответ {index}",
+                        source="mobile",
+                    )
+                )
+            db.session.commit()
+
+        captured_messages: list[dict[str, str]] = []
+
+        def fake_generate_chat_reply(**kwargs):
+            captured_messages.extend(kwargs["messages"])
+            return "Отвечаю на новый вопрос."
+
+        with patch("app.routes.generate_chat_reply", side_effect=fake_generate_chat_reply):
+            response = self.client.post(
+                "/api/mobile/chats/domovenok-kuzya/messages",
+                headers=self.auth_headers,
+                json={"text": "Новый вопрос"},
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(captured_messages[-1]["role"], "user")
+        self.assertEqual(captured_messages[-1]["content"], "Новый вопрос")
+        self.assertNotIn("Старый вопрос 0", [message["content"] for message in captured_messages])
+
+    def test_web_chat_accepts_mobile_bearer_token(self) -> None:
+        with patch("app.routes.generate_chat_reply", return_value="Привет из общего чата.") as reply_mock:
+            response = self.client.post(
+                "/api/web-chat",
+                headers=self.auth_headers,
+                json={
+                    "character_slug": "domovenok-kuzya",
+                    "messages": [{"role": "user", "text": "Привет"}],
+                },
+            )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertTrue(payload["ok"])
+        self.assertEqual(payload["message"]["text"], "Привет из общего чата.")
+        reply_mock.assert_called_once()
 
 
 if __name__ == "__main__":

@@ -3,7 +3,9 @@ from __future__ import annotations
 import json
 import hashlib
 import hmac
+import logging
 import re
+import secrets
 import shutil
 import subprocess
 import time
@@ -35,7 +37,7 @@ from .characters import (
     normalize_realtime_settings,
 )
 from .extensions import db
-from .models import AdminUser, AppUser, Hero, CallSession, SubscriptionPurchase, PricingPlan
+from .models import AdminUser, AppUser, CallSession, ChatMessage, Hero, MobileAuthToken, PricingPlan, SubscriptionPurchase
 from .services import (
     build_user_access_state,
     build_voice_library_payload,
@@ -444,6 +446,40 @@ def _current_app_user() -> AppUser | None:
         return None
 
 
+def _current_mobile_auth_token() -> MobileAuthToken | None:
+    auth_header = (request.headers.get("Authorization") or "").strip()
+    if not auth_header.lower().startswith("bearer "):
+        return None
+
+    raw_token = auth_header[7:].strip()
+    if not raw_token:
+        return None
+
+    token_hash = MobileAuthToken.hash_token(raw_token)
+    now = datetime.utcnow()
+    try:
+        token = (
+            MobileAuthToken.query.filter_by(access_token_hash=token_hash, revoked_at=None)
+            .order_by(MobileAuthToken.id.desc())
+            .first()
+        )
+    except (OperationalError, ProgrammingError):
+        db.session.rollback()
+        return None
+    if not token or token.access_expires_at <= now:
+        return None
+    token.last_used_at = now
+    db.session.commit()
+    return token
+
+
+def _current_mobile_user() -> AppUser | None:
+    token = _current_mobile_auth_token()
+    if not token:
+        return None
+    return db.session.get(AppUser, token.app_user_id)
+
+
 def _login_app_user(user: AppUser) -> None:
     session.permanent = True
     session[APP_USER_SESSION_KEY] = user.id
@@ -516,8 +552,229 @@ def _is_valid_email(value: str) -> bool:
     return bool(EMAIL_RE.match((value or "").strip()))
 
 
+def _looks_like_phone(value: str) -> bool:
+    digits = _normalize_phone(value)
+    return len(digits) == 11
+
+
 def _is_resend_wait_error(message: str) -> bool:
     return "Повторно запросить код можно через" in (message or "")
+
+
+def _mobile_access_token_ttl_seconds() -> int:
+    return max(60, int(current_app.config.get("MOBILE_ACCESS_TOKEN_TTL_SECONDS", 3600)))
+
+
+def _mobile_refresh_token_ttl_days() -> int:
+    return max(1, int(current_app.config.get("MOBILE_REFRESH_TOKEN_TTL_DAYS", 30)))
+
+
+def _mask_email(email: str) -> str:
+    normalized = (email or "").strip().lower()
+    if "@" not in normalized:
+        return normalized
+    local, domain = normalized.split("@", 1)
+    masked_local = "*" if len(local) <= 1 else local[0] + "***"
+    return f"{masked_local}@{domain}"
+
+
+def _build_mobile_display_name(email: str) -> str:
+    local = (email.split("@", 1)[0] if "@" in email else email).strip("._- ")
+    if not local:
+        return "User"
+    return local[:80]
+
+
+def _serialize_mobile_user(user: AppUser) -> dict:
+    access_state = _app_user_access_state(user)
+    return {
+        "id": user.id,
+        "uuid": user.user_uuid,
+        "name": user.name,
+        "email": user.email,
+        "phone": user.phone or "",
+        "email_verified": bool(user.email_verified),
+        "has_call_access": bool(access_state["has_call_access"]),
+        "remaining_trial_minutes": int(access_state["trial_remaining_minutes"]),
+    }
+
+
+def _mobile_asset_url(value: str | None) -> str | None:
+    raw = str(value or "").strip()
+    if not raw:
+        return None
+    if raw.startswith(("http://", "https://")):
+        return raw
+    if raw.startswith("/"):
+        return f"{current_app.config['PUBLIC_BASE_URL'].rstrip('/')}{raw}"
+    return f"{current_app.config['PUBLIC_BASE_URL'].rstrip('/')}/{raw.lstrip('/')}"
+
+
+def _default_character_greeting(character: dict) -> str:
+    greeting = str(character.get("greeting_prompt") or "").strip()
+    if greeting:
+        return greeting
+    return str(DEFAULT_GREETING_PROMPT or "Привет! Чем помочь?").strip()
+
+
+def _serialize_chat_message(message: ChatMessage) -> dict:
+    return {
+        "id": f"msg_{message.id}",
+        "role": message.role,
+        "text": message.text,
+        "created_at": message.created_at.isoformat() + "Z",
+    }
+
+
+def _load_chat_messages(user: AppUser, character_slug: str, *, limit: int | None = None) -> list[ChatMessage]:
+    if limit:
+        latest_items = (
+            ChatMessage.query.filter_by(app_user_id=user.id, character_slug=character_slug)
+            .order_by(ChatMessage.created_at.desc(), ChatMessage.id.desc())
+            .limit(limit)
+            .all()
+        )
+        return list(reversed(latest_items))
+    return (
+        ChatMessage.query.filter_by(app_user_id=user.id, character_slug=character_slug)
+        .order_by(ChatMessage.created_at.asc(), ChatMessage.id.asc())
+        .all()
+    )
+
+
+def _chat_list_last_message_payload(character: dict, message: ChatMessage | None) -> dict:
+    if message:
+        return _serialize_chat_message(message)
+    return {
+        "id": None,
+        "role": "assistant",
+        "text": _default_character_greeting(character),
+        "created_at": None,
+    }
+
+
+def _mobile_chat_list_items(user: AppUser) -> list[dict]:
+    characters = _serialize_characters(list_characters())
+    access_state = _app_user_access_state(user)
+    latest_messages = (
+        db.session.query(ChatMessage)
+        .filter(ChatMessage.app_user_id == user.id)
+        .order_by(ChatMessage.character_slug.asc(), ChatMessage.created_at.desc(), ChatMessage.id.desc())
+        .all()
+    )
+    latest_by_slug: dict[str, ChatMessage] = {}
+    for item in latest_messages:
+        latest_by_slug.setdefault(item.character_slug, item)
+
+    items = []
+    for character in characters:
+        last_message = _chat_list_last_message_payload(character, latest_by_slug.get(character["slug"]))
+        items.append(
+            {
+                "chat_id": f"hero:{character['slug']}",
+                "character_slug": character["slug"],
+                "title": character["name"],
+                "subtitle": character["description"],
+                "avatar_url": _mobile_asset_url(character.get("avatar_url")),
+                "last_message": last_message,
+                "unread_count": 0,
+                "can_call": bool(access_state["has_call_access"]),
+            }
+        )
+    return items
+
+
+def _issue_mobile_tokens(user: AppUser, *, device_name: str = "") -> dict:
+    now = datetime.utcnow()
+    access_token = secrets.token_urlsafe(32)
+    refresh_token = secrets.token_urlsafe(48)
+    access_ttl = _mobile_access_token_ttl_seconds()
+    refresh_ttl_days = _mobile_refresh_token_ttl_days()
+    token = MobileAuthToken(
+        app_user_id=user.id,
+        access_token_hash=MobileAuthToken.hash_token(access_token),
+        refresh_token_hash=MobileAuthToken.hash_token(refresh_token),
+        device_name=(device_name or "").strip()[:255] or None,
+        last_used_at=now,
+        access_expires_at=now + timedelta(seconds=access_ttl),
+        refresh_expires_at=now + timedelta(days=refresh_ttl_days),
+    )
+    db.session.add(token)
+    db.session.commit()
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "expires_in": access_ttl,
+    }
+
+
+def _rotate_mobile_access_token(token: MobileAuthToken) -> dict:
+    now = datetime.utcnow()
+    access_token = secrets.token_urlsafe(32)
+    access_ttl = _mobile_access_token_ttl_seconds()
+    token.access_token_hash = MobileAuthToken.hash_token(access_token)
+    token.access_expires_at = now + timedelta(seconds=access_ttl)
+    token.last_used_at = now
+    db.session.commit()
+    return {
+        "access_token": access_token,
+        "expires_in": access_ttl,
+    }
+
+
+def _mobile_token_from_refresh_token(raw_refresh_token: str) -> MobileAuthToken | None:
+    if not raw_refresh_token:
+        return None
+    token_hash = MobileAuthToken.hash_token(raw_refresh_token)
+    now = datetime.utcnow()
+    try:
+        token = (
+            MobileAuthToken.query.filter_by(refresh_token_hash=token_hash, revoked_at=None)
+            .order_by(MobileAuthToken.id.desc())
+            .first()
+        )
+    except (OperationalError, ProgrammingError):
+        db.session.rollback()
+        return None
+    if not token or token.refresh_expires_at <= now:
+        return None
+    return token
+
+
+def _mobile_chat_reply(character: dict, history: list[ChatMessage]) -> str:
+    normalized_messages = [
+        {"role": message.role, "content": message.text[:4000]}
+        for message in history[-40:]
+        if message.role in {"user", "assistant"} and message.text
+    ]
+    return _generate_text_chat_reply(
+        character=character,
+        normalized_messages=normalized_messages,
+        chat_surface_label="в текстовом чате мобильного приложения",
+    )
+
+
+def _generate_text_chat_reply(
+    *,
+    character: dict,
+    normalized_messages: list[dict[str, str]],
+    chat_surface_label: str,
+) -> str:
+    system_prompt = (
+        f"{build_runtime_instructions(character, end_call_mode='function')}\n\n"
+        f"Сейчас общение происходит {chat_surface_label}. "
+        "Отвечай по-русски естественно, тепло и кратко, как в мессенджере. "
+        "Не говори о телефонном звонке, микрофоне или голосовой сессии, если пользователь сам не переводит разговор туда."
+    )
+    return generate_chat_reply(
+        api_key=current_app.config["OPENAI_API_KEY"],
+        model=current_app.config["OPENAI_CHAT_MODEL"],
+        messages=[
+            {"role": "system", "content": system_prompt},
+            *normalized_messages,
+        ],
+        timeout_seconds=float(current_app.config.get("MOBILE_CHAT_REPLY_TIMEOUT_SECONDS", 60)),
+    )
 
 
 def _format_call_duration(total_seconds: int | float | None) -> str:
@@ -1768,6 +2025,215 @@ def verify_email():
     )
 
 
+@main_bp.post("/api/mobile/auth/request-code")
+def mobile_auth_request_code_api():
+    payload = request.get_json(silent=True) or {}
+    login = str(payload.get("login") or "").strip().lower()
+    if not login:
+        return jsonify({"ok": False, "error": "Email or phone is required."}), 400
+    if _looks_like_phone(login):
+        return jsonify({"ok": False, "error": "SMS login is not enabled yet."}), 400
+    if not _is_valid_email(login):
+        return jsonify({"ok": False, "error": "Enter a valid email address."}), 400
+
+    user = _find_app_user_by_email(login)
+    if not user:
+        user = AppUser(
+            email=login,
+            phone="",
+            name=_build_mobile_display_name(login),
+            consent_to_personal_data=False,
+            email_verified=False,
+        )
+        db.session.add(user)
+        db.session.commit()
+
+    try:
+        issue_email_code(user=user, purpose="mobile_login")
+    except ValueError as exc:
+        status_code = 429 if _is_resend_wait_error(str(exc)) else 400
+        return jsonify({"ok": False, "error": str(exc)}), status_code
+
+    ttl_seconds = max(60, int(current_app.config.get("EMAIL_VERIFICATION_CODE_TTL_MINUTES", 10)) * 60)
+    resend_seconds = max(1, int(current_app.config.get("EMAIL_VERIFICATION_RESEND_INTERVAL_SECONDS", 60)))
+    return jsonify(
+        {
+            "ok": True,
+            "channel": "email",
+            "masked_destination": _mask_email(login),
+            "expires_in_seconds": ttl_seconds,
+            "resend_in_seconds": resend_seconds,
+            "purpose": "mobile_login",
+        }
+    )
+
+
+@main_bp.post("/api/mobile/auth/verify-code")
+def mobile_auth_verify_code_api():
+    payload = request.get_json(silent=True) or {}
+    login = str(payload.get("login") or "").strip().lower()
+    code = str(payload.get("code") or "").strip()
+    purpose = str(payload.get("purpose") or "mobile_login").strip() or "mobile_login"
+    device_name = str(payload.get("device_name") or "").strip()
+
+    if not login or not code:
+        return jsonify({"ok": False, "error": "Login and code are required."}), 400
+    if purpose != "mobile_login":
+        return jsonify({"ok": False, "error": "Unsupported verification purpose."}), 400
+    if _looks_like_phone(login):
+        return jsonify({"ok": False, "error": "SMS login is not enabled yet."}), 400
+    if not _is_valid_email(login):
+        return jsonify({"ok": False, "error": "Enter a valid email address."}), 400
+
+    try:
+        user = verify_email_code(email=login, code=code, purpose=purpose)
+    except ValueError as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 400
+
+    user = _ensure_user_uuid(user)
+    if not user.email_verified:
+        user.email_verified = True
+        user.email_verified_at = datetime.utcnow()
+        db.session.commit()
+
+    tokens = _issue_mobile_tokens(user, device_name=device_name)
+    return jsonify({"ok": True, **tokens, "user": _serialize_mobile_user(user)})
+
+
+@main_bp.post("/api/mobile/auth/refresh")
+def mobile_auth_refresh_api():
+    payload = request.get_json(silent=True) or {}
+    refresh_token = str(payload.get("refresh_token") or "").strip()
+    if not refresh_token:
+        return jsonify({"ok": False, "error": "Refresh token is required."}), 400
+
+    token = _mobile_token_from_refresh_token(refresh_token)
+    if not token:
+        return jsonify({"ok": False, "error": "Refresh token is invalid or expired."}), 401
+
+    rotated = _rotate_mobile_access_token(token)
+    return jsonify({"ok": True, **rotated})
+
+
+@main_bp.post("/api/mobile/auth/logout")
+def mobile_auth_logout_api():
+    payload = request.get_json(silent=True) or {}
+    refresh_token = str(payload.get("refresh_token") or "").strip()
+    if not refresh_token:
+        return jsonify({"ok": False, "error": "Refresh token is required."}), 400
+
+    token = _mobile_token_from_refresh_token(refresh_token)
+    if token:
+        token.revoked_at = datetime.utcnow()
+        db.session.commit()
+    return jsonify({"ok": True})
+
+
+@main_bp.get("/api/mobile/me")
+def mobile_me_api():
+    user = _current_mobile_user()
+    if not user:
+        return jsonify({"ok": False, "error": "Authentication required."}), 401
+    user = _ensure_user_uuid(user)
+    return jsonify({"ok": True, "user": _serialize_mobile_user(user)})
+
+
+@main_bp.get("/api/mobile/chats")
+def mobile_chats_api():
+    user = _current_mobile_user()
+    if not user:
+        return jsonify({"ok": False, "error": "Authentication required."}), 401
+    user = _ensure_user_uuid(user)
+    return jsonify({"ok": True, "items": _mobile_chat_list_items(user)})
+
+
+@main_bp.get("/api/mobile/chats/<slug>/messages")
+def mobile_chat_messages_api(slug: str):
+    user = _current_mobile_user()
+    if not user:
+        return jsonify({"ok": False, "error": "Authentication required."}), 401
+    user = _ensure_user_uuid(user)
+
+    character = get_character(slug, include_inactive=False)
+    if not character:
+        return jsonify({"ok": False, "error": "Hero not found."}), 404
+    serialized_character = _serialize_character(character)
+    messages = _load_chat_messages(user, slug)
+    items = [_serialize_chat_message(message) for message in messages]
+
+    return jsonify(
+        {
+            "ok": True,
+            "character": {
+                "slug": serialized_character["slug"],
+                "name": serialized_character["name"],
+                "avatar_url": _mobile_asset_url(serialized_character.get("avatar_url")),
+            },
+            "items": items,
+            "next_cursor": None,
+        }
+    )
+
+
+@main_bp.post("/api/mobile/chats/<slug>/messages")
+def mobile_chat_send_message_api(slug: str):
+    user = _current_mobile_user()
+    if not user:
+        return jsonify({"ok": False, "error": "Authentication required."}), 401
+    user = _ensure_user_uuid(user)
+    if not _app_user_ready_for_calls(user):
+        return jsonify({"ok": False, "error": "Email verification required."}), 403
+    if not current_app.config.get("OPENAI_API_KEY"):
+        return jsonify({"ok": False, "error": "OPENAI_API_KEY is not configured."}), 503
+
+    character = get_character(slug, include_inactive=False)
+    if not character:
+        return jsonify({"ok": False, "error": "Hero not found."}), 404
+    serialized_character = _serialize_character(character)
+
+    payload = request.get_json(silent=True) or {}
+    text = str(payload.get("text") or "").strip()
+    if not text:
+        return jsonify({"ok": False, "error": "Message text is required."}), 400
+
+    user_message = ChatMessage(
+        app_user_id=user.id,
+        character_slug=slug,
+        role="user",
+        text=text[:4000],
+        source="mobile",
+    )
+    db.session.add(user_message)
+    db.session.commit()
+
+    history = _load_chat_messages(user, slug, limit=24)
+    try:
+        reply_text = _mobile_chat_reply(serialized_character, history)
+    except Exception as exc:  # noqa: BLE001
+        logging.exception("Mobile chat reply failed for %s", slug)
+        error_message = str(exc).strip().lower()
+        status_code = 504 if "timeout" in error_message or "timed out" in error_message else 502
+        return jsonify({"ok": False, "error": "Персонаж пока не ответил. Попробуйте еще раз через пару секунд."}), status_code
+
+    assistant_message = ChatMessage(
+        app_user_id=user.id,
+        character_slug=slug,
+        role="assistant",
+        text=reply_text[:4000],
+        source="mobile",
+    )
+    db.session.add(assistant_message)
+    db.session.commit()
+
+    return jsonify(
+        {
+            "ok": True,
+            "user_message": _serialize_chat_message(user_message),
+            "assistant_message": _serialize_chat_message(assistant_message),
+        }
+    )
+
+
 @main_bp.get("/account")
 def account():
     user = _current_app_user()
@@ -2903,7 +3369,7 @@ def finish_call_session_api(call_session_id: int):
 
 @main_bp.post("/api/web-chat")
 def web_chat_api():
-    app_user = _current_app_user()
+    app_user = _current_app_user() or _current_mobile_user()
     if not app_user:
         return jsonify({"ok": False, "error": "Authentication required."}), 401
     if not _app_user_ready_for_calls(app_user):
@@ -2936,20 +3402,10 @@ def web_chat_api():
     if normalized_messages[-1]["role"] != "user":
         return jsonify({"ok": False, "error": "Last message must be from the user."}), 400
 
-    system_prompt = (
-        f"{build_runtime_instructions(character, end_call_mode='function')}\n\n"
-        "Сейчас общение происходит в текстовом чате на сайте. "
-        "Отвечай по-русски естественно, тепло и кратко, как в мессенджере. "
-        "Не говори о телефонном звонке, микрофоне или голосовой сессии, если пользователь сам не переводит разговор туда."
-    )
-
-    reply_text = generate_chat_reply(
-        api_key=current_app.config["OPENAI_API_KEY"],
-        model=current_app.config["OPENAI_CHAT_MODEL"],
-        messages=[
-            {"role": "system", "content": system_prompt},
-            *normalized_messages,
-        ],
+    reply_text = _generate_text_chat_reply(
+        character=character,
+        normalized_messages=normalized_messages,
+        chat_surface_label="в текстовом чате на сайте",
     )
 
     return jsonify(

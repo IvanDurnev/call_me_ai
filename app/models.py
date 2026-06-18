@@ -59,6 +59,39 @@ class EmailCode(db.Model):
         return self.code_hash == self.hash_code(code)
 
 
+class MobileAuthToken(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    app_user_id = db.Column(db.Integer, db.ForeignKey("app_user.id"), nullable=False, index=True)
+    access_token_hash = db.Column(db.String(64), nullable=False, unique=True, index=True)
+    refresh_token_hash = db.Column(db.String(64), nullable=False, unique=True, index=True)
+    device_name = db.Column(db.String(255), nullable=True)
+    last_used_at = db.Column(db.DateTime, nullable=True)
+    access_expires_at = db.Column(db.DateTime, nullable=False)
+    refresh_expires_at = db.Column(db.DateTime, nullable=False)
+    revoked_at = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+    @staticmethod
+    def hash_token(token: str) -> str:
+        return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+    def matches_access_token(self, token: str) -> bool:
+        return self.access_token_hash == self.hash_token(token)
+
+    def matches_refresh_token(self, token: str) -> bool:
+        return self.refresh_token_hash == self.hash_token(token)
+
+
+class ChatMessage(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    app_user_id = db.Column(db.Integer, db.ForeignKey("app_user.id"), nullable=False, index=True)
+    character_slug = db.Column(db.String(64), nullable=False, index=True)
+    role = db.Column(db.String(32), nullable=False)
+    text = db.Column(db.Text, nullable=False)
+    source = db.Column(db.String(32), nullable=False, default="mobile")
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, index=True)
+
+
 class Hero(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     slug = db.Column(db.String(64), nullable=False, unique=True, index=True)
