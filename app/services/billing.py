@@ -75,11 +75,20 @@ def _find_active_unlimited_bucket(unlimited_buckets: list[dict], at: datetime) -
     )
 
 
-def build_user_access_state(user: AppUser | None, *, trial_minutes_limit: int) -> dict:
+def build_user_access_state(
+    user: AppUser | None,
+    *,
+    trial_minutes_limit: int,
+    purchases: list[SubscriptionPurchase] | None = None,
+    calls: list[CallSession] | None = None,
+    plan_cache: dict[str, PricingPlan | None] | None = None,
+    now: datetime | None = None,
+) -> dict:
     empty_state = {
         "trial_total_minutes": max(0, int(trial_minutes_limit)),
         "trial_remaining_minutes": 0,
         "trial_used_minutes": 0,
+        "trial_calls_tried": False,
         "package_total_minutes": 0,
         "package_remaining_minutes": 0,
         "package_used_minutes": 0,
@@ -89,21 +98,24 @@ def build_user_access_state(user: AppUser | None, *, trial_minutes_limit: int) -
     if not user:
         return empty_state
 
-    purchases = (
-        SubscriptionPurchase.query.filter_by(app_user_id=user.id, status="paid")
-        .order_by(SubscriptionPurchase.paid_at.asc(), SubscriptionPurchase.created_at.asc(), SubscriptionPurchase.id.asc())
-        .all()
-    )
-    calls = (
-        CallSession.query.filter(
-            CallSession.app_user_id == user.id,
-            or_(CallSession.ended_at.isnot(None), CallSession.status == "finished"),
+    if purchases is None:
+        purchases = (
+            SubscriptionPurchase.query.filter_by(app_user_id=user.id, status="paid")
+            .order_by(SubscriptionPurchase.paid_at.asc(), SubscriptionPurchase.created_at.asc(), SubscriptionPurchase.id.asc())
+            .all()
         )
-        .order_by(CallSession.started_at.asc(), CallSession.id.asc())
-        .all()
-    )
+    if calls is None:
+        calls = (
+            CallSession.query.filter(
+                CallSession.app_user_id == user.id,
+                or_(CallSession.ended_at.isnot(None), CallSession.status == "finished"),
+            )
+            .order_by(CallSession.started_at.asc(), CallSession.id.asc())
+            .all()
+        )
 
-    plan_cache: dict[str, PricingPlan | None] = {}
+    if plan_cache is None:
+        plan_cache = {}
     package_buckets = []
     unlimited_buckets = []
     for purchase in purchases:
@@ -120,14 +132,22 @@ def build_user_access_state(user: AppUser | None, *, trial_minutes_limit: int) -
             )
 
     trial_remaining_minutes = max(0, int(trial_minutes_limit))
+    trial_calls_tried = False
 
     for call in calls:
         billed_minutes = _call_billed_minutes(call)
-        if billed_minutes <= 0:
-            continue
-
         call_started_at = call.started_at or call.ended_at or datetime.utcnow()
         active_unlimited = _find_active_unlimited_bucket(unlimited_buckets, call_started_at)
+        if (
+            not active_unlimited
+            and trial_remaining_minutes > 0
+            and call.status == "finished"
+            and call.started_at and call.ended_at
+            and call.ended_at > call.started_at
+        ):
+            trial_calls_tried = True
+        if billed_minutes <= 0:
+            continue
         if active_unlimited:
             # While an unlimited plan is active, we do not spend any minute balance at all:
             # neither purchased minute packages nor trial minutes.
@@ -152,7 +172,7 @@ def build_user_access_state(user: AppUser | None, *, trial_minutes_limit: int) -
             bucket["minutes_remaining"] -= consume
             remaining_to_bill -= consume
 
-    now = datetime.utcnow()
+    now = now or datetime.utcnow()
     active_unlimited = _find_active_unlimited_bucket(list(reversed(unlimited_buckets)), now)
 
     package_total_minutes = sum(bucket["minutes_total"] for bucket in package_buckets)
@@ -226,6 +246,7 @@ def build_user_access_state(user: AppUser | None, *, trial_minutes_limit: int) -
         "trial_total_minutes": max(0, int(trial_minutes_limit)),
         "trial_remaining_minutes": trial_remaining_minutes,
         "trial_used_minutes": trial_used_minutes,
+        "trial_calls_tried": trial_calls_tried,
         "package_total_minutes": package_total_minutes,
         "package_remaining_minutes": package_remaining_minutes,
         "package_used_minutes": package_used_minutes,

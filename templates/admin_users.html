@@ -4,9 +4,9 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Admin</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='call.css', v='20261102adminborderless') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='call.css', v='20261102userssorting') }}">
   </head>
-  <body class="miniapp-page heroes-page">
+  <body class="miniapp-page heroes-page users-page">
     <main class="call-shell heroes-shell">
       <section class="phone-frame">
         <div class="phone-screen heroes-screen">
@@ -28,18 +28,18 @@
           </nav>
 
           <section class="hero-form users-table-card">
+            <p class="hero-meta">Нажмите на заголовок столбца для сортировки. Пробные созвоны — завершённые звонки в рамках пробного времени, включая звонки короче минуты. Оплата — успешная покупка любого тарифа.</p>
             <div class="users-table-wrap">
               <table class="users-table">
                 <thead>
                   <tr>
-                    <th>ID</th>
-                    <th>Имя</th>
-                    <th>Email</th>
-                    <th>Телефон</th>
-                    <th>Подтв. почта</th>
-                    <th>Telegram</th>
-                    <th>MAX</th>
-                    <th>Создан</th>
+                    {% for key, label in columns %}
+                      <th scope="col"{% if sort == key %} aria-sort="{{ 'ascending' if direction == 'asc' else 'descending' }}"{% endif %}>
+                        <a class="users-sort-link" href="{{ url_for('main.admin_users', sort=key, direction='desc' if sort == key and direction == 'asc' else 'asc', per_page=per_page) }}">
+                          {{ label }} <span aria-hidden="true">{{ ('↑' if direction == 'asc' else '↓') if sort == key else '↕' }}</span>
+                        </a>
+                      </th>
+                    {% endfor %}
                   </tr>
                 </thead>
                 <tbody>
@@ -58,11 +58,19 @@
                         {% endif %}
                       </td>
                       <td>{% if user.max_user_id %}{{ user.max_user_id }}{% else %}-{% endif %}</td>
+                      <td>{{ 'Да' if summaries[user.id].trial_calls_tried else 'Нет' }}</td>
+                      <td>{{ 'Да' if summaries[user.id].has_paid else 'Нет' }}</td>
+                      <td>
+                        {{ summaries[user.id].subscription_status }}
+                        {% if summaries[user.id].subscription_name %}
+                          <span class="users-subscription-name">{{ summaries[user.id].subscription_name }}</span>
+                        {% endif %}
+                      </td>
                       <td>{{ user.created_at.strftime("%Y-%m-%d %H:%M") if user.created_at else "-" }}</td>
                     </tr>
                   {% else %}
                     <tr>
-                      <td colspan="8">Пользователи пока не найдены.</td>
+                      <td colspan="11">Пользователи пока не найдены.</td>
                     </tr>
                   {% endfor %}
                 </tbody>
@@ -72,13 +80,13 @@
             <div class="users-pagination">
               <a
                 class="call-btn call-btn-secondary{% if page <= 1 %} is-disabled{% endif %}"
-                href="{% if page > 1 %}{{ url_for('main.admin_users', page=page - 1, per_page=per_page) }}{% else %}#{% endif %}"
+                href="{% if page > 1 %}{{ url_for('main.admin_users', page=page - 1, per_page=per_page, sort=sort, direction=direction) }}{% else %}#{% endif %}"
                 {% if page <= 1 %}aria-disabled="true"{% endif %}
               >Назад</a>
               <p class="hero-meta">Страница {{ page }} из {{ total_pages }}</p>
               <a
                 class="call-btn call-btn-secondary{% if page >= total_pages %} is-disabled{% endif %}"
-                href="{% if page < total_pages %}{{ url_for('main.admin_users', page=page + 1, per_page=per_page) }}{% else %}#{% endif %}"
+                href="{% if page < total_pages %}{{ url_for('main.admin_users', page=page + 1, per_page=per_page, sort=sort, direction=direction) }}{% else %}#{% endif %}"
                 {% if page >= total_pages %}aria-disabled="true"{% endif %}
               >Вперёд</a>
             </div>

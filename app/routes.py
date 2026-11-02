@@ -37,6 +37,7 @@ from .characters import (
     normalize_realtime_settings,
 )
 from .extensions import db
+from .services.admin_users import build_admin_user_summaries
 from .services.openai_models import list_openai_models, supports_text_chat
 from .models import AdminUser, AppUser, CallSession, ChatMessage, Hero, MobileAuthToken, PricingPlan, SubscriptionPurchase
 from .services import (
@@ -2669,16 +2670,45 @@ def admin_users():
         per_page = 50
     per_page = min(max(per_page, 1), 200)
 
-    users_query = AppUser.query.order_by(AppUser.created_at.desc(), AppUser.id.desc())
-    total_users = users_query.count()
+    columns = [
+        ("id", "ID"), ("name", "Имя"), ("email", "Email"), ("phone", "Телефон"),
+        ("email_verified", "Подтв. почта"), ("telegram", "Telegram"), ("max", "MAX"),
+        ("trial_calls_tried", "Пробовали тестовые созвоны"), ("has_paid", "Оплачивали подписку"),
+        ("subscription_status", "Текущий статус подписки"), ("created_at", "Создан"),
+    ]
+    sort = request.args.get("sort", "created_at")
+    if sort not in dict(columns):
+        sort = "created_at"
+    direction = request.args.get("direction", "desc")
+    if direction not in {"asc", "desc"}:
+        direction = "desc"
+    users = AppUser.query.all()
+    summaries = build_admin_user_summaries(users, trial_minutes_limit=_trial_calls_limit())
+
+    def sort_value(user):
+        if sort in {"trial_calls_tried", "has_paid", "subscription_status"}:
+            return summaries[user.id][sort]
+        if sort == "telegram":
+            return (user.telegram_user_id or 0, (user.telegram_username or "").casefold())
+        if sort == "max":
+            return user.max_user_id or 0
+        value = getattr(user, sort)
+        return value.casefold() if isinstance(value, str) else value
+
+    users.sort(key=lambda user: (sort_value(user), user.id), reverse=direction == "desc")
+    total_users = len(users)
     total_pages = (total_users + per_page - 1) // per_page if total_users else 1
     if page > total_pages:
         page = total_pages
 
-    users = users_query.offset((page - 1) * per_page).limit(per_page).all()
+    users = users[(page - 1) * per_page:page * per_page]
     return render_template(
         "admin_users.html",
         users=users,
+        summaries=summaries,
+        columns=columns,
+        sort=sort,
+        direction=direction,
         admin_section="users",
         page=page,
         per_page=per_page,
