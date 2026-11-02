@@ -169,6 +169,53 @@ class CloudPaymentsRoutesTests(unittest.TestCase):
             "X-Content-HMAC": signature,
         }
 
+    def test_configured_and_legacy_webhook_urls_require_valid_signatures(self) -> None:
+        for prefix in ("/payments/cloudpayments", "/api/cloudpayments/webhooks"):
+            for kind in ("pay", "fail", "recurrent"):
+                with self.subTest(prefix=prefix, kind=kind):
+                    response = self.client.post(f"{prefix}/{kind}", data=b"")
+                    self.assertEqual(response.status_code, 403)
+                    self.assertEqual(response.get_json(), {"code": 13})
+        with self.app.app_context():
+            self.assertEqual(SubscriptionPurchase.query.count(), 0)
+
+    def test_configured_webhook_urls_process_signed_notifications_idempotently(self) -> None:
+        with self.app.app_context():
+            user = AppUser(email="aliases@example.test", phone="70000000000", name="Webhook test",
+                           email_verified=True, consent_to_personal_data=True)
+            db.session.add(user)
+            db.session.flush()
+            user_id = user.id
+            for invoice in ("alias-paid", "alias-failed"):
+                db.session.add(SubscriptionPurchase(app_user_id=user.id, invoice_id=invoice,
+                    plan_code="test", plan_name="Test", amount=Decimal("99.00"), currency="RUB", status="created"))
+            db.session.commit()
+
+        def post_signed(kind, fields):
+            body = urlencode(fields).encode("utf-8")
+            response = self.client.post(f"/payments/cloudpayments/{kind}", data=body,
+                                        headers=self._signature_headers(body))
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.get_json(), {"code": 0})
+
+        pay_fields = {"InvoiceId": "alias-paid", "AccountId": str(user_id), "Amount": "99.00",
+                      "Currency": "RUB", "TransactionId": "alias-tx", "SubscriptionId": "alias-sub",
+                      "SubscriptionStatus": "Active"}
+        post_signed("pay", pay_fields)
+        post_signed("pay", pay_fields)
+        post_signed("fail", {"InvoiceId": "alias-failed", "AccountId": str(user_id),
+                              "Amount": "99.00", "Currency": "RUB", "TransactionId": "alias-failed-tx"})
+        post_signed("recurrent", {"Id": "alias-sub", "AccountId": str(user_id), "Status": "Canceled"})
+        with self.app.app_context():
+            self.assertEqual(SubscriptionPurchase.query.count(), 2)
+            paid = SubscriptionPurchase.query.filter_by(invoice_id="alias-paid").one()
+            failed = SubscriptionPurchase.query.filter_by(invoice_id="alias-failed").one()
+            self.assertEqual(paid.status, "paid")
+            self.assertEqual(paid.transaction_id, "alias-tx")
+            self.assertEqual(paid.subscription_status, "Canceled")
+            self.assertIsNotNone(paid.canceled_at)
+            self.assertEqual(failed.status, "failed")
+
     def test_pay_webhook_marks_purchase_paid_and_stores_subscription_state(self) -> None:
         with self.app.app_context():
             user = AppUser(

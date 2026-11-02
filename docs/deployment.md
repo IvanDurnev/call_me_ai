@@ -40,3 +40,13 @@ After restarting, verify the home page, login redirects, protected APIs and
 updated static assets. If startup or smoke checks fail, restore the previous Git
 revision and restart the same processes. The additive mobile tables can remain
 when rolling back to the previous code.
+
+CloudPayments notification URLs currently configured for the merchant:
+
+- `https://domovoice.ai/payments/cloudpayments/pay`
+- `https://domovoice.ai/payments/cloudpayments/fail`
+- `https://domovoice.ai/payments/cloudpayments/recurrent`
+
+All use POST and the same HMAC validation as the legacy
+`/api/cloudpayments/webhooks/{pay,fail,recurrent}` endpoints. Both URL forms
+are supported. Do not change merchant settings during routine deployment.

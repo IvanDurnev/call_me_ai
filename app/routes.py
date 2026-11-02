@@ -2568,6 +2568,7 @@ def subscription_resume():
     )
 
 
+@main_bp.post("/payments/cloudpayments/pay")
 @main_bp.post("/api/cloudpayments/webhooks/pay")
 def cloudpayments_pay_webhook():
     if not _verify_cloudpayments_notification():
@@ -2582,6 +2583,7 @@ def cloudpayments_pay_webhook():
     return _cloudpayments_json_code()
 
 
+@main_bp.post("/payments/cloudpayments/fail")
 @main_bp.post("/api/cloudpayments/webhooks/fail")
 def cloudpayments_fail_webhook():
     if not _verify_cloudpayments_notification():
@@ -2596,6 +2598,7 @@ def cloudpayments_fail_webhook():
     return _cloudpayments_json_code()
 
 
+@main_bp.post("/payments/cloudpayments/recurrent")
 @main_bp.post("/api/cloudpayments/webhooks/recurrent")
 def cloudpayments_recurrent_webhook():
     if not _verify_cloudpayments_notification():
