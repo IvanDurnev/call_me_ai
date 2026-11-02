@@ -69,12 +69,14 @@ class WebCallHistoryTests(unittest.TestCase):
         self.assertEqual(calls[0]['transcript'], [{'role': 'user', 'text': 'Привет!'}])
         self.assertNotIn('Чужой секрет', response.get_data(as_text=True))
 
-    def test_messenger_keeps_deleted_hero_history_accessible(self):
+    def test_messenger_does_not_restore_deleted_heroes_from_call_history(self):
         self.login()
         response = self.client.get('/web')
         self.assertEqual(response.status_code, 200)
-        self.assertIn('Старый герой', response.get_data(as_text=True))
-        self.assertIn('deleted-hero', response.get_data(as_text=True))
+        self.assertNotIn('Старый герой', response.get_data(as_text=True))
+        self.assertNotIn('deleted-hero', response.get_data(as_text=True))
+        calls = self.client.get('/api/web/calls').get_json()['calls']
+        self.assertIn('deleted-hero', [call['character_slug'] for call in calls])
 
     def test_account_has_no_transcripts_and_links_to_messenger(self):
         self.login()

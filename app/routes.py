@@ -1664,17 +1664,6 @@ def _render_web_messenger():
         for character in _serialize_characters(list_characters(include_inactive=True))
         if character["is_active"] or character["slug"] in history_slugs
     ]
-    known_slugs = {character["slug"] for character in characters}
-    for call in past_calls:
-        if call.character_slug not in known_slugs:
-            characters.append({
-                "slug": call.character_slug,
-                "name": (call.meta_json or {}).get("character_name") or call.character_slug,
-                "description": "История разговоров",
-                "emoji": "💬",
-                "is_active": False,
-            })
-            known_slugs.add(call.character_slug)
     if not characters:
         abort(404)
 
