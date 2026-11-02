@@ -4,6 +4,7 @@ import unittest
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
+from urllib.parse import urlsplit
 
 from flask import Flask
 
@@ -94,7 +95,7 @@ class MiniappPickerVisibilityTests(unittest.TestCase):
         self.assertNotIn("Inactive Hero", html)
         self.assertNotIn("Inactive Hero Zero", html)
 
-    def test_index_uses_web_character_links_without_telegram_source(self) -> None:
+    def test_index_links_to_web_messenger_without_telegram_source(self) -> None:
         characters = [
             {
                 "slug": "active-hero",
@@ -110,20 +111,20 @@ class MiniappPickerVisibilityTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
-        self.assertIn('href="/miniapp/active-hero"', html)
+        self.assertIn('href="/web"', html)
         self.assertNotIn("source=telegram-miniapp", html)
 
     def test_anonymous_web_miniapp_redirects_to_login(self) -> None:
         response = self.client.get("/miniapp/active-hero")
 
         self.assertEqual(response.status_code, 302)
-        self.assertIn("/login/email", response.headers["Location"])
+        self.assertEqual(urlsplit(response.headers["Location"]).path, "/login")
 
     def test_anonymous_web_messenger_redirects_to_login(self) -> None:
         response = self.client.get("/web")
 
         self.assertEqual(response.status_code, 302)
-        self.assertIn("/login/email", response.headers["Location"])
+        self.assertEqual(urlsplit(response.headers["Location"]).path, "/login")
 
     def test_web_messenger_renders_single_page_chat_switcher(self) -> None:
         characters = [
@@ -147,13 +148,14 @@ class MiniappPickerVisibilityTests(unittest.TestCase):
             patch("app.routes._current_app_user", return_value=SimpleNamespace(id=7, email="user@example.com")),
             patch("app.routes._app_user_ready_for_calls", return_value=True),
             patch("app.routes._app_user_access_state", return_value={"has_call_access": True}),
+            patch("app.routes._list_user_calls", return_value=[]),
             patch("app.routes.list_characters", return_value=characters),
         ):
             response = self.client.get("/web")
 
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
-        self.assertIn("Chats", html)
+        self.assertIn("Беседы", html)
         self.assertIn("web-characters-data", html)
         self.assertIn("Second Hero", html)
         self.assertIn('class="web-contact-card is-active"', html)

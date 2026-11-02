@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ character.name }}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='call.css', v='20260529webmessenger2') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='call.css', v='20261102audioonly') }}">
   </head>
   <body
     class="web-page"
@@ -16,12 +16,6 @@
     data-realtime-provider="{{ realtime_provider }}"
     data-app-user-id="{{ app_user.id }}"
     data-call-access-available="{{ 'true' if call_access_available else 'false' }}"
-    data-video-call-enabled="{{ 'true' if character.video_call_enabled else 'false' }}"
-    data-video-interior-spline-url="{{ character.video_interior_spline_url or '' }}"
-    data-video-character-spline-url="{{ character.video_character_spline_url or '' }}"
-    data-video-character-zoom="{{ character.video_character_zoom or 0.38 }}"
-    data-video-mouth-open-object-name="{{ character.video_mouth_open_object_name or 'MouthOpen' }}"
-    data-video-mouth-closed-object-name="{{ character.video_mouth_closed_object_name or 'MouthClosed' }}"
     data-start-speech-frames="2"
     data-end-speech-ms="550"
     data-min-turn-audio-ms="160"
@@ -134,6 +128,6 @@
     </main>
 
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="{{ url_for('static', filename='call.js', v='20260529webmessenger2') }}"></script>
+    <script src="{{ url_for('static', filename='call.js', v='20261102audioonly') }}"></script>
   </body>
 </html>

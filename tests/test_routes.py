@@ -601,7 +601,9 @@ class CloudPaymentsRoutesTests(unittest.TestCase):
             # 12:11:11 Moscow -> 09:11:11 UTC
             self.assertEqual(purchase.paid_at, datetime(2026, 4, 12, 9, 11, 11))
 
-    def test_account_cancel_disables_autorenew_for_active_subscription(self) -> None:
+    @patch("app.services.billing.datetime")
+    def test_account_cancel_disables_autorenew_for_active_subscription(self, billing_clock) -> None:
+        billing_clock.utcnow.return_value = datetime(2026, 4, 12, 12, 0, 0)
         with self.app.app_context():
             user = AppUser(
                 email="member@example.com",
@@ -661,7 +663,9 @@ class CloudPaymentsRoutesTests(unittest.TestCase):
             self.assertEqual(history[-1]["action"], "cancel_auto_renew")
             self.assertEqual(history[-1]["actor"], "user")
 
-    def test_account_cancel_disables_local_autorenew_without_subscription_id(self) -> None:
+    @patch("app.services.billing.datetime")
+    def test_account_cancel_disables_local_autorenew_without_subscription_id(self, billing_clock) -> None:
+        billing_clock.utcnow.return_value = datetime(2026, 4, 12, 12, 0, 0)
         with self.app.app_context():
             user = AppUser(
                 email="token-cancel@example.com",
@@ -717,7 +721,9 @@ class CloudPaymentsRoutesTests(unittest.TestCase):
             history = (purchase.provider_payload_json or {}).get("subscription_action_history") or []
             self.assertEqual(history[-1]["action"], "cancel_auto_renew")
 
-    def test_account_resume_reenables_local_autorenew(self) -> None:
+    @patch("app.services.billing.datetime")
+    def test_account_resume_reenables_local_autorenew(self, billing_clock) -> None:
+        billing_clock.utcnow.return_value = datetime(2026, 4, 12, 12, 0, 0)
         with self.app.app_context():
             user = AppUser(
                 email="resume@example.com",
@@ -1608,6 +1614,36 @@ class MobileChatRoutesTests(unittest.TestCase):
         self.assertTrue(payload["ok"])
         self.assertEqual(payload["message"]["text"], "Привет из общего чата.")
         reply_mock.assert_called_once()
+
+        with self.app.app_context():
+            messages = (
+                ChatMessage.query.filter_by(app_user_id=self.user_id, character_slug="domovenok-kuzya")
+                .order_by(ChatMessage.id.asc())
+                .all()
+            )
+            self.assertEqual(len(messages), 2)
+            self.assertEqual(messages[0].role, "user")
+            self.assertEqual(messages[0].text, "Привет")
+            self.assertEqual(messages[1].role, "assistant")
+            self.assertEqual(messages[1].text, "Привет из общего чата.")
+
+    def test_start_call_session_accepts_mobile_bearer_token(self) -> None:
+        response = self.client.post(
+            "/api/call-sessions/start",
+            headers=self.auth_headers,
+            json={"character_slug": "domovenok-kuzya", "started_from": "mobile"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertTrue(payload["ok"])
+        self.assertEqual(payload["provider"], "openai")
+        self.assertTrue(payload["websocket_url"])
+        with self.app.app_context():
+            call_session = db.session.get(CallSession, payload["call_session_id"])
+            self.assertIsNotNone(call_session)
+            self.assertEqual(call_session.app_user_id, self.user_id)
+            self.assertEqual((call_session.meta_json or {}).get("started_from"), "mobile")
 
 
 if __name__ == "__main__":

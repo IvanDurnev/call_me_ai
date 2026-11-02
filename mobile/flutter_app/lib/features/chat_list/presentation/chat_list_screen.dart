@@ -52,7 +52,8 @@ class _ChatListScreenState extends State<ChatListScreen> {
       });
     } on ApiException catch (error) {
       if (error.statusCode == 401 && mounted) {
-        Navigator.of(context).pushNamedAndRemoveUntil(AuthScreen.routeName, (_) => false);
+        Navigator.of(context)
+            .pushNamedAndRemoveUntil(AuthScreen.routeName, (_) => false);
         return;
       }
       setState(() {
@@ -78,7 +79,8 @@ class _ChatListScreenState extends State<ChatListScreen> {
             onPressed: () async {
               await scope.session.logout(scope.apiClient);
               if (!context.mounted) return;
-              Navigator.of(context).pushNamedAndRemoveUntil(AuthScreen.routeName, (_) => false);
+              Navigator.of(context)
+                  .pushNamedAndRemoveUntil(AuthScreen.routeName, (_) => false);
             },
             icon: const Icon(Icons.logout),
           ),
@@ -106,15 +108,18 @@ class _ChatListScreenState extends State<ChatListScreen> {
             itemBuilder: (context, index) {
               final item = _items[index];
               return ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 tileColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18)),
                 leading: CircleAvatar(
                   radius: 28,
                   backgroundColor: const Color(0xFFEAF4FF),
-                  backgroundImage: item.avatarUrl != null && item.avatarUrl!.isNotEmpty
-                      ? NetworkImage(item.avatarUrl!)
-                      : null,
+                  backgroundImage:
+                      item.avatarUrl != null && item.avatarUrl!.isNotEmpty
+                          ? NetworkImage(item.avatarUrl!)
+                          : null,
                   child: item.avatarUrl == null || item.avatarUrl!.isEmpty
                       ? Text(
                           item.title.isEmpty ? '?' : item.title.substring(0, 1),
@@ -133,6 +138,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                       characterSlug: item.characterSlug,
                       title: item.title,
                       avatarUrl: item.avatarUrl,
+                      canCall: item.canCall,
                     ),
                   );
                 },

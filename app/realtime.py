@@ -130,6 +130,17 @@ class SocketBridge:
             if not app_user:
                 raise ValueError("Регистрация обязательна перед первым звонком.")
 
+            existing_call_session_id = payload.get("call_session_id")
+            if existing_call_session_id:
+                existing_call_session = db.session.get(CallSession, existing_call_session_id)
+                if (
+                    existing_call_session
+                    and existing_call_session.app_user_id == app_user.id
+                    and existing_call_session.character_slug == self.character_slug
+                ):
+                    self.call_session_id = existing_call_session.id
+                    return
+
             access_state = build_user_access_state(
                 app_user,
                 trial_minutes_limit=max(0, int(self.app.config.get("TRY_CALLS_NUMBER", 1))),

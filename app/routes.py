@@ -37,6 +37,7 @@ from .characters import (
     normalize_realtime_settings,
 )
 from .extensions import db
+from .services.openai_models import list_openai_models, supports_text_chat
 from .models import AdminUser, AppUser, CallSession, ChatMessage, Hero, MobileAuthToken, PricingPlan, SubscriptionPurchase
 from .services import (
     build_user_access_state,
@@ -768,7 +769,8 @@ def _generate_text_chat_reply(
     )
     return generate_chat_reply(
         api_key=current_app.config["OPENAI_API_KEY"],
-        model=current_app.config["OPENAI_CHAT_MODEL"],
+        model=normalize_realtime_settings(character.get("realtime_settings")).get("text_chat_model")
+        or current_app.config["OPENAI_CHAT_MODEL"],
         messages=[
             {"role": "system", "content": system_prompt},
             *normalized_messages,
@@ -1599,7 +1601,12 @@ def admin_root():
 
 
 def _render_index(platform: str):
-    characters = _serialize_characters(list_characters())
+    characters = [
+        character
+        for character in _serialize_characters(list_characters())
+        if _coerce_bool(character.get("is_active", True), default=True)
+    ]
+    characters = secrets.SystemRandom().sample(characters, min(4, len(characters)))
     items = []
     for character in characters:
         link = (
@@ -1650,15 +1657,28 @@ def _render_web_messenger():
     if not _app_user_ready_for_calls(app_user):
         return redirect(url_for("main.verify_email", email=app_user.email, purpose="verify_email", next=request.url))
 
+    past_calls = _list_user_calls(app_user.id)
+    history_slugs = {call.character_slug for call in past_calls}
     characters = [
         character
-        for character in _serialize_characters(list_characters())
-        if _coerce_bool(character.get("is_active", True), default=True)
+        for character in _serialize_characters(list_characters(include_inactive=True))
+        if character["is_active"] or character["slug"] in history_slugs
     ]
+    known_slugs = {character["slug"] for character in characters}
+    for call in past_calls:
+        if call.character_slug not in known_slugs:
+            characters.append({
+                "slug": call.character_slug,
+                "name": (call.meta_json or {}).get("character_name") or call.character_slug,
+                "description": "История разговоров",
+                "emoji": "💬",
+                "is_active": False,
+            })
+            known_slugs.add(call.character_slug)
     if not characters:
         abort(404)
 
-    ws_base = current_app.config["PUBLIC_BASE_URL"]
+    ws_base = (current_app.config.get("PUBLIC_BASE_URL") or request.url_root).rstrip("/")
     if ws_base.startswith("https://"):
         ws_base = "wss://" + ws_base.removeprefix("https://")
     elif ws_base.startswith("http://"):
@@ -1733,7 +1753,7 @@ def _render_miniapp(slug: str, started_from: str):
     if not character:
         abort(404)
 
-    ws_base = current_app.config["PUBLIC_BASE_URL"]
+    ws_base = (current_app.config.get("PUBLIC_BASE_URL") or request.url_root).rstrip("/")
     if ws_base.startswith("https://"):
         ws_base = "wss://" + ws_base.removeprefix("https://")
     elif ws_base.startswith("http://"):
@@ -2234,6 +2254,46 @@ def mobile_chat_send_message_api(slug: str):
     )
 
 
+def _list_user_calls(user_id: int) -> list[CallSession]:
+    return (
+        CallSession.query.filter_by(app_user_id=user_id)
+        .order_by(CallSession.started_at.asc(), CallSession.id.asc())
+        .all()
+    )
+
+
+@main_bp.get("/api/web/calls")
+def web_call_history_api():
+    user = _current_app_user()
+    if not user:
+        return jsonify({"ok": False, "error": "Нужно войти в мессенджер."}), 401
+    if not user.email_verified:
+        return jsonify({"ok": False, "error": "Подтвердите электронную почту."}), 403
+
+    calls = _list_user_calls(user.id)
+    items = []
+    for call in calls:
+        meta = call.meta_json or {}
+        duration = (call.ended_at - call.started_at).total_seconds() if call.started_at and call.ended_at else 0
+        transcript = [
+            {"role": str(line.get("role") or "assistant"), "text": str(line.get("text") or "")}
+            for line in (meta.get("conversation_log") or [])
+            if isinstance(line, dict) and line.get("text")
+        ]
+        items.append({
+            "id": call.id,
+            "character_slug": call.character_slug,
+            "character_name": meta.get("character_name") or call.character_slug,
+            "started_at": call.started_at.isoformat() + "Z" if call.started_at else None,
+            "duration": _format_call_duration(duration),
+            "status": call.status,
+            "transcript": transcript,
+        })
+    response = jsonify({"ok": True, "calls": items})
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+
 @main_bp.get("/account")
 def account():
     user = _current_app_user()
@@ -2243,11 +2303,6 @@ def account():
         return redirect(url_for("main.verify_email", email=user.email, purpose="verify_email", next=request.url))
 
     try:
-        calls = (
-            CallSession.query.filter_by(app_user_id=user.id)
-            .order_by(CallSession.started_at.desc(), CallSession.id.desc())
-            .all()
-        )
         purchases = (
             SubscriptionPurchase.query.filter_by(app_user_id=user.id)
             .order_by(SubscriptionPurchase.created_at.desc(), SubscriptionPurchase.id.desc())
@@ -2255,16 +2310,7 @@ def account():
         )
     except (OperationalError, ProgrammingError):
         db.session.rollback()
-        calls = []
         purchases = []
-
-    now = datetime.utcnow()
-    for call in calls:
-        duration_seconds = 0
-        if call.started_at:
-            duration_seconds = max(0, int(((call.ended_at or now) - call.started_at).total_seconds()))
-        call.duration_seconds = duration_seconds
-        call.duration_display = _format_call_duration(duration_seconds)
 
     _sync_pending_subscription_purchases(user)
     access_state = _app_user_access_state(user)
@@ -2273,7 +2319,6 @@ def account():
     return render_template(
         "account.html",
         current_user=user,
-        calls=calls,
         purchases=purchases,
         has_trial_available=access_state["trial_remaining_minutes"] > 0,
         remaining_trial_minutes=access_state["trial_remaining_minutes"],
@@ -2690,10 +2735,27 @@ def heroes_api():
     )
 
 
+@main_bp.get("/api/openai/models")
+@_admin_required()
+def openai_models_api():
+    api_key = current_app.config.get("OPENAI_API_KEY") or ""
+    if not api_key:
+        return jsonify({"ok": False, "error": "Ключ OpenAI не настроен."}), 503
+    try:
+        items = list_openai_models(api_key=api_key)
+    except Exception as exc:  # noqa: BLE001
+        current_app.logger.warning("OpenAI model list failed: %s", type(exc).__name__)
+        return jsonify({"ok": False, "error": "Не удалось загрузить модели OpenAI. Попробуйте ещё раз."}), 502
+    return jsonify({"ok": True, "items": items, "default_model": current_app.config["OPENAI_CHAT_MODEL"]})
+
+
 @main_bp.post("/api/heroes")
 @_admin_required()
 def create_hero_api():
     payload = request.get_json(silent=True) or {}
+    model = str(payload.get("text_chat_model") or "").strip()
+    if model and (len(model) > 200 or not re.fullmatch(r"[A-Za-z0-9_.:-]+", model) or not supports_text_chat(model)):
+        return jsonify({"ok": False, "error": "Выберите текстовую модель OpenAI."}), 400
     name = (payload.get("name") or "").strip()
     if not name:
         return jsonify({"ok": False, "error": "Hero name is required."}), 400
@@ -2708,7 +2770,7 @@ def create_hero_api():
         greeting_prompt=DEFAULT_GREETING_PROMPT,
         sort_order=_next_hero_sort_order(),
         is_active=_coerce_bool(payload.get("is_active", True), default=True),
-        realtime_settings_json=normalize_realtime_settings({"provider": payload.get("provider")}),
+        realtime_settings_json=normalize_realtime_settings({"provider": payload.get("provider"), "text_chat_model": payload.get("text_chat_model")}),
     )
     db.session.add(hero)
     try:
@@ -2787,6 +2849,9 @@ def update_hero_api(slug: str):
 
     original_slug = hero.slug
     payload = request.get_json(silent=True) or {}
+    model = str(payload.get("text_chat_model") or "").strip()
+    if model and (len(model) > 200 or not re.fullmatch(r"[A-Za-z0-9_.:-]+", model) or not supports_text_chat(model)):
+        return jsonify({"ok": False, "error": "Выберите текстовую модель OpenAI."}), 400
     if "slug" in payload:
         requested_slug = _normalize_slug_value(payload.get("slug"))
         if not requested_slug:
@@ -2815,16 +2880,8 @@ def update_hero_api(slug: str):
 
     realtime_settings = normalize_realtime_settings(hero.realtime_settings_json)
     realtime_field_map = {
+        "text_chat_model": "text_chat_model",
         "provider": "provider",
-        "video_call_enabled": "video_call_enabled",
-        "video_interior_spline_url": "video_interior_spline_url",
-        "video_character_spline_url": "video_character_spline_url",
-        "video_interior_scale": "video_interior_scale",
-        "video_interior_zoom": "video_interior_zoom",
-        "video_character_scale": "video_character_scale",
-        "video_character_offset_y": "video_character_offset_y",
-        "video_mouth_open_object_name": "video_mouth_open_object_name",
-        "video_mouth_closed_object_name": "video_mouth_closed_object_name",
         "realtime_model": "model",
         "input_transcription_model": "input_transcription_model",
         "input_transcription_language": "input_transcription_language",
@@ -3047,52 +3104,6 @@ def upload_hero_avatar_api(slug: str):
     return jsonify({"ok": True, "hero": _serialize_character_from_model(hero)})
 
 
-@main_bp.post("/api/heroes/<slug>/spline-interior")
-@_admin_required()
-def upload_hero_spline_interior_api(slug: str):
-    return _upload_hero_spline_scene(slug, scene_kind="interior")
-
-
-@main_bp.post("/api/heroes/<slug>/spline-character")
-@_admin_required()
-def upload_hero_spline_character_api(slug: str):
-    return _upload_hero_spline_scene(slug, scene_kind="character")
-
-
-def _upload_hero_spline_scene(slug: str, *, scene_kind: str):
-    hero = _get_hero_model(slug)
-    if not hero:
-        return jsonify({"ok": False, "error": "Hero not found."}), 404
-
-    uploaded = request.files.get("file")
-    if not uploaded or not uploaded.filename:
-        return jsonify({"ok": False, "error": "Spline scene file is required."}), 400
-
-    original_filename = uploaded.filename
-    suffix = Path(original_filename).suffix.lower()
-    if suffix != ".splinecode":
-        return jsonify({"ok": False, "error": "Use a .splinecode file exported from Spline Code panel."}), 400
-
-    raw_bytes = uploaded.read()
-    if not raw_bytes:
-        return jsonify({"ok": False, "error": "The uploaded .splinecode file is empty."}), 400
-
-    file_stem = "scene-interior" if scene_kind == "interior" else "scene-character"
-    relative_path = _save_uploaded_file(slug, file_stem, f"{file_stem}.splinecode", raw_bytes)
-
-    realtime_settings = normalize_realtime_settings(hero.realtime_settings_json)
-    scene_url = url_for("static", filename=relative_path)
-    if scene_kind == "interior":
-        realtime_settings["video_interior_spline_url"] = scene_url
-    else:
-        realtime_settings["video_character_spline_url"] = scene_url
-
-    hero.realtime_settings_json = realtime_settings
-    db.session.commit()
-
-    return jsonify({"ok": True, "hero": _serialize_character_from_model(hero)})
-
-
 @main_bp.get("/api/voices")
 def voices_api():
     return jsonify(build_voice_library_payload())
@@ -3207,7 +3218,7 @@ def preview_voice_api() -> Response:
 
 @main_bp.post("/api/call-sessions/start")
 def start_call_session_api():
-    app_user = _current_app_user()
+    app_user = _current_app_user() or _current_mobile_user()
     if not app_user:
         return jsonify({"ok": False, "error": "Authentication required."}), 401
     if not _app_user_ready_for_calls(app_user):
@@ -3278,7 +3289,7 @@ def start_call_session_api():
         }
         return jsonify(response_payload)
 
-    ws_base = current_app.config["PUBLIC_BASE_URL"]
+    ws_base = (current_app.config.get("PUBLIC_BASE_URL") or request.url_root).rstrip("/")
     if ws_base.startswith("https://"):
         ws_base = "wss://" + ws_base.removeprefix("https://")
     elif ws_base.startswith("http://"):
@@ -3289,7 +3300,7 @@ def start_call_session_api():
 
 @main_bp.post("/api/call-sessions/<int:call_session_id>/finish")
 def finish_call_session_api(call_session_id: int):
-    app_user = _current_app_user()
+    app_user = _current_app_user() or _current_mobile_user()
     if not app_user:
         return jsonify({"ok": False, "error": "Authentication required."}), 401
 
@@ -3369,7 +3380,8 @@ def finish_call_session_api(call_session_id: int):
 
 @main_bp.post("/api/web-chat")
 def web_chat_api():
-    app_user = _current_app_user() or _current_mobile_user()
+    mobile_user = _current_mobile_user()
+    app_user = _current_app_user() or mobile_user
     if not app_user:
         return jsonify({"ok": False, "error": "Authentication required."}), 401
     if not _app_user_ready_for_calls(app_user):
@@ -3407,6 +3419,25 @@ def web_chat_api():
         normalized_messages=normalized_messages,
         chat_surface_label="в текстовом чате на сайте",
     )
+
+    if mobile_user:
+        user_message = ChatMessage(
+            app_user_id=mobile_user.id,
+            character_slug=slug,
+            role="user",
+            text=normalized_messages[-1]["content"][:4000],
+            source="mobile",
+        )
+        assistant_message = ChatMessage(
+            app_user_id=mobile_user.id,
+            character_slug=slug,
+            role="assistant",
+            text=reply_text[:4000],
+            source="mobile",
+        )
+        db.session.add(user_message)
+        db.session.add(assistant_message)
+        db.session.commit()
 
     return jsonify(
         {
@@ -3489,6 +3520,7 @@ def _serialize_character(character: dict) -> dict:
     realtime_settings = normalize_realtime_settings(payload.get("realtime_settings"))
     payload["realtime_settings"] = realtime_settings
     payload["realtime_model"] = realtime_settings.get("model", "")
+    payload["text_chat_model"] = realtime_settings.get("text_chat_model", "")
     payload["input_transcription_model"] = realtime_settings.get("input_transcription_model", "")
     payload["input_transcription_language"] = realtime_settings.get("input_transcription_language", "")
     payload["input_transcription_prompt"] = realtime_settings.get("input_transcription_prompt", "")
@@ -3502,15 +3534,6 @@ def _serialize_character(character: dict) -> dict:
     payload["elevenlabs_agent_id"] = realtime_settings.get("elevenlabs_agent_id", "")
     payload["elevenlabs_llm"] = realtime_settings.get("elevenlabs_llm", ELEVENLABS_DEFAULT_LLM)
     payload["elevenlabs_turn_eagerness"] = realtime_settings.get("elevenlabs_turn_eagerness", "normal")
-    payload["video_call_enabled"] = bool(realtime_settings.get("video_call_enabled"))
-    payload["video_interior_spline_url"] = realtime_settings.get("video_interior_spline_url", "")
-    payload["video_character_spline_url"] = realtime_settings.get("video_character_spline_url", "")
-    payload["video_interior_scale"] = realtime_settings.get("video_interior_scale", 0.72)
-    payload["video_interior_zoom"] = realtime_settings.get("video_interior_zoom", 1.0)
-    payload["video_character_scale"] = realtime_settings.get("video_character_scale", 0.62)
-    payload["video_character_offset_y"] = realtime_settings.get("video_character_offset_y", 0.0)
-    payload["video_mouth_open_object_name"] = realtime_settings.get("video_mouth_open_object_name", "MouthOpen")
-    payload["video_mouth_closed_object_name"] = realtime_settings.get("video_mouth_closed_object_name", "MouthClosed")
     payload["provider"] = _hero_provider(payload)
     return payload
 

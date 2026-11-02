@@ -7,7 +7,6 @@ let characterDescription = body.dataset.characterDescription || "";
 const startedFrom = body.dataset.startedFrom || "web";
 const appUserId = Number(body.dataset.appUserId || 0) || null;
 const callAccessAvailable = body.dataset.callAccessAvailable === "true";
-let videoCallEnabled = body.dataset.videoCallEnabled === "true";
 
 const logNode = document.getElementById("call-log");
 const callWaveNode = document.getElementById("call-wave");
@@ -113,6 +112,8 @@ const WEB_CHAT_STORAGE_KEY = "call_me_ai.web_chat_histories.v1";
 const webChatHistories = loadWebChatHistories();
 let webChatSending = false;
 const hasWebTextChat = Boolean(webChatInputNode);
+let webCallHistory = [];
+let webCallHistoryError = "";
 let webChatSearchQuery = "";
 const mobileWebChatMedia = window.matchMedia("(max-width: 920px)");
 
@@ -267,6 +268,62 @@ function setCurrentWebChatHistory(messages) {
   persistWebChatHistories();
 }
 
+async function loadWebCallHistory() {
+  if (!hasWebTextChat) return;
+  try {
+    const response = await fetch("/api/web/calls", { cache: "no-store" });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || "Не удалось загрузить историю звонков.");
+    }
+    webCallHistory = payload.calls || [];
+    webCallHistoryError = "";
+  } catch (error) {
+    webCallHistoryError = error instanceof Error ? error.message : "Не удалось загрузить историю звонков.";
+  }
+  if (!callActive && !connecting) renderWebChatIntro();
+}
+
+function renderWebCallHistory(query) {
+  let count = 0;
+  for (const call of webCallHistory) {
+    if (call.character_slug !== characterSlug) continue;
+    const date = call.started_at ? new Date(call.started_at).toLocaleString("ru-RU") : "Без даты";
+    const transcript = Array.isArray(call.transcript) ? call.transcript : [];
+    const label = `Звонок · ${date} · ${call.duration}`;
+    if (query && ![label, ...transcript.map((line) => line.text)].join(" ").toLowerCase().includes(query)) continue;
+    const card = document.createElement("details");
+    card.className = "web-call-record";
+    card.open = Boolean(query);
+    const summary = document.createElement("summary");
+    summary.textContent = label;
+    card.appendChild(summary);
+    for (const line of transcript) {
+      const p = document.createElement("p");
+      p.className = `log-line ${line.role === "user" ? "log-line-user" : "log-line-character"}`;
+      p.textContent = `${line.role === "user" ? "Вы" : call.character_name}: ${line.text}`;
+      card.appendChild(p);
+    }
+    if (!transcript.length) {
+      const empty = document.createElement("p");
+      empty.className = "log-line log-line-system";
+      empty.textContent = "Транскрипция разговора пока не сохранена.";
+      card.appendChild(empty);
+    }
+    logNode.appendChild(card);
+    count += 1;
+  }
+  if (webCallHistoryError) {
+    const retry = document.createElement("button");
+    retry.type = "button";
+    retry.className = "web-call-history-retry";
+    retry.textContent = `${webCallHistoryError} Повторить`;
+    retry.addEventListener("click", () => { void loadWebCallHistory(); });
+    logNode.appendChild(retry);
+  }
+  return count;
+}
+
 function renderWebChatIntro() {
   if (!logNode) {
     return;
@@ -277,8 +334,9 @@ function renderWebChatIntro() {
     ? history.filter((item) => item.text.toLowerCase().includes(normalizedQuery))
     : history;
 
-  logNode.innerHTML = `<p class="log-line log-line-system">Сегодня</p>`;
-  if (!visibleMessages.length) {
+  logNode.replaceChildren();
+  const callCount = renderWebCallHistory(normalizedQuery);
+  if (!visibleMessages.length && !callCount) {
     const emptyNode = document.createElement("p");
     emptyNode.className = "log-line log-line-system log-line-search-empty";
     emptyNode.textContent = "Ничего не найдено";
@@ -315,7 +373,6 @@ function switchWebCharacter(nextSlug) {
   characterDescription = nextCharacter.description || "";
   realtimeProvider = nextCharacter.realtime_provider || "openai";
   websocketUrl = nextCharacter.websocket_url || "";
-  videoCallEnabled = Boolean(nextCharacter.video_call_enabled);
   providerInputSampleRate = realtimeProvider === "elevenlabs" ? 16000 : 24000;
   providerOutputSampleRate = realtimeProvider === "elevenlabs" ? 16000 : 24000;
   localConversationLog = [];
@@ -326,7 +383,6 @@ function switchWebCharacter(nextSlug) {
   body.dataset.characterDescription = characterDescription;
   body.dataset.realtimeProvider = realtimeProvider;
   body.dataset.websocketUrl = websocketUrl;
-  body.dataset.videoCallEnabled = videoCallEnabled ? "true" : "false";
 
   if (webChatTitleNode) {
     webChatTitleNode.textContent = characterName;
@@ -371,9 +427,13 @@ function updateWebChatComposerState() {
     return;
   }
   const hasText = Boolean(String(webChatInputNode.value || "").trim());
-  const interactionLocked = webChatSending || callActive || connecting;
+  const interactionLocked = webChatSending || callActive || connecting || isArchivedWebCharacter();
   webChatInputNode.disabled = interactionLocked;
   webChatSendNode.disabled = interactionLocked || !hasText;
+}
+
+function isArchivedWebCharacter() {
+  return hasWebTextChat && webCharacters.find((item) => item.slug === characterSlug)?.is_active === false;
 }
 
 async function sendWebChatMessage() {
@@ -560,23 +620,13 @@ function updateWaveLiveState(live) {
   stopWaveAnimation();
 }
 
-function syncCharacterVideoState() {
-  body.classList.toggle("video-call-enabled", videoCallEnabled);
-  body.classList.toggle("character-speaking", videoCallEnabled && callActive && speaking);
-  body.classList.toggle("character-listening", videoCallEnabled && callActive && micEnabled && !speaking);
-  window.dispatchEvent(new CustomEvent("call:speaking-state", {
-    detail: {
-      speaking: videoCallEnabled && callActive && speaking,
-      callActive,
-      videoCallEnabled,
-    },
-  }));
-}
-
 function syncCallControls() {
   updateWaveLiveState(callActive);
-  syncCharacterVideoState();
   updateWebChatComposerState();
+  if (isArchivedWebCharacter()) {
+    setMicButtonState("Герой недоступен", true);
+    return;
+  }
   if (connecting) {
     setMicButtonState("Соединяем…", true);
     setMicButtonTone("primary");
@@ -771,7 +821,6 @@ async function playNextChunk() {
   }
 
   speaking = true;
-  syncCharacterVideoState();
   const { samples: rawSamples, sampleRate } = playbackQueue.shift();
   const boostedSamples = boostAssistantLoudness(rawSamples);
   const assistantRms = computeRmsLevel(boostedSamples);
@@ -814,7 +863,6 @@ async function playNextChunk() {
       }
     }
     speaking = false;
-    syncCharacterVideoState();
     if (pendingAutoEnd && !playbackQueue.length && !assistantResponseActive) {
       endCall("auto-end");
       return;
@@ -837,7 +885,6 @@ function stopAssistantPlayback() {
     currentSource = null;
   }
   speaking = false;
-  syncCharacterVideoState();
   assistantResponseActive = false;
   assistantLevel = 0;
   assistantLevelTarget = 0;
@@ -1289,7 +1336,7 @@ async function finishCallSession(reason = "client") {
   }
   finishingCallSession = true;
   try {
-    await fetch(`/api/call-sessions/${callSessionId}/finish`, {
+    const response = await fetch(`/api/call-sessions/${callSessionId}/finish`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -1300,6 +1347,7 @@ async function finishCallSession(reason = "client") {
       }),
       keepalive: true,
     });
+    if (response.ok) await loadWebCallHistory();
   } catch {
     // Best-effort finish request.
   }
@@ -1327,6 +1375,7 @@ function attachCommonSocketHandlers() {
     syncCallControls();
     logLine(manuallyClosed ? "Звонок завершён." : "Соединение оборвалось.");
     void finishCallSession(manuallyClosed ? "manual" : "disconnect");
+    if (realtimeProvider !== "elevenlabs") void loadWebCallHistory();
   });
 }
 
@@ -1349,7 +1398,6 @@ function connectOpenAi() {
       started_from: startedFrom,
     }));
     logLine(`Соединение с ${characterName} установлено.`);
-    syncCharacterVideoState();
   });
 
   socket.addEventListener("message", async (event) => {
@@ -1485,7 +1533,6 @@ function connectElevenLabs(sessionPayload) {
     console.log("[ElevenLabs] sending init:", initPayload);
     socket.send(initPayload);
     logLine(`Соединение с ${characterName} установлено.`);
-    syncCharacterVideoState();
   });
 
   socket.addEventListener("close", (event) => {
@@ -1623,7 +1670,6 @@ function endCall(reason = "manual") {
   if (socket?.readyState === WebSocket.CONNECTING) {
     socket.close();
   }
-  syncCharacterVideoState();
 }
 
 micButton.addEventListener("click", async () => {
@@ -1746,5 +1792,6 @@ if (mobileWebChatMedia.addEventListener) {
 }
 
 renderWebChatIntro();
+void loadWebCallHistory();
 updateWebChatComposerState();
 syncMobileWebLayout();

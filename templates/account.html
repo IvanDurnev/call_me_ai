@@ -56,6 +56,7 @@
               </p>
             </div>
             <a class="call-btn call-btn-primary call-link-btn" href="{{ url_for('main.index') }}">На главную</a>
+            <a class="call-btn call-btn-secondary call-link-btn" href="{{ url_for('main.web_messenger_index') }}">Зайти в мессенджер</a>
           </div>
 
           <article class="voice-card account-subscription-card">
@@ -203,43 +204,6 @@
             </div>
           </article>
 
-          <div class="voice-list">
-            {% for call in calls %}
-              <article class="voice-card account-call-card">
-                <div class="voice-card-head">
-                  <div>
-                    <h2>{{ (call.meta_json or {}).get('character_name') or call.character_slug }}</h2>
-                    <p>
-                      {{ call.started_at.strftime('%d.%m.%Y %H:%M') if call.started_at else 'Без даты' }}
-                      {% if call.duration_display %}
-                        · {{ call.duration_display }}
-                      {% endif %}
-                    </p>
-                  </div>
-                  <span class="voice-badge">{{ call.status }}</span>
-                </div>
-                <div class="account-transcript">
-                  {% for line in (call.meta_json or {}).get('conversation_log', []) %}
-                    <p class="log-line">
-                      <strong>{{ 'Вы' if line.role == 'user' else 'Персонаж' }}:</strong>
-                      {{ line.text }}
-                    </p>
-                  {% else %}
-                    <p class="log-line">Транскрипция разговора пока не сохранена.</p>
-                  {% endfor %}
-                </div>
-              </article>
-            {% else %}
-              <article class="voice-card">
-                <div class="voice-card-head">
-                  <div>
-                    <h2>Пока нет звонков</h2>
-                    <p>После первого разговора здесь появится история и транскрипция.</p>
-                  </div>
-                </div>
-              </article>
-            {% endfor %}
-          </div>
         </div>
       </section>
     </main>

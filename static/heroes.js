@@ -12,6 +12,10 @@ let selectedSlug = heroes[0]?.slug || null;
 let pricingPlans = initialState.pricing_plans || [];
 let selectedPlanCode = pricingPlans[0]?.code || null;
 let previewAudioUrl = null;
+let openaiModels = [];
+let openaiDefaultModel = "";
+let openaiModelsStatus = "Модели OpenAI ещё не загружены.";
+let openaiModelsLoading = false;
 
 const heroesList = document.getElementById("heroes-list");
 const heroEditor = document.getElementById("hero-editor");
@@ -186,6 +190,57 @@ function renderModelOptions(hero) {
   return `<option value="">По умолчанию проекта</option>${options}`;
 }
 
+function renderTextChatModelOptions(currentValue = "") {
+  const options = [];
+  options.push(`<option value="">Общая модель проекта${openaiDefaultModel ? ` (${escapeHtml(openaiDefaultModel)})` : ""}</option>`);
+  if (currentValue && !openaiModels.some((item) => item.id === currentValue)) {
+    options.push(`<option value="${escapeHtml(currentValue)}" selected>${escapeHtml(currentValue)} (сохранённая)</option>`);
+  }
+  for (const [selectable, label] of [[true, "Текстовые модели"], [false, "Другие модели — недоступны для переписки"]]) {
+    const items = openaiModels.filter((item) => item.text_chat === selectable);
+    if (!items.length) continue;
+    options.push(`<optgroup label="${label}" ${selectable ? "" : "disabled"}>`);
+    for (const item of items) {
+      options.push(`<option value="${escapeHtml(item.id)}" ${item.id === currentValue ? "selected" : ""}>${escapeHtml(item.id)}</option>`);
+    }
+    options.push("</optgroup>");
+  }
+  return options.join("");
+}
+
+function syncOpenaiModelPicker() {
+  const select = document.querySelector('[name="text_chat_model"]');
+  if (select) {
+    const value = select.value;
+    select.innerHTML = renderTextChatModelOptions(value);
+    select.value = value;
+  }
+  const status = document.getElementById("openai-models-status");
+  if (status) status.textContent = openaiModelsStatus;
+  const refresh = document.getElementById("openai-models-refresh");
+  if (refresh) refresh.disabled = openaiModelsLoading;
+}
+
+async function loadOpenaiModels() {
+  if (openaiModelsLoading) return;
+  openaiModelsLoading = true;
+  openaiModelsStatus = "Загружаю модели OpenAI…";
+  syncOpenaiModelPicker();
+  try {
+    const response = await fetch("/api/openai/models", { cache: "no-store" });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) throw new Error(payload.error || "Не удалось загрузить модели OpenAI.");
+    openaiModels = payload.items || [];
+    openaiDefaultModel = payload.default_model || "";
+    openaiModelsStatus = `Загружено моделей: ${openaiModels.length}. Для переписки: ${openaiModels.filter((item) => item.text_chat).length}.`;
+  } catch (error) {
+    openaiModelsStatus = `${error.message || "Не удалось загрузить модели OpenAI."} Сохранённый выбор доступен.`;
+  } finally {
+    openaiModelsLoading = false;
+    syncOpenaiModelPicker();
+  }
+}
+
 function renderTranscriptionOptions(hero) {
   const currentValue = hero.input_transcription_model || "";
   const options = (initialState.transcription_model_options || []).map((option) => `
@@ -232,15 +287,6 @@ function buildHeroSavePayload(form, hero) {
     emoji: formData.get("emoji"),
     description: formData.get("description"),
     provider,
-    video_call_enabled: formData.get("video_call_enabled") === "on",
-    video_interior_spline_url: formData.get("video_interior_spline_url") || "",
-    video_character_spline_url: formData.get("video_character_spline_url") || "",
-    video_interior_scale: formData.get("video_interior_scale") || "",
-    video_interior_zoom: formData.get("video_interior_zoom") || "",
-    video_character_scale: formData.get("video_character_scale") || "",
-    video_character_offset_y: formData.get("video_character_offset_y") || "",
-    video_mouth_open_object_name: formData.get("video_mouth_open_object_name") || "",
-    video_mouth_closed_object_name: formData.get("video_mouth_closed_object_name") || "",
     is_active: formData.get("is_active") === "on",
     greeting_prompt: formData.get("greeting_prompt"),
     system_prompt: formData.get("system_prompt"),
@@ -250,6 +296,7 @@ function buildHeroSavePayload(form, hero) {
     elevenlabs_first_message: hero.elevenlabs_first_message || "",
     elevenlabs_agent_id: hero.elevenlabs_agent_id || "",
     elevenlabs_llm: hero.elevenlabs_llm || "gpt-4o-mini",
+    text_chat_model: formData.has("text_chat_model") ? formData.get("text_chat_model") : hero.text_chat_model || "",
     elevenlabs_turn_eagerness: hero.elevenlabs_turn_eagerness || "normal",
     realtime_model: hero.realtime_model || "",
     input_transcription_model: hero.input_transcription_model || "",
@@ -363,44 +410,6 @@ function renderEditor() {
           <input name="is_active" type="checkbox" ${hero.is_active ? "checked" : ""}>
           <span>Герой активен и показывается в /start</span>
         </label>
-        <label class="hero-field hero-field-inline">
-          <input name="video_call_enabled" type="checkbox" ${hero.video_call_enabled ? "checked" : ""}>
-          <span>Видеозвонок (показывать говорящего персонажа во время созвона)</span>
-        </label>
-        <label class="hero-field">
-          <span>Spline интерьер (URL или вставка кода)</span>
-          <textarea name="video_interior_spline_url" rows="2" placeholder="https://prod.spline.design/.../scene.splinecode">${escapeHtml(hero.video_interior_spline_url || "")}</textarea>
-        </label>
-        <label class="hero-field">
-          <span>Spline персонаж (URL или вставка кода)</span>
-          <textarea name="video_character_spline_url" rows="2" placeholder="https://prod.spline.design/.../scene.splinecode">${escapeHtml(hero.video_character_spline_url || "")}</textarea>
-        </label>
-        <div class="hero-field-grid">
-          <label class="hero-field">
-            <span>Масштаб интерьера</span>
-            <input name="video_interior_scale" type="number" min="0.2" max="3" step="0.05" value="${escapeHtml(Number(hero.video_interior_scale ?? 0.72).toFixed(2))}">
-          </label>
-          <label class="hero-field">
-            <span>Зум интерьера (больше = дальше)</span>
-            <input name="video_interior_zoom" type="number" min="0.5" max="4" step="0.05" value="${escapeHtml(Number(hero.video_interior_zoom ?? 1).toFixed(2))}">
-          </label>
-          <label class="hero-field">
-            <span>Масштаб персонажа</span>
-            <input name="video_character_scale" type="number" min="0.2" max="3" step="0.05" value="${escapeHtml(Number(hero.video_character_scale ?? 0.62).toFixed(2))}">
-          </label>
-          <label class="hero-field">
-            <span>Сдвиг персонажа по Y (%)</span>
-            <input name="video_character_offset_y" type="number" min="-80" max="80" step="1" value="${escapeHtml(Number(hero.video_character_offset_y ?? 0).toFixed(0))}">
-          </label>
-          <label class="hero-field">
-            <span>Имя объекта рта (открыт)</span>
-            <input name="video_mouth_open_object_name" type="text" value="${escapeHtml(hero.video_mouth_open_object_name || "MouthOpen")}">
-          </label>
-          <label class="hero-field">
-            <span>Имя объекта рта (закрыт)</span>
-            <input name="video_mouth_closed_object_name" type="text" value="${escapeHtml(hero.video_mouth_closed_object_name || "MouthClosed")}">
-          </label>
-        </div>
       </div>
 
       <div class="hero-section">
@@ -429,28 +438,6 @@ function renderEditor() {
             <label class="call-btn call-btn-secondary hero-upload-btn">
               <input id="avatar-upload" type="file" accept=".jpg,.jpeg,.png,.webp,.gif" hidden>
               Загрузить картинку
-            </label>
-          </div>
-          <div class="hero-upload-card">
-            <div class="hero-upload-copy">
-              <strong>Spline интерьер (.splinecode)</strong>
-              <span>${hero.video_interior_spline_url ? "Сцена интерьера загружена" : "Файл интерьера ещё не загружен"}</span>
-              <p>Загрузите экспорт из Spline: Export -> Code -> .splinecode.</p>
-            </div>
-            <label class="call-btn call-btn-secondary hero-upload-btn">
-              <input id="spline-interior-upload" type="file" accept=".splinecode" hidden>
-              Загрузить интерьер
-            </label>
-          </div>
-          <div class="hero-upload-card">
-            <div class="hero-upload-copy">
-              <strong>Spline персонаж (.splinecode)</strong>
-              <span>${hero.video_character_spline_url ? "Сцена персонажа загружена" : "Файл персонажа ещё не загружен"}</span>
-              <p>Загрузите отдельную сцену персонажа для управления ртом через API.</p>
-            </div>
-            <label class="call-btn call-btn-secondary hero-upload-btn">
-              <input id="spline-character-upload" type="file" accept=".splinecode" hidden>
-              Загрузить персонажа
             </label>
           </div>
         </div>
@@ -490,6 +477,21 @@ function renderEditor() {
             <input id="desktop-output-gain" name="desktop_output_gain" type="range" min="0.5" max="2" step="0.05" value="${escapeHtml(hero.desktop_output_gain ?? 1.0)}">
           </label>
         </div>
+      </div>
+
+      <div class="hero-section">
+        <div class="hero-section-head">
+          <h3>Текстовая переписка</h3>
+          <p>Модель для сообщений этому персонажу. Общая модель проекта используется, если отдельная не выбрана.</p>
+        </div>
+        <div class="hero-field-grid">
+          <label class="hero-field hero-field-wide">
+            <span>Модель OpenAI для переписки</span>
+            <select name="text_chat_model">${renderTextChatModelOptions(hero.text_chat_model || "")}</select>
+          </label>
+        </div>
+        <p class="voice-meta" id="openai-models-status" role="status">${escapeHtml(openaiModelsStatus)}</p>
+        <button class="call-btn call-btn-secondary" id="openai-models-refresh" type="button" ${openaiModelsLoading ? "disabled" : ""}>Обновить список моделей</button>
       </div>
 
       <div class="hero-section">
@@ -597,8 +599,6 @@ function renderEditor() {
   const statusNode = document.getElementById("hero-status");
   const knowledgeInput = document.getElementById("knowledge-upload");
   const avatarInput = document.getElementById("avatar-upload");
-  const splineInteriorInput = document.getElementById("spline-interior-upload");
-  const splineCharacterInput = document.getElementById("spline-character-upload");
   const deleteButton = document.getElementById("hero-delete-btn");
   const previewButton = document.getElementById("voice-preview-btn");
   const previewAudio = document.getElementById("voice-preview-audio");
@@ -609,6 +609,7 @@ function renderEditor() {
   const createAgentButton = document.getElementById("hero-create-agent-btn");
   const testAgentButton = document.getElementById("hero-test-agent-btn");
   const copyChecklistButton = document.getElementById("hero-copy-agent-checklist-btn");
+  document.getElementById("openai-models-refresh")?.addEventListener("click", () => { void loadOpenaiModels(); });
 
   bindRangeValue("mobile-output-gain", "mobile-output-gain-value", 2);
   bindRangeValue("desktop-output-gain", "desktop-output-gain-value", 2);
@@ -862,22 +863,6 @@ function renderEditor() {
     await uploadFile(selectedSlug || hero.slug, avatarInput.files[0], "avatar", statusNode);
     avatarInput.value = "";
   });
-
-  splineInteriorInput?.addEventListener("change", async () => {
-    if (!splineInteriorInput.files?.length) {
-      return;
-    }
-    await uploadFile(selectedSlug || hero.slug, splineInteriorInput.files[0], "spline-interior", statusNode);
-    splineInteriorInput.value = "";
-  });
-
-  splineCharacterInput?.addEventListener("change", async () => {
-    if (!splineCharacterInput.files?.length) {
-      return;
-    }
-    await uploadFile(selectedSlug || hero.slug, splineCharacterInput.files[0], "spline-character", statusNode);
-    splineCharacterInput.value = "";
-  });
 }
 
 function renderPlanKindOptions(currentValue) {
@@ -1046,8 +1031,6 @@ async function uploadFile(slug, file, kind, statusNode) {
   const uploadingMessage = {
     knowledge: "Загружаю базу знаний...",
     avatar: "Загружаю аватар...",
-    "spline-interior": "Загружаю .splinecode интерьера...",
-    "spline-character": "Загружаю .splinecode персонажа...",
   }[kind] || "Загружаю файл...";
   setStatus(statusNode, uploadingMessage);
   const formData = new FormData();
@@ -1068,8 +1051,6 @@ async function uploadFile(slug, file, kind, statusNode) {
     const successMessage = {
       knowledge: "База знаний обновлена.",
       avatar: "Аватар обновлён.",
-      "spline-interior": "Spline интерьер загружен и привязан к герою.",
-      "spline-character": "Spline персонаж загружен и привязан к герою.",
     }[kind] || "Файл загружен.";
     setStatus(statusNode, successMessage);
   } catch (error) {
@@ -1208,3 +1189,4 @@ async function bootstrap() {
 }
 
 bootstrap();
+if (heroesList) void loadOpenaiModels();

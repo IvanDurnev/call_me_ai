@@ -29,29 +29,8 @@
           <h1>Любимые герои всегда на связи.</h1>
           <p class="lead lead-lg">
             Малыш может послушать сказку на ночь, поделиться радостью, найти поддержку или задать важный вопрос.
-            А родители после разговора увидят аккуратную текстовую транскрипцию в личном кабинете.
+            А родители после разговора увидят аккуратную текстовую транскрипцию в мессенджере.
           </p>
-
-          <div class="cta-block">
-            <p class="cta-title">Позвонить через</p>
-            <div class="cta-row">
-              {% if telegram_bot_link %}
-                <span class="cta-button cta-button-primary cta-button-disabled" aria-disabled="true">
-                  Telegram
-                </span>
-              {% endif %}
-
-              {% if max_bot_link %}
-                <span class="cta-button cta-button-secondary cta-button-disabled" aria-disabled="true">
-                  Max
-                </span>
-              {% endif %}
-
-              <a class="cta-button cta-button-secondary" href="{{ url_for('main.web_messenger_index') }}">
-                Веб-версия
-              </a>
-            </div>
-          </div>
 
           <div class="mini-points">
             <article class="mini-point">
@@ -95,6 +74,16 @@
               </article>
             {% endfor %}
 
+            <a class="character-card character-card-rich" href="{{ url_for('main.web_messenger_index') }}">
+              <span class="character-card-top">
+                <span class="landing-character-avatar landing-account-avatar">
+                  <span class="character-emoji">💬</span>
+                </span>
+              </span>
+              <strong>Зайти в мессенджер</strong>
+              <span>Беседы и звонки любимым героям.</span>
+            </a>
+
             <a class="character-card character-card-rich landing-account-card" href="{{ url_for('main.account') if current_user else url_for('main.login_email') }}">
               <span class="character-card-top">
                 <span class="landing-character-avatar landing-account-avatar">
@@ -106,7 +95,7 @@
                 {% if current_user %}
                   Привет, {{ current_user.name }}!
                 {% else %}
-                  Транскрипции разговоров, тарифы и настройки.
+                  Подписка, тарифы и настройки.
                 {% endif %}
               </span>
             </a>

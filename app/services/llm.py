@@ -13,11 +13,16 @@ def generate_chat_reply(
     timeout_seconds: float = 60.0,
 ) -> str:
     client = build_openai_client(api_key, timeout_seconds)
-    response = client.chat.completions.create(
-        model=model,
-        messages=[_coerce_message(message) for message in messages],
-        temperature=0.8,
-    )
+    normalized_messages = [_coerce_message(message) for message in messages]
+    base_model = model.split(":")[1] if model.startswith("ft:") else model
+    legacy_chat = base_model.startswith(("gpt-3.5", "gpt-4", "chatgpt-4o"))
+    search_model = "search" in base_model
+    if not legacy_chat and not search_model:
+        # Newer reasoning, Pro and Codex models use Responses without sampling overrides.
+        response = client.responses.create(model=model, input=normalized_messages, store=False)
+        return (response.output_text or "").strip()
+    options = {"temperature": 0.8} if legacy_chat and not search_model else {}
+    response = client.chat.completions.create(model=model, messages=normalized_messages, **options)
     text = response.choices[0].message.content if response.choices else ""
     return (text or "").strip()
 
