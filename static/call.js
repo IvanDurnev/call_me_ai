@@ -6,7 +6,7 @@ let characterName = body.dataset.characterName;
 let characterDescription = body.dataset.characterDescription || "";
 const startedFrom = body.dataset.startedFrom || "web";
 const appUserId = Number(body.dataset.appUserId || 0) || null;
-const callAccessAvailable = body.dataset.callAccessAvailable === "true";
+let callAccessAvailable = body.dataset.callAccessAvailable === "true";
 
 const logNode = document.getElementById("call-log");
 const callWaveNode = document.getElementById("call-wave");
@@ -264,6 +264,28 @@ async function loadWebCallHistory() {
     webCallHistoryError = message;
   }
   if (changed && !callActive && !connecting) renderWebChatIntro({ preservePosition: true });
+}
+
+async function loadWebAccountSummary() {
+  if (!document.getElementById("web-balance-value")) return;
+  try {
+    const response = await fetch("/api/web/account-summary", {cache: "no-store", signal: window.AbortSignal?.timeout?.(15000)});
+    const payload = await response.json();
+    if (!response.ok || !payload.ok || payload.user_id !== appUserId) return;
+    const summary = payload.summary;
+    for (const [id, value] of Object.entries({
+      "web-balance-value": summary.minutes_label,
+      "web-balance-detail": summary.minutes_detail,
+      "web-subscription-name": summary.subscription_name,
+      "web-subscription-status": summary.subscription_status,
+    })) {
+      document.getElementById(id).textContent = value;
+    }
+    callAccessAvailable = summary.has_call_access;
+    syncCallControls();
+  } catch {
+    // Preserve the last server-confirmed balance during a temporary connection loss.
+  }
 }
 
 function renderMessageContent(node, text) {
@@ -723,7 +745,7 @@ function syncCallControls() {
     return;
   }
 
-  if (!callAccessAvailable) {
+  if (!callAccessAvailable && !callActive && !connecting) {
     setMicButtonState("Минуты закончились", true);
     setMicButtonTone("danger");
     return;
@@ -1439,7 +1461,7 @@ async function finishCallSession(reason = "client") {
       }),
       keepalive: true,
     });
-    if (response.ok) await loadWebCallHistory();
+    if (response.ok) await Promise.all([loadWebCallHistory(), loadWebAccountSummary()]);
   } catch {
     // Best-effort finish request.
   }
@@ -1469,7 +1491,10 @@ function attachCommonSocketHandlers() {
     syncCallControls();
     logLine(timedOut ? "Все линии заняты. Попробуйте позвонить позже." : manuallyClosed ? "Звонок завершён." : "Соединение оборвалось.");
     void finishCallSession(timedOut ? "queue_timeout" : manuallyClosed ? "manual" : "disconnect");
-    if (realtimeProvider !== "elevenlabs") void loadWebCallHistory();
+    if (realtimeProvider !== "elevenlabs") {
+      void loadWebCallHistory();
+      void loadWebAccountSummary();
+    }
   });
 }
 
@@ -1800,7 +1825,7 @@ function endCall(reason = "manual") {
 }
 
 micButton.addEventListener("click", async () => {
-  if (!callAccessAvailable) {
+  if (!callAccessAvailable && !callActive && !connecting) {
     logLine("Доступные минуты исчерпаны. Перейдите в личный кабинет.");
     return;
   }
@@ -1926,6 +1951,9 @@ if (hasWebTextChat && window.ChatSyncClient) {
   chatSyncClient.start();
   document.addEventListener("visibilitychange", () => { if (!document.hidden) void loadWebCallHistory(); });
   window.setInterval(() => { if (!document.hidden && !callActive && !connecting) void loadWebCallHistory(); }, 20000);
+  window.setInterval(() => { if (!document.hidden) void loadWebAccountSummary(); }, 30000);
+  window.addEventListener("focus", () => { void loadWebAccountSummary(); });
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) void loadWebAccountSummary(); });
 }
 void loadWebCallHistory();
 updateWebChatComposerState();

@@ -119,3 +119,36 @@ class ChatSyncTests(unittest.TestCase):
         self.assertTrue(first["has_more"])
         self.assertEqual(len(first["items"]) + len(second["items"]), 1002)
         self.assertFalse(second["has_more"])
+
+    def test_sidebar_account_summary_adds_trial_and_package_minutes(self):
+        state = {"trial_remaining_minutes": 2, "package_remaining_minutes": 15,
+            "has_call_access": True, "current_subscription": {"kind": "call_package", "plan_name": "Пакет 15 минут"}}
+        with patch("app.routes._app_user_access_state", return_value=state):
+            response = self.first.get("/api/web/account-summary")
+        self.assertEqual(response.status_code, 200)
+        summary = response.get_json()["summary"]
+        self.assertEqual(summary["remaining_minutes"], 17)
+        self.assertEqual(summary["minutes_label"], "17 мин")
+        self.assertIn("Пробные: 2", summary["minutes_detail"])
+        self.assertEqual(summary["subscription_status"], "Пакет минут активен")
+        self.assertEqual(response.headers["Cache-Control"], "no-store")
+
+    def test_sidebar_unlimited_summary_does_not_expose_billing_tokens(self):
+        state = {"has_call_access": True, "current_subscription": {"kind": "unlimited", "plan_name": "Безлимит на месяц",
+            "expires_at": datetime(2026, 12, 1), "auto_renew_enabled": False, "cloudpayments_token": "private-token"}}
+        with patch("app.routes._app_user_access_state", return_value=state):
+            response = self.first.get("/api/web/account-summary")
+        summary = response.get_json()["summary"]
+        self.assertEqual(summary["minutes_label"], "Безлимит")
+        self.assertIn("01.12.2026", summary["subscription_status"])
+        self.assertIn("без автопродления", summary["subscription_status"])
+        self.assertNotIn("private-token", response.get_data(as_text=True))
+
+    def test_sidebar_summary_is_protected_and_uses_the_signed_in_account(self):
+        self.assertEqual(self.app.test_client().get("/api/web/account-summary").status_code, 401)
+        with patch("app.routes._app_user_access_state", side_effect=lambda user: {
+            "trial_remaining_minutes": user.id, "has_call_access": True}):
+            first = self.first.get("/api/web/account-summary").get_json()
+            other = self.other.get("/api/web/account-summary").get_json()
+        self.assertEqual(first["summary"]["remaining_minutes"], self.user_id)
+        self.assertEqual(other["summary"]["remaining_minutes"], self.other_id)

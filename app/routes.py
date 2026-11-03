@@ -1652,6 +1652,48 @@ def _render_index(platform: str):
     )
 
 
+def _web_account_summary(state: dict) -> dict:
+    trial = max(0, int(state.get("trial_remaining_minutes") or 0))
+    package = max(0, int(state.get("package_remaining_minutes") or 0))
+    subscription = state.get("current_subscription") or {}
+    unlimited = subscription.get("kind") == "unlimited"
+    detail = []
+    if trial:
+        detail.append(f"Пробные: {trial} мин")
+    if package:
+        detail.append(f"В пакете: {package} мин")
+    status = "Нет активной подписки"
+    if unlimited:
+        status = "Активна"
+        if subscription.get("expires_at"):
+            status += " до " + subscription["expires_at"].strftime("%d.%m.%Y")
+        if not subscription.get("auto_renew_enabled"):
+            status += " · без автопродления"
+    elif subscription:
+        status = "Пакет минут активен"
+    return {
+        "remaining_minutes": trial + package,
+        "unlimited": unlimited,
+        "minutes_label": "Безлимит" if unlimited else f"{trial + package} мин",
+        "minutes_detail": "Без ограничения минут" if unlimited else " · ".join(detail) or "Выберите тариф в личном кабинете",
+        "subscription_name": subscription.get("plan_name") or "Подписка не подключена",
+        "subscription_status": status,
+        "has_call_access": bool(state.get("has_call_access")),
+    }
+
+
+@main_bp.get("/api/web/account-summary")
+def web_account_summary_api():
+    user = _current_app_user() or _current_mobile_user()
+    if not user:
+        return jsonify({"ok": False, "error": "Authentication required."}), 401
+    if not _app_user_ready_for_calls(user):
+        return jsonify({"ok": False, "error": "Email verification required."}), 403
+    response = jsonify({"ok": True, "user_id": user.id, "summary": _web_account_summary(_app_user_access_state(user))})
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+
 def _render_web_messenger():
     app_user = _current_app_user()
     if not app_user:
@@ -1699,6 +1741,7 @@ def _render_web_messenger():
         call_access_available=access_state["has_call_access"],
         realtime_provider=_hero_provider(selected_character),
         account_url=url_for("main.account"),
+        account_summary=_web_account_summary(access_state),
     )
 
 

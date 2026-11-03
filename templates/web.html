@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>{{ character.name }}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='call.css', v='20261103chatsync') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='call.css', v='20261103sidebaraccount') }}">
   </head>
   <body
     class="web-page"
@@ -63,6 +63,19 @@
               </div>
             {% endfor %}
           </nav>
+          <footer class="web-sidebar-billing" aria-label="Минуты и подписка">
+            <div class="web-balance-row">
+              <span>Осталось минут</span>
+              <strong id="web-balance-value">{{ account_summary.minutes_label }}</strong>
+            </div>
+            <p class="web-balance-detail" id="web-balance-detail">{{ account_summary.minutes_detail }}</p>
+            <div class="web-sidebar-subscription">
+              <span class="web-sidebar-caption">Текущий тариф</span>
+              <strong id="web-subscription-name">{{ account_summary.subscription_name }}</strong>
+              <span id="web-subscription-status">{{ account_summary.subscription_status }}</span>
+            </div>
+            <a class="web-sidebar-account-link" href="{{ account_url }}">Личный кабинет <span aria-hidden="true">↗</span></a>
+          </footer>
         </aside>
 
         <section class="web-chat-panel">
@@ -133,6 +146,6 @@
     <script src="{{ url_for('static', filename='vendor/purify-3.4.17.min.js') }}"></script>
     <script src="{{ url_for('static', filename='chat-markdown.js', v='20261103markdown') }}"></script>
     <script src="{{ url_for('static', filename='web-chat-sync.js', v='20261103chatsync') }}"></script>
-    <script src="{{ url_for('static', filename='call.js', v='20261103typinglowercase') }}"></script>
+    <script src="{{ url_for('static', filename='call.js', v='20261103sidebaraccount') }}"></script>
   </body>
 </html>
