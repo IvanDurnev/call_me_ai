@@ -182,7 +182,7 @@ function setIdleConnectionState() {
   if (!hasWebTextChat || callActive || connecting) {
     return;
   }
-  setConnectionState((webChatSendingSlug === characterSlug || remoteTypingSlugs.has(characterSlug)) ? "Печатает..." : "", false);
+  setConnectionState((webChatSendingSlug === characterSlug || remoteTypingSlugs.has(characterSlug)) ? "печатает..." : "", false);
 }
 
 function closeWebChatSearch({ keepQuery = false } = {}) {
@@ -452,7 +452,7 @@ function setWebCharacterTyping(slug, typing) {
   if (!preview) return;
   if (typing) {
     if (preview.dataset.idleText === undefined) preview.dataset.idleText = preview.textContent;
-    preview.textContent = "Печатает...";
+    preview.textContent = "печатает...";
   } else if (preview.dataset.idleText !== undefined) {
     preview.textContent = preview.dataset.idleText;
     delete preview.dataset.idleText;

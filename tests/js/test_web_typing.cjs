@@ -47,7 +47,7 @@ function setup() {
 test('typing is shown only for the replying hero, and reply stays in original chat after switching', async () => {
   const s = setup();
   const task = s.context.sendWebChatMessage();
-  assert.equal(s.previews[0].textContent, 'Печатает...');
+  assert.equal(s.previews[0].textContent, 'печатает...');
   assert.equal(s.previews[1].textContent, 'Второй герой');
   s.context.characterSlug = 'second';
   s.context.setIdleConnectionState();
