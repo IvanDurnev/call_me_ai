@@ -26,6 +26,7 @@ from .services.chat_sync import begin_operation, retry_operation, merge_legacy_m
 from .account_linking import link_max_account, link_telegram_account
 from .characters import (
     build_realtime_session_config,
+    build_corporate_call_instructions,
     build_runtime_instructions,
     DEFAULT_GREETING_PROMPT,
     ELEVENLABS_DEFAULT_LLM,
@@ -40,7 +41,7 @@ from .characters import (
 from .extensions import db
 from .services.admin_users import build_admin_user_summaries
 from .services.openai_models import list_openai_models, supports_text_chat
-from .models import AdminUser, AppUser, CallSession, ChatMessage, ChatOperation, Hero, MobileAuthToken, PricingPlan, SubscriptionPurchase
+from .models import AdminUser, AppUser, CallSession, CorporatePage, ChatMessage, ChatOperation, Hero, MobileAuthToken, PricingPlan, SubscriptionPurchase
 from .services import (
     build_user_access_state,
     build_voice_library_payload,
@@ -321,6 +322,7 @@ def _run_elevenlabs_smoke_test(character: dict) -> dict[str, object]:
 
 def _build_elevenlabs_agent_payload(character: dict) -> dict[str, object]:
     full_instructions = build_runtime_instructions(character, end_call_mode="marker")
+    full_instructions += "\n\n{{corporate_call_instructions}}"
     voice_id = str(character.get("elevenlabs_voice_id") or character.get("voice") or "").strip()
     character_name = (character.get("name") or "Персонаж").strip()
     tts_model_id = (current_app.config.get("ELEVENLABS_TTS_MODEL") or "eleven_flash_v2_5").strip() or "eleven_flash_v2_5"
@@ -349,6 +351,7 @@ def _build_elevenlabs_agent_payload(character: dict) -> dict[str, object]:
                 },
                 "first_message": first_message,
                 "language": "ru",
+                "dynamic_variables": {"dynamic_variable_placeholders": {"corporate_call_instructions": ""}},
             },
             "tts": {
                 "model_id": tts_model_id,
@@ -3268,6 +3271,9 @@ def start_call_session_api():
     if corporate_page_id is None and not _app_user_access_state(app_user)["has_call_access"]:
         return jsonify({"ok": False, "error": "Доступные минуты исчерпаны. Продлите тариф в личном кабинете."}), 403
 
+    corporate_instructions = ""
+    if corporate_page_id is not None:
+        corporate_instructions = db.session.get(CorporatePage, corporate_page_id).call_instructions or ""
     provider = _hero_provider(character)
     call_session = CallSession(
         corporate_page_id=corporate_page_id,
@@ -3278,6 +3284,7 @@ def start_call_session_api():
         status="active",
         meta_json={
             "corporate_page_id": corporate_page_id,
+            "corporate_call_instructions": corporate_instructions,
             "platform": started_from,
             "started_from": started_from,
             "app_user_name": app_user.name,
@@ -3306,8 +3313,15 @@ def start_call_session_api():
             db.session.commit()
             return jsonify({"ok": False, "error": "ELEVENLABS_AGENT_ID is not configured for this hero."}), 400
 
-        with suppress(Exception):
+        try:
             _sync_elevenlabs_agent_for_character(character, agent_id=agent_id)
+        except Exception:
+            if corporate_instructions:
+                current_app.logger.exception("Corporate call agent setup failed")
+                call_session.status = "failed"
+                call_session.ended_at = datetime.utcnow()
+                db.session.commit()
+                return jsonify({"ok": False, "error": "Не удалось подготовить корпоративный сценарий звонка. Попробуйте позже."}), 502
 
         response_payload["signed_url"] = get_signed_url(
             agent_id=agent_id,
@@ -3320,6 +3334,7 @@ def start_call_session_api():
                 "character_name": character.get("name") or "",
                 "character_description": character.get("description") or "",
                 "user_name": app_user.name,
+                "corporate_call_instructions": build_corporate_call_instructions(corporate_instructions),
             },
             "user_id": app_user.user_uuid,
         }

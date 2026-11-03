@@ -98,7 +98,22 @@ def build_runtime_instructions(character: dict[str, Any], *, end_call_mode: str 
             f"{knowledge_text}"
         )
 
+    full_instructions += build_corporate_call_instructions(character.get("corporate_call_instructions") or "")
+
     return full_instructions
+
+
+def build_corporate_call_instructions(instructions: str) -> str:
+    if not instructions.strip():
+        return ""
+    return (
+        "\n\nИНСТРУКЦИЯ ДЛЯ ЭТОГО КОРПОРАТИВНОГО ЗВОНКА. "
+        "Сохраняй образ персонажа и учитывай следующий контекст и сценарий на протяжении разговора. "
+        "Если указаны обязательные вопросы, задавай их по одному в подходящий момент, "
+        "учитывай уже полученные ответы и не придумывай ответы за собеседника. "
+        "Если собеседник не хочет отвечать или хочет завершить звонок, уважай его решение.\n\n"
+        f"{instructions.strip()}"
+    )
 
 
 def build_character_identity_prompt(character: dict[str, Any]) -> str:

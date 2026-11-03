@@ -20,6 +20,19 @@ def prepare_schema(connection):
     required = {"app_user", "hero", "call_session", "email_code"}
     if not required.issubset(inspector.get_table_names()):
         raise RuntimeError("First prepare the existing application schema.")
+    operations = Operations(MigrationContext.configure(connection))
+    if inspector.has_table("corporate_page"):
+        existing = {column["name"] for column in inspector.get_columns("corporate_page")}
+        additions = [
+            sa.Column("call_instructions", sa.Text(), nullable=False, server_default=""),
+            sa.Column("logo_border_radius", sa.Integer(), nullable=False, server_default="0"),
+            sa.Column("font_path", sa.String(512), nullable=True),
+            sa.Column("font_original_name", sa.String(255), nullable=True),
+        ]
+        for column in additions:
+            if column.name not in existing:
+                operations.add_column("corporate_page", column)
+        inspector = sa.inspect(connection)
     tables = [CorporatePage.__table__, CorporateMembership.__table__, CorporateRegistrationCode.__table__]
     for table in tables:
         if inspector.has_table(table.name):
@@ -27,7 +40,6 @@ def prepare_schema(connection):
             if missing:
                 raise RuntimeError(f"{table.name}: missing columns {sorted(missing)}")
     db.metadata.create_all(bind=connection, tables=tables, checkfirst=True)
-    operations = Operations(MigrationContext.configure(connection))
     if "failed_attempts" not in {column["name"] for column in inspector.get_columns("email_code")}:
         operations.add_column("email_code", sa.Column("failed_attempts", sa.Integer(), nullable=False, server_default="0"))
     if "corporate_page_id" not in {column["name"] for column in inspector.get_columns("call_session")}:

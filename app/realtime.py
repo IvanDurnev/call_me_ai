@@ -31,11 +31,20 @@ def build_openai_headers(app) -> list[str]:
 
 
 class SocketBridge:
-    def __init__(self, browser_ws, character_slug: str):
+    def __init__(self, browser_ws, character_slug: str, *, corporate_call_id: int | None = None):
         self.browser_ws = browser_ws
         self.character_slug = character_slug
         self.character = get_character(character_slug)
         self.app = current_app._get_current_object()
+        self.corporate_call_id = corporate_call_id
+        if corporate_call_id is not None:
+            from .corporate import corporate_access
+            call = db.session.get(CallSession, corporate_call_id)
+            user = db.session.get(AppUser, session.get("app_user_id")) if session.get("app_user_id") else None
+            if (not call or not user or call.app_user_id != user.id or call.ended_at
+                    or not corporate_access(user, call.corporate_page_id, character_slug)):
+                raise ValueError("Нет доступа к корпоративному звонку.")
+            self.character = {**self.character, "corporate_call_instructions": (call.meta_json or {}).get("corporate_call_instructions", "")}
         settings = normalize_realtime_settings(self.character.get("realtime_settings") if self.character else None)
         self.provider = str(settings.get("provider") or self.app.config.get("REALTIME_API_PROVIDER") or "openai").strip().lower() or "openai"
         self.openai_ws: WebSocket | None = None
@@ -142,7 +151,8 @@ class SocketBridge:
                     page_id = existing_call_session.corporate_page_id
                     if page_id:
                         from .corporate import corporate_access
-                        if (self.authenticated_user_id != app_user.id or existing_call_session.ended_at
+                        if (self.corporate_call_id != existing_call_session.id
+                                or self.authenticated_user_id != app_user.id or existing_call_session.ended_at
                                 or not corporate_access(app_user, page_id, self.character_slug)):
                             raise ValueError("Нет доступа к корпоративному звонку.")
                     self.call_session_id = existing_call_session.id
@@ -387,7 +397,7 @@ class SocketBridge:
                         "response": {
                             "modalities": ["audio", "text"],
                             "instructions": (
-                                f"{build_character_identity_prompt(self.character)}\n\n"
+                                f"{build_runtime_instructions(self.character) if self.corporate_call_id else build_character_identity_prompt(self.character)}\n\n"
                                 f"{self.character.get('greeting_prompt') or ('Начни разговор первым. Коротко поздоровайся по-русски, как будто это живой телефонный звонок, и спроси, чем помочь.')}"
                             ),
                         },

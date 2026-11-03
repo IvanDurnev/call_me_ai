@@ -67,6 +67,33 @@ def _upload(field):
     return relative
 
 
+def _upload_font():
+    upload = request.files.get("font")
+    if not upload or not upload.filename:
+        return None
+    name = Path(upload.filename.replace("\\", "/")).name[:255]
+    suffix = Path(name).suffix.lower()
+    data = upload.stream.read(8 * 1024 * 1024 + 1)
+    if len(data) > 8 * 1024 * 1024:
+        raise ValueError("Шрифт должен быть не больше 8 МБ.")
+    signatures = {".woff": b"wOFF", ".woff2": b"wOF2", ".ttf": b"\x00\x01\x00\x00", ".otf": b"OTTO"}
+    valid = suffix in signatures and data[:4] == signatures[suffix]
+    if valid and suffix in {".woff", ".woff2"}:
+        header_size = 44 if suffix == ".woff" else 48
+        valid = (len(data) >= header_size and int.from_bytes(data[8:12], "big") == len(data)
+                 and int.from_bytes(data[12:14], "big") > 0)
+    elif valid:
+        tables = int.from_bytes(data[4:6], "big")
+        valid = len(data) >= 12 and tables > 0 and 12 + tables * 16 <= len(data)
+    if not valid:
+        raise ValueError("Загрузите файл шрифта WOFF2, WOFF, TTF или OTF.")
+    relative = f"uploads/corporate/{uuid.uuid4().hex}{suffix}"
+    target = Path(current_app.static_folder) / relative
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_bytes(data)
+    return relative, name
+
+
 @main_bp.route("/admin/corporate-pages", methods=["GET", "POST"])
 @_admin_required(view_mode="html")
 def admin_corporate_pages():
@@ -107,12 +134,28 @@ def admin_corporate_pages():
                 values = {key: request.form.get(key, "").strip() for key in ("name", "title", "button_label")}
                 if not all(values.values()) or any(len(values[key]) > limit for key, limit in (("name", 255), ("title", 255), ("button_label", 120))):
                     raise ValueError("Заполните название, заголовок (до 255 символов) и подпись кнопки (до 120 символов).")
+                call_instructions = request.form.get("call_instructions", "").strip()
+                if len(call_instructions) > 20000:
+                    raise ValueError("Инструкция по созвону должна быть не длиннее 20 000 символов.")
+                try:
+                    logo_border_radius = int(request.form.get("logo_border_radius", selected.logo_border_radius if selected else 0))
+                except (ValueError, TypeError):
+                    raise ValueError("Скругление углов: укажите целое число от 0 до 200 пикселей.")
+                if not 0 <= logo_border_radius <= 200:
+                    raise ValueError("Скругление углов: укажите целое число от 0 до 200 пикселей.")
                 domains = ", ".join(_domains(request.form.get("email_domains", "")))
+                font = _upload_font()
                 background, logo = _upload("background"), _upload("logo")
                 page = selected or CorporatePage()
                 for key, value in values.items():
                     setattr(page, key, value)
                 page.endpoint, page.hero_id, page.email_domains = endpoint, hero.id, domains
+                page.logo_border_radius = logo_border_radius
+                if font:
+                    page.font_path, page.font_original_name = font
+                elif request.form.get("remove_font") == "on":
+                    page.font_path, page.font_original_name = None, None
+                page.call_instructions = call_instructions
                 page.is_active = request.form.get("is_active") == "on"
                 for field, uploaded in (("background_path", background), ("logo_path", logo)):
                     if uploaded:

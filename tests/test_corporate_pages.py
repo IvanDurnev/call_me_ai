@@ -179,6 +179,145 @@ class CorporatePagesTests(TestCase):
             with self.assertRaisesRegex(ValueError, 'Нет доступа'):
                 bridge._create_call_session({'app_user_id':AppUser.query.one().id, 'call_session_id':call_id})
 
+    def test_admin_saves_clears_and_validates_call_instructions(self):
+        with self.client.session_transaction() as state:
+            state['admin_user_id'] = self.admin_id
+        form = dict(csrf_token=self.csrf(), page_id=self.page_id, name='ACME', endpoint='acme-holiday', title='Праздник', button_label='Звонок', hero_id=self.hero_id, is_active='on')
+        instruction = 'Компания Север. Обязательно узнай имя ребёнка и его возраст.'
+        response = self.client.post('/admin/corporate-pages', data={**form, 'call_instructions': instruction})
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(db.session.get(CorporatePage, self.page_id).call_instructions, instruction)
+        self.assertIn(instruction, self.client.get(response.location).text)
+        self.assertNotIn(instruction, self.client.get('/acme-holiday').text)
+        response = self.client.post('/admin/corporate-pages', data={**form, 'call_instructions': 'x' * 20001})
+        self.assertIn('20 000', response.text)
+        self.assertEqual(db.session.get(CorporatePage, self.page_id).call_instructions, instruction)
+        self.client.post('/admin/corporate-pages', data={**form, 'call_instructions': ''})
+        self.assertEqual(db.session.get(CorporatePage, self.page_id).call_instructions, '')
+
+    def test_openai_session_uses_snapshot_and_keeps_base_prompt(self):
+        from flask import session
+        from app.characters import build_realtime_session_config, get_character
+        page = db.session.get(CorporatePage, self.page_id)
+        page.call_instructions = 'Компания Север. Узнай возраст.'
+        hero = db.session.get(Hero, self.hero_id)
+        hero.system_prompt = 'Основной образ Деда Мороза.'
+        hero.realtime_settings_json = {'instructions_override': 'Основные инструкции персонажа.'}
+        db.session.commit()
+        self.redeem()
+        response = self.client.post('/api/call-sessions/start', json={'character_slug':'santa', 'corporate_page_id':self.page_id})
+        call_id = response.json['call_session_id']
+        page.call_instructions = 'Новый сценарий другой компании.'
+        db.session.commit()
+        with self.app.test_request_context('/ws/call/santa'):
+            session['app_user_id'] = AppUser.query.one().id
+            bridge = SocketBridge(Mock(), 'santa', corporate_call_id=call_id)
+            bridge._create_call_session({'app_user_id':session['app_user_id'], 'call_session_id':call_id})
+            with patch('app.realtime.create_connection', return_value=Mock()):
+                self.app.config.update(OPENAI_REALTIME_MODEL='gpt-realtime', OPENAI_REALTIME_VOICE='alloy', OPENAI_API_KEY='test')
+                bridge._connect_openai()
+            import json
+            sent = json.loads(bridge.openai_ws.send.call_args.args[0])
+            instructions = sent['session']['instructions']
+            self.assertIn('Компания Север. Узнай возраст.', instructions)
+            self.assertIn('Основные инструкции персонажа.', instructions)
+            self.assertNotIn('Новый сценарий', instructions)
+            regular = build_realtime_session_config(get_character('santa'), 'gpt-realtime', 'alloy')
+            self.assertNotIn('Компания Север', regular['instructions'])
+            self.assertNotIn('corporate_call_instructions', get_character('santa'))
+
+    def test_elevenlabs_keeps_corporate_context_out_of_shared_agent(self):
+        from app.routes import _build_elevenlabs_agent_payload
+        page = db.session.get(CorporatePage, self.page_id)
+        page.call_instructions = 'Компания Север. Спроси о любимом подарке.'
+        db.session.commit()
+        self.redeem()
+        self.app.config['ELEVEN_LABS_API_KEY'] = 'test'
+        with patch('app.routes._hero_provider', return_value='elevenlabs'), patch('app.routes._resolve_elevenlabs_agent_id', return_value='agent'), patch('app.routes.update_agent') as update, patch('app.routes.get_signed_url', return_value='wss://signed'):
+            response = self.client.post('/api/call-sessions/start', json={'character_slug':'santa', 'corporate_page_id':self.page_id})
+        self.assertEqual(response.status_code, 200, response.text)
+        variables = response.json['conversation_initiation_client_data']['dynamic_variables']
+        self.assertIn(page.call_instructions, variables['corporate_call_instructions'])
+        prompt = update.call_args.kwargs['conversation_config']['agent']['prompt']['prompt']
+        self.assertIn('{{corporate_call_instructions}}', prompt)
+        self.assertNotIn('Компания Север', prompt)
+        self.assertEqual(CallSession.query.one().meta_json['corporate_call_instructions'], page.call_instructions)
+        from flask import session
+        with self.app.test_request_context('/ws/call/santa'):
+            session['app_user_id'] = AppUser.query.one().id
+            bridge = SocketBridge(Mock(), 'santa', corporate_call_id=response.json['call_session_id'])
+            self.app.config.update(OPENAI_API_KEY='test', OPENAI_CHAT_MODEL='test')
+            with patch('app.realtime.generate_chat_reply', return_value='Привет') as generate:
+                bridge._generate_elevenlabs_reply(greeting=True)
+            self.assertIn('Компания Север', generate.call_args.kwargs['messages'][0]['content'])
+
+    def test_elevenlabs_setup_failure_does_not_skip_corporate_scenario(self):
+        page = db.session.get(CorporatePage, self.page_id)
+        page.call_instructions = 'Узнай имя.'
+        db.session.commit()
+        self.redeem()
+        with patch('app.routes._hero_provider', return_value='elevenlabs'), patch('app.routes._resolve_elevenlabs_agent_id', return_value='agent'), patch('app.routes._sync_elevenlabs_agent_for_character', side_effect=RuntimeError('provider')), patch('app.routes.get_signed_url') as signed:
+            response = self.client.post('/api/call-sessions/start', json={'character_slug':'santa', 'corporate_page_id':self.page_id})
+        self.assertEqual(response.status_code, 502)
+        self.assertFalse(signed.called)
+        self.assertEqual(CallSession.query.one().status, 'failed')
+
+    def test_logo_rounding_is_saved_rendered_and_validated(self):
+        with self.client.session_transaction() as state:
+            state['admin_user_id'] = self.admin_id
+        form = dict(csrf_token=self.csrf(), page_id=self.page_id, name='ACME', endpoint='acme-holiday', title='Праздник', button_label='Звонок', hero_id=self.hero_id, is_active='on')
+        page = db.session.get(CorporatePage, self.page_id)
+        page.logo_path = 'images/logo.webp'
+        db.session.commit()
+        response = self.client.post('/admin/corporate-pages', data={**form, 'logo_border_radius': 24})
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(page.logo_border_radius, 24)
+        self.assertIn('--corporate-logo-radius:24px', self.client.get('/acme-holiday').text)
+        self.assertIn('Скругление углов', self.client.get(response.location).text)
+        for invalid in ('-1', '201', '5.5', 'invalid'):
+            response = self.client.post('/admin/corporate-pages', data={**form, 'logo_border_radius': invalid})
+            self.assertIn('целое число от 0 до 200', response.text)
+            self.assertEqual(page.logo_border_radius, 24)
+        self.client.post('/admin/corporate-pages', data={**form, 'logo_border_radius': 0})
+        self.assertEqual(page.logo_border_radius, 0)
+
+    def test_corporate_font_can_be_replaced_removed_and_scoped(self):
+        with self.client.session_transaction() as state:
+            state['admin_user_id'] = self.admin_id
+        form = dict(csrf_token=self.csrf(), page_id=self.page_id, name='ACME', endpoint='acme-holiday', title='Праздник', button_label='Звонок', hero_id=self.hero_id, is_active='on')
+        with patch('app.corporate._upload_font', return_value=('uploads/corporate/test.woff2', 'Brand.woff2')):
+            self.assertEqual(self.client.post('/admin/corporate-pages', data=form).status_code, 302)
+        page = db.session.get(CorporatePage, self.page_id)
+        self.assertEqual(page.font_original_name, 'Brand.woff2')
+        html = self.client.get('/acme-holiday').text
+        self.assertIn('@font-face', html)
+        self.assertIn('corporate-custom-font', html)
+        self.assertIn('/static/uploads/corporate/test.woff2', html)
+        other = CorporatePage(endpoint='other-brand', name='Other', title='Other', button_label='Call', hero_id=self.hero_id)
+        db.session.add(other)
+        db.session.commit()
+        self.assertNotIn('@font-face', self.client.get('/other-brand').text)
+        self.client.post('/admin/corporate-pages', data=form)
+        self.assertEqual(page.font_original_name, 'Brand.woff2')
+        with patch('app.corporate._upload_font', return_value=('uploads/corporate/next.ttf', 'Next.ttf')):
+            self.client.post('/admin/corporate-pages', data=form)
+        self.assertEqual(page.font_original_name, 'Next.ttf')
+        self.client.post('/admin/corporate-pages', data={**form, 'remove_font': 'on'})
+        self.assertIsNone(page.font_path)
+        self.assertIsNone(page.font_original_name)
+        self.assertNotIn('@font-face', self.client.get('/acme-holiday').text)
+
+    def test_font_upload_rejects_invalid_or_oversized_files(self):
+        with self.client.session_transaction() as state:
+            state['admin_user_id'] = self.admin_id
+        form = dict(csrf_token=self.csrf(), page_id=self.page_id, name='ACME', endpoint='acme-holiday', title='Праздник', button_label='Звонок', hero_id=self.hero_id)
+        for filename, content in [('font.svg', b'<svg/>'), ('font.woff2', b'<script>alert(1)</script>'), ('font.ttf', b'\x00\x01\x00\x00'), ('font.woff', b'wOFF')]:
+            response = self.client.post('/admin/corporate-pages', data={**form, 'font': (io.BytesIO(content), filename)})
+            self.assertIn('Загрузите файл шрифта', response.text)
+            self.assertIsNone(db.session.get(CorporatePage, self.page_id).font_path)
+        response = self.client.post('/admin/corporate-pages', data={**form, 'font': (io.BytesIO(b'x' * (8 * 1024 * 1024 + 1)), 'font.woff2')})
+        self.assertIn('не больше 8 МБ', response.text)
+
 
 class CorporateMigrationTests(TestCase):
     def test_upgrade_and_downgrade_preserve_existing_calls(self):
@@ -221,4 +360,44 @@ class CorporateMigrationTests(TestCase):
             prepare_schema(connection)
             self.assertIn('corporate_membership', sa.inspect(connection).get_table_names())
             self.assertEqual(connection.exec_driver_sql('SELECT status FROM call_session WHERE id=1').scalar(), 'finished')
+        engine.dispose()
+
+    def test_existing_corporate_pages_receive_empty_instruction(self):
+        import sqlalchemy as sa
+        from scripts.prepare_corporate_schema import prepare_schema
+        engine = sa.create_engine('sqlite://')
+        with engine.begin() as connection:
+            for table in ('hero', 'app_user', 'email_code'):
+                connection.exec_driver_sql(f'CREATE TABLE {table} (id INTEGER PRIMARY KEY)')
+            connection.exec_driver_sql('CREATE TABLE call_session (id INTEGER PRIMARY KEY, status VARCHAR(32))')
+            prepare_schema(connection)
+            from alembic.migration import MigrationContext
+            from alembic.operations import Operations
+            with Operations(MigrationContext.configure(connection)).batch_alter_table('corporate_page') as batch:
+                batch.drop_column('call_instructions')
+            connection.exec_driver_sql("INSERT INTO corporate_page (id, endpoint, name, title, button_label, hero_id, email_domains, is_active, created_at) VALUES (1, 'test-company', 'Test', 'Title', 'Call', 1, '', 1, CURRENT_TIMESTAMP)")
+            prepare_schema(connection)
+            prepare_schema(connection)
+            self.assertEqual(connection.exec_driver_sql('SELECT call_instructions FROM corporate_page WHERE id=1').scalar(), '')
+        engine.dispose()
+
+    def test_branding_upgrade_preserves_existing_page_settings(self):
+        import sqlalchemy as sa
+        from scripts.prepare_corporate_schema import prepare_schema
+        engine = sa.create_engine('sqlite://')
+        with engine.begin() as connection:
+            for table in ('hero', 'app_user', 'email_code'):
+                connection.exec_driver_sql(f'CREATE TABLE {table} (id INTEGER PRIMARY KEY)')
+            connection.exec_driver_sql('CREATE TABLE call_session (id INTEGER PRIMARY KEY)')
+            prepare_schema(connection)
+            from alembic.migration import MigrationContext
+            from alembic.operations import Operations
+            with Operations(MigrationContext.configure(connection)).batch_alter_table('corporate_page') as batch:
+                for column in ('logo_border_radius', 'font_path', 'font_original_name'):
+                    batch.drop_column(column)
+            connection.exec_driver_sql("INSERT INTO corporate_page (id, endpoint, name, title, button_label, hero_id, email_domains, is_active, created_at, call_instructions) VALUES (1, 'test-company', 'Test', 'Title', 'Call', 1, '', 1, CURRENT_TIMESTAMP, 'Спроси имя')")
+            prepare_schema(connection)
+            prepare_schema(connection)
+            row = connection.exec_driver_sql('SELECT logo_border_radius, font_path, font_original_name, call_instructions FROM corporate_page WHERE id=1').one()
+            self.assertEqual(tuple(row), (0, None, None, 'Спроси имя'))
         engine.dispose()

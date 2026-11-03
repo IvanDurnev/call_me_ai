@@ -10,6 +10,7 @@ from .realtime import SocketBridge
 def register_ws_routes() -> None:
     @sock.route("/ws/call/<slug>")
     def call_socket(ws, slug: str):
+        corporate_call_id = None
         if "corporate_call" in request.args:
             from .corporate import corporate_access
             call = db.session.get(CallSession, request.args.get("corporate_call", type=int))
@@ -18,5 +19,6 @@ def register_ws_routes() -> None:
                     or not corporate_access(user, call.corporate_page_id, slug)):
                 ws.close()
                 return
-        bridge = SocketBridge(ws, slug)
+            corporate_call_id = call.id
+        bridge = SocketBridge(ws, slug, corporate_call_id=corporate_call_id)
         bridge.serve()
