@@ -361,6 +361,7 @@ function renderWebChatIntro() {
 function switchWebCharacter(nextSlug) {
   if (!nextSlug || nextSlug === characterSlug) {
     openMobileWebChat();
+    webChatInputNode?.focus({ preventScroll: true });
     return;
   }
   if (connecting || callActive) {
@@ -424,6 +425,7 @@ function switchWebCharacter(nextSlug) {
   syncCallControls();
   updateWebChatComposerState();
   openMobileWebChat();
+  webChatInputNode?.focus({ preventScroll: true });
 }
 
 function updateWebChatComposerState() {
