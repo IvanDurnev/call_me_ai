@@ -1108,6 +1108,21 @@ async function reloadAdminData() {
   render();
 }
 
+function refreshCreateVoices() {
+  if (!createForm) return;
+  const provider = createForm.elements.provider.value;
+  const select = createForm.elements.create_voice;
+  const voices = initialState.voice_options?.[provider] || [];
+  const previous = select.value;
+  select.innerHTML = voices.length
+    ? voices.map((voice) => `<option value="${escapeHtml(voice.value)}">${escapeHtml(voice.label)}</option>`).join("")
+    : '<option value="">Голоса не загрузились — обновите страницу</option>';
+  if (voices.some((voice) => voice.value === previous)) select.value = previous;
+}
+
+createForm?.elements.provider.addEventListener("change", refreshCreateVoices);
+refreshCreateVoices();
+
 createForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
   const formData = new FormData(createForm);
@@ -1116,7 +1131,12 @@ createForm?.addEventListener("submit", async (event) => {
     emoji: formData.get("emoji"),
     provider: formData.get("provider") || initialState.realtime_provider || "openai",
   };
+  const voice = formData.get("create_voice");
+  if (payload.provider === "elevenlabs") payload.elevenlabs_voice_id = voice;
+  else payload.voice = voice;
 
+  const submitButton = createForm.querySelector('button[type="submit"]');
+  submitButton.disabled = true;
   setStatus(createStatus, "Создаю персонажа...");
   try {
     const response = await fetch("/api/heroes", {
@@ -1130,6 +1150,8 @@ createForm?.addEventListener("submit", async (event) => {
     }
 
     createForm.reset();
+    if (initialState.realtime_provider) createForm.elements.provider.value = initialState.realtime_provider;
+    refreshCreateVoices();
     prependHero(result.hero);
     await reloadAdminData();
     const createdMessage = result.agent_created
@@ -1138,6 +1160,8 @@ createForm?.addEventListener("submit", async (event) => {
     setStatus(createStatus, createdMessage);
   } catch (error) {
     setStatus(createStatus, error.message || "Не удалось создать персонажа.", true);
+  } finally {
+    submitButton.disabled = false;
   }
 });
 

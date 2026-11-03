@@ -2782,6 +2782,15 @@ def create_hero_api():
     if not name:
         return jsonify({"ok": False, "error": "Hero name is required."}), 400
 
+    settings = normalize_realtime_settings({"provider": payload.get("provider"), "text_chat_model": payload.get("text_chat_model")})
+    provider = settings.get("provider") or _realtime_provider()
+    elevenlabs_voice_id = str(payload.get("elevenlabs_voice_id") or "").strip()
+    if provider == "elevenlabs" and (
+        not re.fullmatch(r"[A-Za-z0-9_-]{10,128}", elevenlabs_voice_id)
+        or any(option["value"] == elevenlabs_voice_id for option in OPENAI_VOICE_OPTIONS)
+    ):
+        return jsonify({"ok": False, "error": "Выберите голос ElevenLabs перед созданием персонажа."}), 400
+
     slug = _build_unique_slug((payload.get("slug") or name).strip())
     hero = Hero(
         slug=slug,
@@ -2789,10 +2798,11 @@ def create_hero_api():
         description=(payload.get("description") or "").strip(),
         emoji=(payload.get("emoji") or "AI").strip()[:16] or "AI",
         voice=(payload.get("voice") or "alloy").strip() or "alloy",
+        elevenlabs_voice_id=elevenlabs_voice_id or None,
         greeting_prompt=DEFAULT_GREETING_PROMPT,
         sort_order=_next_hero_sort_order(),
         is_active=_coerce_bool(payload.get("is_active", True), default=True),
-        realtime_settings_json=normalize_realtime_settings({"provider": payload.get("provider"), "text_chat_model": payload.get("text_chat_model")}),
+        realtime_settings_json=settings,
     )
     db.session.add(hero)
     try:

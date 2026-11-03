@@ -1262,7 +1262,7 @@ class CallSessionRoutesTests(unittest.TestCase):
         ) as mocked_create_agent:
             response = self.client.post(
                 "/api/heroes",
-                json={"name": "Новый герой", "slug": "new-hero", "emoji": "✨"},
+                json={"name": "Новый герой", "slug": "new-hero", "emoji": "✨", "elevenlabs_voice_id": "21m00Tcm4TlvDq8ikWAM"},
             )
 
         self.assertEqual(response.status_code, 200)
@@ -1272,10 +1272,33 @@ class CallSessionRoutesTests(unittest.TestCase):
         self.assertEqual(payload["agent_id"], "agent-new-hero")
         mocked_create_agent.assert_called_once()
 
+        self.assertEqual(mocked_create_agent.call_args.kwargs["conversation_config"]["tts"]["voice_id"], "21m00Tcm4TlvDq8ikWAM")
+
         with self.app.app_context():
             hero = Hero.query.filter_by(slug="new-hero").first()
             self.assertIsNotNone(hero)
             self.assertEqual((hero.realtime_settings_json or {}).get("elevenlabs_agent_id"), "agent-new-hero")
+
+    def test_create_elevenlabs_hero_requires_provider_voice_before_external_request(self) -> None:
+        with self.client.session_transaction() as session:
+            session[ADMIN_SESSION_KEY] = self.admin_id
+        with patch("app.routes.create_agent") as create_agent_mock:
+            for voice in (None, "", "alloy"):
+                response = self.client.post("/api/heroes", json={"name": "Новый герой", "elevenlabs_voice_id": voice})
+                self.assertEqual(response.status_code, 400)
+                self.assertIn("Выберите голос ElevenLabs", response.get_json()["error"])
+            create_agent_mock.assert_not_called()
+        with self.app.app_context():
+            self.assertEqual(Hero.query.count(), 1)
+
+    def test_create_openai_hero_does_not_create_elevenlabs_agent(self) -> None:
+        with self.client.session_transaction() as session:
+            session[ADMIN_SESSION_KEY] = self.admin_id
+        with patch("app.routes.create_agent") as create_agent_mock:
+            response = self.client.post("/api/heroes", json={"name": "OpenAI герой", "provider": "openai", "voice": "coral"})
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.get_json()["hero"]["voice"], "coral")
+            create_agent_mock.assert_not_called()
 
     def test_finish_call_session_persists_elevenlabs_transcript(self) -> None:
         with self.app.app_context():
