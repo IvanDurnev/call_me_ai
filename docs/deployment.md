@@ -24,7 +24,7 @@ git status --short
 git pull --ff-only itd master
 APP_ENABLE_RECURRING_WORKER=false venv/bin/python -m scripts.prepare_mobile_schema
 APP_ENABLE_RECURRING_WORKER=false venv/bin/python -m unittest discover -s tests
-sudo supervisorctl restart call_me_ai call_me_ai_telegram_polling call_me_ai_max_polling
+sudo supervisorctl signal HUP call_me_ai
 sudo supervisorctl status call_me_ai call_me_ai_telegram_polling call_me_ai_max_polling
 curl --fail https://domovoice.ai/health
 ```
@@ -40,6 +40,12 @@ After restarting, verify the home page, login redirects, protected APIs and
 updated static assets. If startup or smoke checks fail, restore the previous Git
 revision and restart the same processes. The additive mobile tables can remain
 when rolling back to the previous code.
+
+For routine web code/template updates, keep the Gunicorn listener open and
+gracefully replace its workers with `sudo supervisorctl signal HUP call_me_ai`
+instead of stopping and starting the service. Check `/health` before and after,
+and confirm a new worker booted in the Gunicorn log. A supervisor restart is
+still required for changes to the master's environment or startup command.
 
 CloudPayments notification URLs currently configured for the merchant:
 
