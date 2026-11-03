@@ -26,7 +26,7 @@ def build_admin_user_summaries(users: list[AppUser], *, trial_minutes_limit: int
     calls = (
         CallSession.query.options(load_only(
             CallSession.id, CallSession.app_user_id, CallSession.status,
-            CallSession.started_at, CallSession.ended_at,
+            CallSession.started_at, CallSession.ended_at, CallSession.corporate_page_id,
         ))
         .filter(CallSession.app_user_id.in_(user_ids),
                 or_(CallSession.ended_at.isnot(None), CallSession.status == 'finished'))

@@ -135,6 +135,8 @@ def build_user_access_state(
     trial_calls_tried = False
 
     for call in calls:
+        if call.corporate_page_id:
+            continue
         billed_minutes = _call_billed_minutes(call)
         call_started_at = call.started_at or call.ended_at or datetime.utcnow()
         active_unlimited = _find_active_unlimited_bucket(unlimited_buckets, call_started_at)

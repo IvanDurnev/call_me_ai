@@ -52,7 +52,11 @@ def verify_email_code(*, email: str, code: str, purpose: str) -> AppUser:
         raise ValueError("Код не найден. Запросите новый.")
     if entry.expires_at < now:
         raise ValueError("Срок действия кода истёк. Запросите новый.")
+    if entry.failed_attempts >= 5:
+        raise ValueError("Лимит попыток исчерпан. Запросите новый код.")
     if not entry.matches(normalized_code):
+        EmailCode.query.filter_by(id=entry.id).update({EmailCode.failed_attempts: EmailCode.failed_attempts + 1})
+        db.session.commit()
         raise ValueError("Неверный код.")
 
     user = db.session.get(AppUser, entry.app_user_id) if entry.app_user_id else None

@@ -3251,9 +3251,6 @@ def start_call_session_api():
     app_user = _current_app_user() or _current_mobile_user()
     if not app_user:
         return jsonify({"ok": False, "error": "Authentication required."}), 401
-    if not _app_user_ready_for_calls(app_user):
-        return jsonify({"ok": False, "error": "Email verification required."}), 403
-
     payload = request.get_json(silent=True) or {}
     slug = str(payload.get("character_slug") or "").strip()
     started_from = str(payload.get("started_from") or "web").strip() or "web"
@@ -3261,18 +3258,26 @@ def start_call_session_api():
     if not character:
         return jsonify({"ok": False, "error": "Hero not found."}), 404
 
-    access_state = _app_user_access_state(app_user)
-    if not access_state["has_call_access"]:
+    corporate_page_id = payload.get("corporate_page_id")
+    if corporate_page_id is not None:
+        from .corporate import corporate_access
+        if type(corporate_page_id) is not int or not corporate_access(app_user, corporate_page_id, slug):
+            return jsonify({"ok": False, "error": "Нет доступа к корпоративной странице."}), 403
+    elif not _app_user_ready_for_calls(app_user):
+        return jsonify({"ok": False, "error": "Email verification required."}), 403
+    if corporate_page_id is None and not _app_user_access_state(app_user)["has_call_access"]:
         return jsonify({"ok": False, "error": "Доступные минуты исчерпаны. Продлите тариф в личном кабинете."}), 403
 
     provider = _hero_provider(character)
     call_session = CallSession(
+        corporate_page_id=corporate_page_id,
         app_user_id=app_user.id,
         telegram_user_id=payload.get("telegram_user_id"),
         telegram_username=payload.get("telegram_username"),
         character_slug=character["slug"],
         status="active",
         meta_json={
+            "corporate_page_id": corporate_page_id,
             "platform": started_from,
             "started_from": started_from,
             "app_user_name": app_user.name,
@@ -3326,6 +3331,8 @@ def start_call_session_api():
     elif ws_base.startswith("http://"):
         ws_base = "ws://" + ws_base.removeprefix("http://")
     response_payload["websocket_url"] = f"{ws_base}/ws/call/{character['slug']}"
+    if corporate_page_id is not None:
+        response_payload["websocket_url"] += f"?corporate_call={call_session.id}"
     return jsonify(response_payload)
 
 
@@ -3813,3 +3820,6 @@ def _knowledge_summary(text: str) -> str:
     if len(compact) <= 140:
         return compact
     return compact[:137].rstrip() + "..."
+
+# Register branded pages after the shared authentication helpers and routes.
+from . import corporate  # noqa: E402, F401

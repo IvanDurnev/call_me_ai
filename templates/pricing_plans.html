@@ -25,6 +25,7 @@
             <a class="admin-nav-link{% if admin_section == 'heroes' %} is-active{% endif %}" href="{{ url_for('main.admin_heroes') }}">Персонажи</a>
             <a class="admin-nav-link{% if admin_section == 'pricing_plans' %} is-active{% endif %}" href="{{ url_for('main.admin_pricing_plans') }}">Тарифы</a>
             <a class="admin-nav-link{% if admin_section == 'users' %} is-active{% endif %}" href="{{ url_for('main.admin_users') }}">Пользователи</a>
+            <a class="admin-nav-link" href="{{ url_for('main.admin_corporate_pages') }}">Корпоративные страницы</a>
           </nav>
 
           <div class="heroes-layout tariffs-layout">

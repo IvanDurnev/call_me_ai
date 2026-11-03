@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Корпоративные страницы</title><link rel="stylesheet" href="{{ url_for('static', filename='call.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='corporate.css') }}"></head>
+<body class="miniapp-page heroes-page"><main class="corporate-admin">
+<header><h1>Корпоративные страницы</h1><form action="{{ url_for('main.admin_logout') }}" method="post"><button class="call-btn call-btn-secondary">Выйти</button></form></header>
+<nav class="admin-nav"><a class="admin-nav-link" href="{{ url_for('main.admin_heroes') }}">Персонажи</a><a class="admin-nav-link" href="{{ url_for('main.admin_pricing_plans') }}">Тарифы</a><a class="admin-nav-link" href="{{ url_for('main.admin_users') }}">Пользователи</a><a class="admin-nav-link is-active" href="{{ url_for('main.admin_corporate_pages') }}">Корпоративные страницы</a></nav>
+{% if error %}<p role="alert" class="corporate-error">{{ error }}</p>{% endif %}
+{% if request.args.get('saved') %}<p role="status">Настройки сохранены.</p>{% endif %}
+<div class="corporate-admin-grid"><aside class="corporate-panel"><a href="{{ url_for('main.admin_corporate_pages') }}">+ Создать страницу</a>{% for item in pages %}<article><a href="{{ url_for('main.admin_corporate_pages', edit=item.id) }}"><strong>{{ item.name }}</strong></a><p>/{{ item.endpoint }} · {{ 'Активна' if item.is_active else 'Выключена' }}</p><a href="{{ url_for('main.corporate_page', page_endpoint=item.endpoint) }}" target="_blank" rel="noopener">Открыть страницу ↗</a></article>{% else %}<p>Создайте первую страницу для корпоративного клиента.</p>{% endfor %}</aside>
+<section class="corporate-panel"><h2>{{ 'Настройки: ' + selected.name if selected else 'Новая страница' }}</h2>
+<form method="post" enctype="multipart/form-data" class="corporate-form">
+<input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="page_id" value="{{ selected.id if selected else '' }}">
+<label>Название клиента<input name="name" required maxlength="255" value="{{ selected.name if selected else '' }}"></label>
+<label>Endpoint<input name="endpoint" required pattern="/?[a-z0-9][a-z0-9-]{1,79}/?" placeholder="/company-new-year" value="/{{ selected.endpoint if selected else '' }}"></label><small>Отдельный адрес на этом сайте, например /company-new-year.</small>
+<label>Персонаж<select name="hero_id" required>{% for hero in heroes %}<option value="{{ hero.id }}" {% if selected and selected.hero_id == hero.id %}selected{% endif %}>{{ hero.name }}</option>{% endfor %}</select></label>
+<label>Заголовок сайта<input name="title" required maxlength="255" value="{{ selected.title if selected else 'Новогоднее чудо уже на связи' }}"></label>
+<label>Подпись кнопки звонка<input name="button_label" required maxlength="120" value="{{ selected.button_label if selected else 'Позвонить Деду Морозу' }}"></label>
+<label>Домены корпоративной почты<input name="email_domains" placeholder="company.ru, company.com" value="{{ selected.email_domains if selected else '' }}"></label><small>Точное совпадение домена; пустое поле оставляет вход только по выданным кодам.</small>
+{% for field, label, attr in [('background','Фон','background_path'), ('logo','Логотип','logo_path')] %}
+<label>{{ label }}<input type="file" name="{{ field }}" accept="image/png,image/jpeg,image/webp"></label><small>PNG, JPEG или WebP, до 8 МБ.</small>
+{% if selected and selected[attr] %}<img class="corporate-asset-preview" src="{{ url_for('static', filename=selected[attr]) }}" alt="{{ label }}"><label class="corporate-check"><input type="checkbox" name="remove_{{ attr }}">Удалить {{ label|lower }}</label>{% endif %}
+{% endfor %}
+<label class="corporate-check"><input type="checkbox" name="is_active" {% if not selected or selected.is_active %}checked{% endif %}>Страница активна</label>
+<button class="call-btn call-btn-primary" name="action" value="save">Сохранить</button></form>
+{% if selected %}<hr><h2>Коды регистрации</h2><p>Каждый код даёт доступ одному пользователю только к этой странице. Коды показываются полностью один раз. После регистрации доступ сохраняется в браузере.</p>
+<form method="post" class="corporate-form"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="page_id" value="{{ selected.id }}"><label>Количество кодов<input type="number" name="count" min="1" max="100" value="1" required></label><button class="call-btn call-btn-secondary" name="action" value="codes">Выпустить коды</button></form>
+{% if generated_codes %}<p role="status">Сохраните и передайте эти коды сотрудникам:</p><textarea class="corporate-codes" rows="{{ [generated_codes|length, 12]|min }}" readonly aria-label="Новые коды регистрации">{{ generated_codes|join('\n') }}</textarea>{% endif %}
+{% for code in codes %}<div class="corporate-code-row"><code>•••• {{ code.label }}</code><span>{{ 'Использован' if code.used_at else ('Отозван' if code.revoked_at else 'Доступен') }}</span>{% if not code.used_at and not code.revoked_at %}<form method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="page_id" value="{{ selected.id }}"><input type="hidden" name="code_id" value="{{ code.id }}"><button name="action" value="revoke">Отозвать</button></form>{% endif %}</div>{% endfor %}{% endif %}
+</section></div></main></body></html>

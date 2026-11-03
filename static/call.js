@@ -752,7 +752,7 @@ function syncCallControls() {
   }
 
   if (!callActive) {
-    setMicButtonState("Позвонить");
+    setMicButtonState(body.dataset.callButtonLabel || "Позвонить");
     setMicButtonTone("primary");
     return;
   }
@@ -1429,6 +1429,7 @@ async function startCallSession() {
     body: JSON.stringify({
       character_slug: characterSlug,
       started_from: startedFrom,
+      corporate_page_id: Number(body.dataset.corporatePageId) || null,
       queue_aware: true,
       app_user_id: appUserId,
       telegram_user_id: tg?.initDataUnsafe?.user?.id ?? null,

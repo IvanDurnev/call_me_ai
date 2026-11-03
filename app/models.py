@@ -43,6 +43,7 @@ class AppUser(db.Model):
 
 class EmailCode(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    failed_attempts = db.Column(db.Integer, nullable=False, default=0, server_default="0")
     email = db.Column(db.String(255), nullable=False, index=True)
     purpose = db.Column(db.String(32), nullable=False, index=True)
     code_hash = db.Column(db.String(64), nullable=False)
@@ -135,6 +136,7 @@ class Hero(db.Model):
 
 class CallSession(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    corporate_page_id = db.Column(db.Integer, db.ForeignKey("corporate_page.id"), nullable=True, index=True)
     app_user_id = db.Column(db.Integer, db.ForeignKey("app_user.id"), nullable=True, index=True)
     telegram_user_id = db.Column(db.BigInteger, nullable=True, index=True)
     telegram_username = db.Column(db.String(255), nullable=True)
@@ -186,3 +188,38 @@ class PricingPlan(db.Model):
     is_active = db.Column(db.Boolean, nullable=False, default=True)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class CorporatePage(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    endpoint = db.Column(db.String(80), nullable=False, unique=True)
+    name = db.Column(db.String(255), nullable=False)
+    title = db.Column(db.String(255), nullable=False)
+    button_label = db.Column(db.String(120), nullable=False, default="Позвонить Деду Морозу")
+    hero_id = db.Column(db.Integer, db.ForeignKey("hero.id"), nullable=False)
+    hero = db.relationship("Hero")
+    email_domains = db.Column(db.Text, nullable=False, default="")
+    background_path = db.Column(db.String(512), nullable=True)
+    logo_path = db.Column(db.String(512), nullable=True)
+    is_active = db.Column(db.Boolean, nullable=False, default=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+
+class CorporateMembership(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    page_id = db.Column(db.Integer, db.ForeignKey("corporate_page.id"), nullable=False)
+    app_user_id = db.Column(db.Integer, db.ForeignKey("app_user.id"), nullable=False)
+    source = db.Column(db.String(16), nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    __table_args__ = (db.UniqueConstraint("page_id", "app_user_id", name="uq_corporate_member"),)
+
+
+class CorporateRegistrationCode(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    page_id = db.Column(db.Integer, db.ForeignKey("corporate_page.id"), nullable=False, index=True)
+    code_hash = db.Column(db.String(64), nullable=False, unique=True)
+    label = db.Column(db.String(32), nullable=False)
+    used_by_id = db.Column(db.Integer, db.ForeignKey("app_user.id"), nullable=True)
+    used_at = db.Column(db.DateTime, nullable=True)
+    revoked_at = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)

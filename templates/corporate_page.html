@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>{{ page.title }}</title><link rel="stylesheet" href="{{ url_for('static', filename='call.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='corporate.css') }}"></head>
+<body class="corporate-page" data-character-slug="{{ character.slug }}" data-character-name="{{ character.name }}" data-character-description="{{ character.description }}" data-realtime-provider="{{ realtime_provider }}" data-started-from="corporate" data-corporate-page-id="{{ page.id }}" data-app-user-id="{{ user.id if user else '' }}" data-call-access-available="{{ 'true' if allowed else 'false' }}" data-call-button-label="{{ page.button_label }}" data-mobile-output-gain="{{ character.mobile_output_gain or 3.8 }}" data-desktop-output-gain="{{ character.desktop_output_gain or 1.0 }}">
+{% if page.background_path %}<img class="corporate-background" src="{{ url_for('static', filename=page.background_path) }}" alt="">{% endif %}
+<main class="corporate-stage">
+{% if page.logo_path %}<img class="corporate-logo" src="{{ url_for('static', filename=page.logo_path) }}" alt="{{ page.name }}">{% endif %}
+<h1>{{ page.title }}</h1>
+{% if allowed %}
+<div class="corporate-status"><span id="status-dot" class="status-dot"></span><span id="connection-state" role="status" aria-live="polite">Готов к звонку</span><span id="call-timer">00:00</span></div>
+<button class="call-btn call-btn-primary corporate-call-button" id="mic-btn" type="button">{{ page.button_label }}</button>
+<div id="call-log" hidden></div><div id="call-wave" hidden></div>
+{% else %}
+<button class="call-btn call-btn-primary corporate-call-button" type="button" onclick="document.getElementById('registration').showModal()">{{ page.button_label }}</button>
+<dialog id="registration" class="corporate-registration"><form method="dialog" class="corporate-dialog-close"><button aria-label="Закрыть">×</button></form><h2>Вход на праздник</h2>
+{% if error %}<p class="corporate-error" role="alert">{{ error }}</p>{% endif %}
+{% if pending %}<form method="post" class="corporate-form"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="action" value="verify"><p>Код отправлен на {{ pending.email }}. Проверьте также папку «Спам».</p><label>Код из письма<input name="email_code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required></label><button class="call-btn call-btn-primary">Подтвердить и войти</button></form>{% endif %}
+{% if page.email_domains %}<details {% if not pending %}open{% endif %}><summary>По корпоративной почте</summary><form method="post" class="corporate-form"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="action" value="email"><label>Ваше имя<input name="name" autocomplete="given-name" maxlength="255" required></label><label>Корпоративная почта<input type="email" name="email" autocomplete="email" maxlength="255" required></label><label class="corporate-check"><input type="checkbox" name="consent" required>Я даю <a href="{{ url_for('main.personal_data_consent') }}" target="_blank" rel="noopener">согласие на обработку персональных данных</a></label><button class="call-btn call-btn-primary">Получить код на почту</button></form></details>{% endif %}
+<details {% if not page.email_domains %}open{% endif %}><summary>По коду регистрации</summary><form method="post" class="corporate-form"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="action" value="code"><label>Ваше имя<input name="name" autocomplete="given-name" maxlength="255" required></label><label>Код от вашей компании<input name="registration_code" autocomplete="off" maxlength="32" required></label><label class="corporate-check"><input type="checkbox" name="consent" required>Я даю <a href="{{ url_for('main.personal_data_consent') }}" target="_blank" rel="noopener">согласие на обработку персональных данных</a></label><button class="call-btn call-btn-primary">Зарегистрироваться и войти</button></form></details>
+</dialog>{% if error or pending %}<script>document.getElementById('registration').showModal();</script>{% endif %}
+{% endif %}
+</main>
+{% if allowed %}<script src="{{ url_for('static', filename='call.js', v='20261103corporate') }}"></script>{% endif %}
+</body></html>

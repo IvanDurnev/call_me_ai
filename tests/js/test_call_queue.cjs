@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const source = fs.readFileSync('static/call.js', 'utf8');
 
-function setup() {
+function setup(buttonLabel = "") {
   const calls = {timers: 0, connected: 0, finish: [], statuses: [], buttons: []};
   class Socket {
     static OPEN = 1;
@@ -27,6 +27,7 @@ function setup() {
     setConnectionState(text) { calls.statuses.push(text); }, logLine() {},
     updateWaveLiveState() {}, updateWebChatComposerState() {}, isArchivedWebCharacter() { return false; },
     setMicButtonState(text, disabled) { calls.buttons.push({text, disabled}); }, setMicButtonTone() {},
+    body: {dataset: {callButtonLabel: buttonLabel}},
     callAccessAvailable: true, parseSampleRate() { return null; },
     decodePcm16() { return 'audio'; }, async playNextChunk() {},
     fetch() { calls.connected++; return Promise.resolve({ok: true}); },
@@ -87,4 +88,19 @@ test('late admission after manual cancellation cannot start the timer', async ()
   await message({type: 'queue_status', queue_status_event: {status: 'admitted'}});
   assert.equal(calls.timers, 0);
   assert.equal(calls.connected, 0);
+});
+
+
+test('custom corporate button label returns after a call finishes', () => {
+  const {context, calls} = setup('Позвонить Деду Морозу');
+  context.connecting = false;
+  context.callActive = false;
+  context.syncCallControls();
+  assert.equal(calls.buttons.at(-1).text, 'Позвонить Деду Морозу');
+  context.callActive = true;
+  context.syncCallControls();
+  assert.equal(calls.buttons.at(-1).text, 'Завершить');
+  context.callActive = false;
+  context.syncCallControls();
+  assert.equal(calls.buttons.at(-1).text, 'Позвонить Деду Морозу');
 });

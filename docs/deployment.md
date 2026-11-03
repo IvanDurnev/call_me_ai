@@ -83,3 +83,10 @@ on each device. Matching fragments are merged without overwriting existing rows;
 the original localStorage remains as a backup. Legacy timestamps were never stored,
 so imported fragments are positioned relative to matching messages where possible.
 Import does not activate or recreate deleted characters.
+
+Corporate pages require the additive schema preparation command before reloading
+workers: `APP_ENABLE_RECURRING_WORKER=false venv/bin/python -m scripts.prepare_corporate_schema`.
+Back up the database first. This creates corporate pages, memberships and code
+tables, adds the nullable company reference to calls, and adds the email-code
+failed-attempt counter. It preserves existing records and Alembic history.
+The `static/uploads/corporate` directory must persist across deployments.

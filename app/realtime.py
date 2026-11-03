@@ -10,7 +10,7 @@ from contextlib import suppress
 from datetime import datetime
 from threading import Event, Lock, Thread
 
-from flask import current_app
+from flask import current_app, has_request_context, session
 from simple_websocket.errors import ConnectionClosed as BrowserConnectionClosed
 from websocket import WebSocket, WebSocketConnectionClosedException, WebSocketTimeoutException, create_connection
 
@@ -42,6 +42,7 @@ class SocketBridge:
         self.browser_send_lock = Lock()
         self.openai_send_lock = Lock()
         self.closed = False
+        self.authenticated_user_id = session.get("app_user_id") if has_request_context() else None
         self.call_session_id: int | None = None
         self.greeted = False
         self.pending_user_transcripts: dict[str, str] = {}
@@ -138,6 +139,12 @@ class SocketBridge:
                     and existing_call_session.app_user_id == app_user.id
                     and existing_call_session.character_slug == self.character_slug
                 ):
+                    page_id = existing_call_session.corporate_page_id
+                    if page_id:
+                        from .corporate import corporate_access
+                        if (self.authenticated_user_id != app_user.id or existing_call_session.ended_at
+                                or not corporate_access(app_user, page_id, self.character_slug)):
+                            raise ValueError("Нет доступа к корпоративному звонку.")
                     self.call_session_id = existing_call_session.id
                     return
 

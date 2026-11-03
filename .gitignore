@@ -55,5 +55,6 @@ migrations/*
 !migrations/versions/
 migrations/versions/*
 !migrations/versions/e8f9a0b1c2d3_add_cloudpayments_subscription_fields.py
+!migrations/versions/3b4c5d6e7f8a_add_corporate_pages.py
 
 .claude/
