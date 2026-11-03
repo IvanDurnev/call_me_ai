@@ -9,6 +9,8 @@ from urllib.parse import urlsplit
 from flask import Flask
 
 from app.routes import main_bp
+from app.extensions import db
+from app.models import AppUser
 
 
 class MiniappPickerVisibilityTests(unittest.TestCase):
@@ -23,9 +25,21 @@ class MiniappPickerVisibilityTests(unittest.TestCase):
             SECRET_KEY="test-secret",
             TESTING=True,
             PUBLIC_BASE_URL="https://example.test",
+            SQLALCHEMY_DATABASE_URI="sqlite://",
+            SQLALCHEMY_TRACK_MODIFICATIONS=False,
         )
         self.app.register_blueprint(main_bp)
+        db.init_app(self.app)
+        with self.app.app_context():
+            db.create_all()
+            db.session.add(AppUser(id=7, email="user@example.com", name="User", phone="", email_verified=True))
+            db.session.commit()
         self.client = self.app.test_client()
+
+    def tearDown(self):
+        with self.app.app_context():
+            db.session.remove()
+            db.drop_all()
 
     def test_telegram_picker_shows_only_active_characters(self) -> None:
         characters = [

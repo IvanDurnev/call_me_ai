@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
     <title>{{ character.name }}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='call.css', v='20261103markdown') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='call.css', v='20261103chatsync') }}">
   </head>
   <body
     class="web-page"
@@ -108,6 +108,7 @@
             <button id="web-chat-search-clear" class="web-chat-search-clear" type="button" aria-label="Очистить поиск">✕</button>
           </div>
 
+          <div class="web-chat-sync-notice" id="web-chat-sync-notice" role="status" aria-live="polite" hidden></div>
           <div class="web-chat-stage">
             <div class="call-log web-chat-log" id="call-log">
               <p class="log-line log-line-system">Сегодня</p>
@@ -119,7 +120,7 @@
             <div class="call-wave web-call-wave" id="call-wave" aria-hidden="true"></div>
             <div class="web-composer">
               <button class="web-composer-icon" type="button" aria-label="Вложения">⌘</button>
-              <input id="web-chat-input" type="text" value="" placeholder="Твоё сообщение" aria-label="Сообщение">
+              <input id="web-chat-input" type="text" maxlength="4000" value="" placeholder="Твоё сообщение" aria-label="Сообщение">
               <button id="web-chat-send" class="web-composer-send" type="button" aria-label="Отправить">↑</button>
             </div>
           </footer>
@@ -132,6 +133,7 @@
     <script src="{{ url_for('static', filename='vendor/marked-18.1.3.umd.js') }}"></script>
     <script src="{{ url_for('static', filename='vendor/purify-3.4.17.min.js') }}"></script>
     <script src="{{ url_for('static', filename='chat-markdown.js', v='20261103markdown') }}"></script>
-    <script src="{{ url_for('static', filename='call.js', v='20261103markdown') }}"></script>
+    <script src="{{ url_for('static', filename='web-chat-sync.js', v='20261103chatsync') }}"></script>
+    <script src="{{ url_for('static', filename='call.js', v='20261103chatsync') }}"></script>
   </body>
 </html>

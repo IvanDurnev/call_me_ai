@@ -22,6 +22,7 @@ from flask import Blueprint, Response, abort, current_app, jsonify, redirect, re
 from sqlalchemy.exc import OperationalError, ProgrammingError
 from werkzeug.utils import secure_filename
 
+from .services.chat_sync import begin_operation, retry_operation, merge_legacy_messages, ChatBusyError
 from .account_linking import link_max_account, link_telegram_account
 from .characters import (
     build_realtime_session_config,
@@ -39,7 +40,7 @@ from .characters import (
 from .extensions import db
 from .services.admin_users import build_admin_user_summaries
 from .services.openai_models import list_openai_models, supports_text_chat
-from .models import AdminUser, AppUser, CallSession, ChatMessage, Hero, MobileAuthToken, PricingPlan, SubscriptionPurchase
+from .models import AdminUser, AppUser, CallSession, ChatMessage, ChatOperation, Hero, MobileAuthToken, PricingPlan, SubscriptionPurchase
 from .services import (
     build_user_access_state,
     build_voice_library_payload,
@@ -1660,6 +1661,8 @@ def _render_web_messenger():
 
     past_calls = _list_user_calls(app_user.id)
     history_slugs = {call.character_slug for call in past_calls}
+    history_slugs.update(slug for (slug,) in db.session.query(ChatMessage.character_slug)
+                         .filter(ChatMessage.app_user_id == app_user.id).distinct().all())
     characters = [
         character
         for character in _serialize_characters(list_characters(include_inactive=True))
@@ -2190,58 +2193,7 @@ def mobile_chat_send_message_api(slug: str):
     user = _current_mobile_user()
     if not user:
         return jsonify({"ok": False, "error": "Authentication required."}), 401
-    user = _ensure_user_uuid(user)
-    if not _app_user_ready_for_calls(user):
-        return jsonify({"ok": False, "error": "Email verification required."}), 403
-    if not current_app.config.get("OPENAI_API_KEY"):
-        return jsonify({"ok": False, "error": "OPENAI_API_KEY is not configured."}), 503
-
-    character = get_character(slug, include_inactive=False)
-    if not character:
-        return jsonify({"ok": False, "error": "Hero not found."}), 404
-    serialized_character = _serialize_character(character)
-
-    payload = request.get_json(silent=True) or {}
-    text = str(payload.get("text") or "").strip()
-    if not text:
-        return jsonify({"ok": False, "error": "Message text is required."}), 400
-
-    user_message = ChatMessage(
-        app_user_id=user.id,
-        character_slug=slug,
-        role="user",
-        text=text[:4000],
-        source="mobile",
-    )
-    db.session.add(user_message)
-    db.session.commit()
-
-    history = _load_chat_messages(user, slug, limit=24)
-    try:
-        reply_text = _mobile_chat_reply(serialized_character, history)
-    except Exception as exc:  # noqa: BLE001
-        logging.exception("Mobile chat reply failed for %s", slug)
-        error_message = str(exc).strip().lower()
-        status_code = 504 if "timeout" in error_message or "timed out" in error_message else 502
-        return jsonify({"ok": False, "error": "Персонаж пока не ответил. Попробуйте еще раз через пару секунд."}), status_code
-
-    assistant_message = ChatMessage(
-        app_user_id=user.id,
-        character_slug=slug,
-        role="assistant",
-        text=reply_text[:4000],
-        source="mobile",
-    )
-    db.session.add(assistant_message)
-    db.session.commit()
-
-    return jsonify(
-        {
-            "ok": True,
-            "user_message": _serialize_chat_message(user_message),
-            "assistant_message": _serialize_chat_message(assistant_message),
-        }
-    )
+    return _send_synced_chat_api(user_override=user, slug_override=slug)
 
 
 def _list_user_calls(user_id: int) -> list[CallSession]:
@@ -3441,80 +3393,164 @@ def finish_call_session_api(call_session_id: int):
     return jsonify({"ok": True})
 
 
+def _chat_sync_user():
+    return _current_app_user() or _current_mobile_user()
+
+
+@main_bp.get("/api/web-chat/history")
+def web_chat_history_api():
+    user = _chat_sync_user()
+    if not user:
+        return jsonify({"ok": False, "error": "Authentication required."}), 401
+    if not _app_user_ready_for_calls(user):
+        return jsonify({"ok": False, "error": "Email verification required."}), 403
+    try:
+        after_id = max(0, int(request.args.get("after_id", 0)))
+    except (TypeError, ValueError):
+        return jsonify({"ok": False, "error": "Invalid cursor."}), 400
+    rows = (ChatMessage.query.filter(ChatMessage.app_user_id == user.id, ChatMessage.id > after_id)
+            .order_by(ChatMessage.id).limit(1000).all())
+    items = [{**_serialize_chat_message(m), "character_slug": m.character_slug, "sequence": m.id} for m in rows]
+    pending = ChatOperation.query.filter(ChatOperation.app_user_id == user.id,
+        ChatOperation.status == "pending", ChatOperation.kind == "send",
+        ChatOperation.updated_at >= datetime.utcnow() - timedelta(minutes=10)).all()
+    operations = (ChatOperation.query.filter_by(app_user_id=user.id, kind="send")
+                  .order_by(ChatOperation.id.desc()).limit(100).all())
+    response = jsonify({"ok": True, "user_id": user.id, "items": items,
+        "cursor": rows[-1].id if rows else after_id, "has_more": len(rows) == 1000,
+        "pending_slugs": [operation.character_slug for operation in pending],
+        "requests": [{"request_id": o.request_key, "status": o.status, "user_message_id": o.user_message_id}
+                     for o in operations]})
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+
+@main_bp.post("/api/web-chat/import")
+def web_chat_import_api():
+    user = _chat_sync_user()
+    if not user:
+        return jsonify({"ok": False, "error": "Authentication required."}), 401
+    if not _app_user_ready_for_calls(user):
+        return jsonify({"ok": False, "error": "Email verification required."}), 403
+    if request.content_length and request.content_length > 2_000_000:
+        return jsonify({"ok": False, "error": "История слишком велика для одного переноса."}), 413
+    payload = request.get_json(silent=True) or {}
+    slug = str(payload.get("character_slug") or "").strip()
+    if not get_character(slug, include_inactive=True):
+        return jsonify({"ok": False, "error": "Hero not found."}), 404
+    incoming = payload.get("messages")
+    if not isinstance(incoming, list) or len(incoming) > 500:
+        return jsonify({"ok": False, "error": "Invalid message history."}), 400
+    messages = []
+    for item in incoming:
+        if not isinstance(item, dict):
+            return jsonify({"ok": False, "error": "Invalid message."}), 400
+        role, text = str(item.get("role") or ""), str(item.get("text") or "").strip()
+        if role not in {"user", "assistant"} or not text or len(text) > 100000:
+            return jsonify({"ok": False, "error": "Invalid message."}), 400
+        messages.append({"role": role, "text": text})
+    digest = hashlib.sha256(json.dumps([slug, messages], ensure_ascii=False, sort_keys=True).encode()).hexdigest()
+    try:
+        operation, created = begin_operation(user.id, slug, "import:" + digest, "import")
+        if not created:
+            if operation.status == "done":
+                return jsonify({"ok": True, "imported": 0})
+            if operation.status == "pending" or not retry_operation(operation):
+                return jsonify({"ok": False, "error": "Перенос уже выполняется."}), 409
+        inserted = merge_legacy_messages(user.id, slug, messages)
+        operation.status = "done"
+        db.session.commit()
+    except ChatBusyError as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 409
+    except Exception:
+        db.session.rollback()
+        if "operation" in locals():
+            operation.status = "failed"
+            db.session.commit()
+        raise
+    return jsonify({"ok": True, "imported": inserted})
+
+
 @main_bp.post("/api/web-chat")
 def web_chat_api():
-    mobile_user = _current_mobile_user()
-    app_user = _current_app_user() or mobile_user
+    return _send_synced_chat_api()
+
+
+def _send_synced_chat_api(*, user_override=None, slug_override=None):
+    app_user = user_override or _chat_sync_user()
     if not app_user:
         return jsonify({"ok": False, "error": "Authentication required."}), 401
     if not _app_user_ready_for_calls(app_user):
         return jsonify({"ok": False, "error": "Email verification required."}), 403
     if not current_app.config.get("OPENAI_API_KEY"):
         return jsonify({"ok": False, "error": "OPENAI_API_KEY is not configured."}), 503
-
     payload = request.get_json(silent=True) or {}
-    slug = str(payload.get("character_slug") or "").strip()
+    slug = slug_override or str(payload.get("character_slug") or "").strip()
     character = get_character(slug, include_inactive=False)
     if not character:
         return jsonify({"ok": False, "error": "Hero not found."}), 404
-
-    raw_messages = payload.get("messages")
-    if not isinstance(raw_messages, list):
-        return jsonify({"ok": False, "error": "Messages list is required."}), 400
-
-    normalized_messages: list[dict[str, str]] = []
-    for item in raw_messages[-24:]:
-        if not isinstance(item, dict):
-            continue
-        role = str(item.get("role") or "").strip().lower()
-        text = str(item.get("text") or item.get("content") or "").strip()
-        if role not in {"user", "assistant"} or not text:
-            continue
-        normalized_messages.append({"role": role, "content": text[:4000]})
-
-    if not normalized_messages:
-        return jsonify({"ok": False, "error": "At least one user message is required."}), 400
-    if normalized_messages[-1]["role"] != "user":
-        return jsonify({"ok": False, "error": "Last message must be from the user."}), 400
-
-    reply_text = _generate_text_chat_reply(
-        character=character,
-        normalized_messages=normalized_messages,
-        chat_surface_label="в текстовом чате на сайте",
-    )
-
-    if mobile_user:
-        user_message = ChatMessage(
-            app_user_id=mobile_user.id,
-            character_slug=slug,
-            role="user",
-            text=normalized_messages[-1]["content"][:4000],
-            source="mobile",
-        )
-        assistant_message = ChatMessage(
-            app_user_id=mobile_user.id,
-            character_slug=slug,
-            role="assistant",
-            text=reply_text[:4000],
-            source="mobile",
-        )
-        db.session.add(user_message)
-        db.session.add(assistant_message)
-        db.session.commit()
-
-    return jsonify(
-        {
-            "ok": True,
-            "character": {
-                "slug": character["slug"],
-                "name": character["name"],
-            },
-            "message": {
-                "role": "assistant",
-                "text": reply_text,
-            },
-        }
-    )
+    text = str(payload.get("text") or "").strip()
+    if not text:
+        # Older browser/native clients still send a message list. Its context is
+        # untrusted: only the last user message is accepted into server history.
+        messages = payload.get("messages")
+        if not isinstance(messages, list) or not messages or not isinstance(messages[-1], dict):
+            return jsonify({"ok": False, "error": "Message text is required."}), 400
+        last = messages[-1]
+        if last.get("role") != "user":
+            return jsonify({"ok": False, "error": "Last message must be from the user."}), 400
+        text = str(last.get("text") or last.get("content") or "").strip()
+    if not text or len(text) > 4000:
+        return jsonify({"ok": False, "error": "Сообщение должно содержать от 1 до 4000 символов."}), 400
+    key = str(payload.get("request_id") or uuid.uuid4()).strip()
+    if not re.fullmatch(r"[A-Za-z0-9_-]{8,100}", key):
+        return jsonify({"ok": False, "error": "Invalid request identifier."}), 400
+    try:
+        operation, created = begin_operation(app_user.id, slug, key)
+        if not created:
+            original = db.session.get(ChatMessage, operation.user_message_id) if operation.user_message_id else None
+            if original and original.text != text:
+                return jsonify({"ok": False, "error": "Этот запрос уже использован для другого сообщения."}), 409
+            if operation.status == "pending":
+                return jsonify({"ok": False, "error": "Ответ ещё готовится.", "pending": True}), 409
+            if operation.status == "failed" and not retry_operation(operation):
+                return jsonify({"ok": False, "error": "Ответ ещё готовится.", "pending": True}), 409
+        if operation.status != "done":
+            if not operation.user_message_id:
+                user_message = ChatMessage(app_user_id=app_user.id, character_slug=slug, role="user", text=text,
+                    source="mobile" if _current_mobile_user() else "web")
+                db.session.add(user_message)
+                db.session.flush()
+                operation.user_message_id = user_message.id
+                db.session.commit()
+            history = _load_chat_messages(app_user, slug, limit=24)
+            normalized = [{"role": m.role, "content": m.text[:4000]} for m in history]
+            if not history or history[-1].id != operation.user_message_id:
+                normalized.append({"role": "user", "content": text})
+            try:
+                reply = _generate_text_chat_reply(character=character, normalized_messages=normalized,
+                    chat_surface_label="в текстовом чате")
+            except Exception:
+                current_app.logger.exception("Chat reply failed")
+                operation.status = "failed"
+                db.session.commit()
+                return jsonify({"ok": False, "error": "Не удалось получить ответ. Нажмите «Повторить отправку»."}), 502
+            assistant = ChatMessage(app_user_id=app_user.id, character_slug=slug, role="assistant", text=reply,
+                                    source="mobile" if _current_mobile_user() else "web")
+            db.session.add(assistant)
+            db.session.flush()
+            operation.assistant_message_id = assistant.id
+            operation.status = "done"
+            db.session.commit()
+    except ChatBusyError as exc:
+        return jsonify({"ok": False, "error": str(exc), "busy": True}), 409
+    except ValueError as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 400
+    user_message = db.session.get(ChatMessage, operation.user_message_id)
+    assistant = db.session.get(ChatMessage, operation.assistant_message_id)
+    return jsonify({"ok": True, "character": {"slug": character["slug"], "name": character["name"]},
+        "message": _serialize_chat_message(assistant), "user_message": _serialize_chat_message(user_message),
+        "assistant_message": _serialize_chat_message(assistant)})
 
 
 def _find_voice_directory(name: str):

@@ -61,3 +61,19 @@ duration takes precedence; server-recorded admission time is the fallback.
 
 Run the browser call-state regression checks locally with:
 `node --test tests/js/test_call_queue.cjs`.
+
+Web and native text chat share `chat_message`. Before deploying the chat sync
+release, create the additive idempotency/locking table with
+`APP_ENABLE_RECURRING_WORKER=false venv/bin/python -m scripts.prepare_chat_sync_schema`.
+This adds `chat_operation` with a unique request key per account and a partial
+unique index permitting one pending operation per account/character. Existing
+messages and Alembic history are preserved. Back up the database before running it.
+
+The web client polls account-scoped history every four seconds while visible and
+refreshes when returning online or to the tab. New messages are saved server-side;
+the per-account browser outbox only retains unacknowledged requests for safe retry.
+Legacy unscoped localStorage histories require the user's explicit import action
+on each device. Matching fragments are merged without overwriting existing rows;
+the original localStorage remains as a backup. Legacy timestamps were never stored,
+so imported fragments are positioned relative to matching messages where possible.
+Import does not activate or recreate deleted characters.

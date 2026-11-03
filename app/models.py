@@ -92,6 +92,25 @@ class ChatMessage(db.Model):
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, index=True)
 
 
+class ChatOperation(db.Model):
+    """Idempotency record and short-lived per-conversation write lock."""
+    id = db.Column(db.Integer, primary_key=True)
+    app_user_id = db.Column(db.Integer, db.ForeignKey("app_user.id"), nullable=False, index=True)
+    character_slug = db.Column(db.String(64), nullable=False)
+    request_key = db.Column(db.String(128), nullable=False)
+    kind = db.Column(db.String(16), nullable=False, default="send")
+    status = db.Column(db.String(16), nullable=False, default="pending")
+    user_message_id = db.Column(db.Integer, db.ForeignKey("chat_message.id"), nullable=True)
+    assistant_message_id = db.Column(db.Integer, db.ForeignKey("chat_message.id"), nullable=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    __table_args__ = (
+        db.UniqueConstraint("app_user_id", "request_key", name="uq_chat_operation_request"),
+        db.Index("uq_chat_operation_pending", "app_user_id", "character_slug", unique=True,
+                 postgresql_where=db.text("status = 'pending'"), sqlite_where=db.text("status = 'pending'")),
+    )
+
+
 class Hero(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     slug = db.Column(db.String(64), nullable=False, unique=True, index=True)

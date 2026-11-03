@@ -115,6 +115,12 @@ const WEB_CHAT_STORAGE_KEY = "call_me_ai.web_chat_histories.v1";
 const webChatHistories = loadWebChatHistories();
 let webChatSending = false;
 let webChatSendingSlug = null;
+let chatSyncClient = null;
+let chatSyncRevision = -1;
+let remoteTypingSlugs = new Set();
+let webChatSendError = "";
+let legacyChatHistories = null;
+let legacyImportRunning = false;
 const hasWebTextChat = Boolean(webChatInputNode);
 let webCallHistory = [];
 let webCallHistoryError = "";
@@ -152,48 +158,16 @@ function normalizeStoredHistory(items) {
       role: String(item.role || "").trim().toLowerCase(),
       text: String(item.text || "").trim(),
     }))
-    .filter((item) => ["user", "assistant"].includes(item.role) && item.text)
-    .slice(-40);
+    .filter((item) => ["user", "assistant"].includes(item.role) && item.text);
 }
 
 function loadWebChatHistories() {
-  const histories = new Map();
-  for (const item of webCharacters) {
-    histories.set(item.slug, defaultChatHistory(item));
-  }
-
-  try {
-    const raw = window.localStorage.getItem(WEB_CHAT_STORAGE_KEY);
-    if (!raw) {
-      return histories;
-    }
-    const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== "object") {
-      return histories;
-    }
-    for (const [slug, messages] of Object.entries(parsed)) {
-      const normalized = normalizeStoredHistory(messages);
-      if (normalized.length) {
-        histories.set(slug, normalized);
-      }
-    }
-  } catch {
-    // Ignore malformed localStorage payloads.
-  }
-
-  return histories;
+  return new Map(webCharacters.map(item => [item.slug, defaultChatHistory(item)]));
 }
 
 function persistWebChatHistories() {
-  try {
-    const payload = {};
-    for (const [slug, messages] of webChatHistories.entries()) {
-      payload[slug] = messages.slice(-40);
-    }
-    window.localStorage.setItem(WEB_CHAT_STORAGE_KEY, JSON.stringify(payload));
-  } catch {
-    // Ignore storage quota and privacy mode failures.
-  }
+  // Server history is authoritative. The old unscoped browser cache is only
+  // read by the explicit import action, never overwritten or auto-assigned.
 }
 
 function currentWebChatHistory() {
@@ -208,7 +182,7 @@ function setIdleConnectionState() {
   if (!hasWebTextChat || callActive || connecting) {
     return;
   }
-  setConnectionState(webChatSendingSlug === characterSlug ? "Печатает..." : "", false);
+  setConnectionState((webChatSendingSlug === characterSlug || remoteTypingSlugs.has(characterSlug)) ? "Печатает..." : "", false);
 }
 
 function closeWebChatSearch({ keepQuery = false } = {}) {
@@ -274,18 +248,22 @@ function setCurrentWebChatHistory(messages, slug = characterSlug) {
 
 async function loadWebCallHistory() {
   if (!hasWebTextChat) return;
+  let changed = false;
   try {
     const response = await fetch("/api/web/calls", { cache: "no-store" });
     const payload = await response.json();
     if (!response.ok || !payload.ok) {
       throw new Error(payload.error || "Не удалось загрузить историю звонков.");
     }
+    changed = Boolean(webCallHistoryError) || JSON.stringify(webCallHistory) !== JSON.stringify(payload.calls || []);
     webCallHistory = payload.calls || [];
     webCallHistoryError = "";
   } catch (error) {
-    webCallHistoryError = error instanceof Error ? error.message : "Не удалось загрузить историю звонков.";
+    const message = error instanceof Error ? error.message : "Не удалось загрузить историю звонков.";
+    changed = webCallHistoryError !== message;
+    webCallHistoryError = message;
   }
-  if (!callActive && !connecting) renderWebChatIntro();
+  if (changed && !callActive && !connecting) renderWebChatIntro({ preservePosition: true });
 }
 
 function renderMessageContent(node, text) {
@@ -303,6 +281,7 @@ function renderWebCallHistory(query) {
     if (query && ![label, ...transcript.map((line) => line.text)].join(" ").toLowerCase().includes(query)) continue;
     const card = document.createElement("details");
     card.className = "web-call-record";
+    card.dataset.callId = String(call.id);
     card.open = Boolean(query);
     const summary = document.createElement("summary");
     summary.textContent = label;
@@ -342,10 +321,21 @@ function renderWebCallHistory(query) {
   return count;
 }
 
-function renderWebChatIntro() {
+function renderWebChatIntro({ preservePosition = false } = {}) {
   if (!logNode) {
     return;
   }
+  const stage = logNode.parentElement;
+  const oldScroll = stage.scrollTop;
+  const wasAtBottom = stage.scrollHeight - stage.scrollTop - stage.clientHeight < 48;
+  const openedCalls = new Set(Array.from(logNode.querySelectorAll(".web-call-record[open]")).map(node => node.dataset.callId));
+  const finishRender = () => {
+    for (const node of logNode.querySelectorAll(".web-call-record")) {
+      if (openedCalls.has(node.dataset.callId)) node.open = true;
+    }
+    if (preservePosition && !wasAtBottom) stage.scrollTop = oldScroll;
+    else scrollChatToBottom();
+  };
   const history = currentWebChatHistory();
   const normalizedQuery = webChatSearchQuery.trim().toLowerCase();
   const visibleMessages = normalizedQuery
@@ -359,7 +349,7 @@ function renderWebChatIntro() {
     emptyNode.className = "log-line log-line-system log-line-search-empty";
     emptyNode.textContent = "Ничего не найдено";
     logNode.appendChild(emptyNode);
-    scrollChatToBottom();
+    finishRender();
     return;
   }
 
@@ -369,7 +359,7 @@ function renderWebChatIntro() {
     renderMessageContent(p, item.text);
     logNode.appendChild(p);
   }
-  scrollChatToBottom();
+  finishRender();
 }
 
 function switchWebCharacter(nextSlug) {
@@ -447,7 +437,7 @@ function updateWebChatComposerState() {
     return;
   }
   const hasText = Boolean(String(webChatInputNode.value || "").trim());
-  const interactionLocked = webChatSending || callActive || connecting || isArchivedWebCharacter();
+  const interactionLocked = !chatSyncClient?.loaded || webChatSending || remoteTypingSlugs.has(characterSlug) || callActive || connecting || isArchivedWebCharacter();
   webChatInputNode.disabled = interactionLocked;
   webChatSendNode.disabled = interactionLocked || !hasText;
 }
@@ -469,62 +459,122 @@ function setWebCharacterTyping(slug, typing) {
   }
 }
 
-async function sendWebChatMessage() {
-  if (!webChatInputNode || webChatSending || callActive || connecting) {
-    return;
+function applyChatSyncState(client) {
+  if (!legacyImportRunning) legacyChatHistories = readLegacyChatHistories();
+  if (!client.outbox.length && webChatSendError === "Ответ ещё готовится.") webChatSendError = "";
+  remoteTypingSlugs = client.pendingSlugs;
+  if (client.revision !== chatSyncRevision) {
+    for (const character of webCharacters) {
+      const messages = client.thread(character.slug);
+      webChatHistories.set(character.slug, messages.length ? messages : defaultChatHistory(character));
+    }
+    chatSyncRevision = client.revision;
+    if (!callActive && !connecting) renderWebChatIntro({ preservePosition: true });
   }
-
-  const text = String(webChatInputNode.value || "").trim();
-  if (!text) {
-    updateWebChatComposerState();
-    return;
+  for (const character of webCharacters) {
+    setWebCharacterTyping(character.slug, character.slug === webChatSendingSlug || remoteTypingSlugs.has(character.slug));
   }
+  setIdleConnectionState();
+  updateWebChatComposerState();
+  renderChatSyncNotice();
+}
 
-  const sendingSlug = characterSlug;
-  const nextHistory = [...currentWebChatHistory(), { role: "user", text }].slice(-40);
-  setCurrentWebChatHistory(nextHistory);
-  renderWebChatIntro();
-  webChatInputNode.value = "";
+function readLegacyChatHistories() {
+  try {
+    const raw = localStorage.getItem(WEB_CHAT_STORAGE_KEY);
+    if (!raw) return null;
+    const key = `call_me_ai.chat_import.v1:${appUserId}`;
+    if (localStorage.getItem(key) === raw) return null;
+    const parsed = JSON.parse(raw);
+    const histories = {};
+    for (const character of webCharacters) {
+      const items = normalizeStoredHistory(parsed[character.slug]);
+      if (items[0]?.role === "assistant" && /^Привет! Я .+\. Чем помочь\?$/.test(items[0].text)) items.shift();
+      if (items.length) histories[character.slug] = items;
+    }
+    return Object.keys(histories).length ? {histories, raw} : null;
+  } catch { return null; }
+}
+
+function renderChatSyncNotice() {
+  const notice = document.getElementById("web-chat-sync-notice");
+  if (!notice || !chatSyncClient) return;
+  notice.replaceChildren();
+  const error = webChatSendError || chatSyncClient.error;
+  const unsent = chatSyncClient.outbox.length;
+  const message = error || (unsent && !webChatSending ? "Сообщение ожидает отправки." : "") ||
+    (legacyChatHistories ? "На этом устройстве есть старая переписка. Если она ваша, перенесите её в текущий аккаунт." : "") ||
+    (!chatSyncClient.loaded ? "Загружаем переписку…" : "");
+  notice.hidden = !message;
+  if (!message) return;
+  const text = document.createElement("span");
+  text.textContent = message;
+  notice.appendChild(text);
+  if (unsent && !webChatSending) {
+    const retry = document.createElement("button");
+    retry.type = "button";
+    retry.textContent = "Повторить отправку";
+    retry.addEventListener("click", () => { void sendWebChatMessage(chatSyncClient.outbox[0]); });
+    notice.appendChild(retry);
+  } else if (legacyChatHistories && chatSyncClient.loaded && !webChatSending) {
+    const migrate = document.createElement("button");
+    migrate.type = "button";
+    migrate.disabled = legacyImportRunning;
+    migrate.textContent = legacyImportRunning ? "Переносим…" : "Перенести переписку";
+    migrate.addEventListener("click", () => { void importLegacyChatHistory(); });
+    notice.appendChild(migrate);
+  } else if (error && !webChatSending) {
+    const retry = document.createElement("button");
+    retry.type = "button";
+    retry.textContent = "Обновить";
+    retry.addEventListener("click", () => { webChatSendError = ""; void chatSyncClient.sync(); });
+    notice.appendChild(retry);
+  }
+}
+
+async function importLegacyChatHistory() {
+  if (!legacyChatHistories || legacyImportRunning) return;
+  legacyImportRunning = true;
+  webChatSendError = "";
+  renderChatSyncNotice();
+  try {
+    for (const [slug, messages] of Object.entries(legacyChatHistories.histories)) {
+      const response = await fetch("/api/web-chat/import", {method: "POST", headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({character_slug: slug, messages})});
+      const payload = await response.json();
+      if (!response.ok || !payload.ok) throw new Error(payload.error || "Не удалось перенести историю.");
+    }
+    try { localStorage.setItem(`call_me_ai.chat_import.v1:${appUserId}`, legacyChatHistories.raw); } catch { /* The original remains intact. */ }
+    legacyChatHistories = null;
+    await chatSyncClient.sync();
+  } catch (error) {
+    webChatSendError = error.message;
+  } finally {
+    legacyImportRunning = false;
+    renderChatSyncNotice();
+  }
+}
+
+async function sendWebChatMessage(retryEntry = null) {
+  if (!webChatInputNode || !chatSyncClient?.loaded || webChatSending || callActive || connecting) return;
+  const sendingSlug = retryEntry?.character_slug || characterSlug;
+  const text = retryEntry?.text || String(webChatInputNode.value || "").trim();
+  if (!text) { updateWebChatComposerState(); return; }
+  const entry = retryEntry || chatSyncClient.queueMessage(sendingSlug, text);
+  if (!retryEntry) webChatInputNode.value = "";
   webChatSending = true;
   webChatSendingSlug = sendingSlug;
-  setWebCharacterTyping(sendingSlug, true);
-  setConnectionState("Печатает...", false);
-  updateWebChatComposerState();
-
+  webChatSendError = "";
+  applyChatSyncState(chatSyncClient);
   try {
-    const response = await fetch("/api/web-chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        character_slug: sendingSlug,
-        messages: nextHistory,
-      }),
-    });
-    const payload = await response.json().catch(() => ({ ok: false, error: "Invalid server response." }));
-    if (!response.ok || !payload.ok) {
-      throw new Error(payload.error || "Не удалось отправить сообщение.");
-    }
-
-    const updatedHistory = [...nextHistory, {
-      role: "assistant",
-      text: String(payload.message?.text || "").trim() || "…",
-    }].slice(-40);
-    setCurrentWebChatHistory(updatedHistory, sendingSlug);
-    if (characterSlug === sendingSlug) renderWebChatIntro();
+    await chatSyncClient.sendMessage(entry);
   } catch (error) {
-    const failedHistory = [...nextHistory, {
-      role: "assistant",
-      text: error instanceof Error ? error.message : String(error),
-    }].slice(-40);
-    setCurrentWebChatHistory(failedHistory, sendingSlug);
-    if (characterSlug === sendingSlug) renderWebChatIntro();
+    webChatSendError = error.message || "Не удалось отправить сообщение.";
   } finally {
     webChatSending = false;
     webChatSendingSlug = null;
-    setWebCharacterTyping(sendingSlug, false);
-    setIdleConnectionState();
-    updateWebChatComposerState();
-    if (characterSlug === sendingSlug) webChatInputNode?.focus();
+    applyChatSyncState(chatSyncClient);
+    if (characterSlug === sendingSlug) webChatInputNode?.focus({preventScroll: true});
   }
 }
 
@@ -1870,6 +1920,13 @@ if (mobileWebChatMedia.addEventListener) {
 }
 
 renderWebChatIntro();
+if (hasWebTextChat && window.ChatSyncClient) {
+  legacyChatHistories = readLegacyChatHistories();
+  chatSyncClient = new window.ChatSyncClient(appUserId, applyChatSyncState);
+  chatSyncClient.start();
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) void loadWebCallHistory(); });
+  window.setInterval(() => { if (!document.hidden && !callActive && !connecting) void loadWebCallHistory(); }, 20000);
+}
 void loadWebCallHistory();
 updateWebChatComposerState();
 syncMobileWebLayout();

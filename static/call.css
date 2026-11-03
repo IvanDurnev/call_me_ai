@@ -961,6 +961,36 @@ body {
   padding: 18px 18px 8px;
 }
 
+.web-chat-sync-notice {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 10px 14px;
+  color: #385172;
+  background: #eef5ff;
+  border-bottom: 1px solid #d5e3f5;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.web-chat-sync-notice[hidden] {
+  display: none;
+}
+
+.web-chat-sync-notice button {
+  flex: 0 0 auto;
+  border: 1px solid #bfd2eb;
+  border-radius: 9px;
+  padding: 6px 10px;
+  color: #1e64b7;
+  background: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
 .web-chat-log {
   flex: 1 1 auto;
   display: flex;
