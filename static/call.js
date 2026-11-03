@@ -302,18 +302,27 @@ function renderWebCallHistory(query) {
     const summary = document.createElement("summary");
     summary.textContent = label;
     card.appendChild(summary);
+    const conversation = document.createElement("div");
+    conversation.className = "web-call-transcript";
     for (const line of transcript) {
       const p = document.createElement("p");
       p.className = `log-line ${line.role === "user" ? "log-line-user" : "log-line-character"}`;
-      p.textContent = `${line.role === "user" ? "Вы" : call.character_name}: ${line.text}`;
-      card.appendChild(p);
+      const speaker = document.createElement("span");
+      speaker.className = "web-call-speaker";
+      speaker.textContent = line.role === "user" ? "Вы" : call.character_name;
+      const text = document.createElement("span");
+      text.className = "web-call-message";
+      text.textContent = line.text;
+      p.append(speaker, text);
+      conversation.appendChild(p);
     }
     if (!transcript.length) {
       const empty = document.createElement("p");
       empty.className = "log-line log-line-system";
       empty.textContent = "Транскрипция разговора пока не сохранена.";
-      card.appendChild(empty);
+      conversation.appendChild(empty);
     }
+    card.appendChild(conversation);
     logNode.appendChild(card);
     count += 1;
   }
