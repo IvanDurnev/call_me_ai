@@ -29,7 +29,7 @@
           <div class="call-topline">
             <div class="call-topline-status">
               <span class="status-dot" id="status-dot"></span>
-              <span id="connection-state">Готов к звонку</span>
+              <span id="connection-state" role="status" aria-live="polite">Готов к звонку</span>
             </div>
             <span class="call-timer" id="call-timer">00:00</span>
           </div>
@@ -62,6 +62,6 @@
     </main>
 
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="{{ url_for('static', filename='call.js', v='20261102audioonly') }}"></script>
+    <script src="{{ url_for('static', filename='call.js', v='20261103callqueue') }}"></script>
   </body>
 </html>

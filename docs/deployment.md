@@ -50,3 +50,14 @@ CloudPayments notification URLs currently configured for the merchant:
 All use POST and the same HMAC validation as the legacy
 `/api/cloudpayments/webhooks/{pay,fail,recurrent}` endpoints. Both URL forms
 are supported. Do not change merchant settings during routine deployment.
+
+ElevenLabs call queueing is enabled for the production heroes with a 180-second
+wait timeout. Agent creation and synchronization also enforce this setting.
+Burst pricing remains controlled by the existing ElevenLabs settings. Browser
+clients handle waiting, admission, cancellation and queue timeout; hold audio
+does not start the conversation timer. Queue-aware calls exclude waiting from
+their stored duration and minute consumption. Provider-reported conversation
+duration takes precedence; server-recorded admission time is the fallback.
+
+Run the browser call-state regression checks locally with:
+`node --test tests/js/test_call_queue.cjs`.

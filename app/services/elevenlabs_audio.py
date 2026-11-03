@@ -82,6 +82,7 @@ def create_agent(
         raise ValueError("conversation_config is required.")
     payload: dict[str, Any] = {
         "conversation_config": conversation_config,
+        "platform_settings": {"queueing_config": {"enabled": True, "wait_timeout_seconds": 180}},
     }
     if name and name.strip():
         payload["name"] = name.strip()
@@ -216,6 +217,7 @@ def update_agent(
     if not isinstance(conversation_config, dict) or not conversation_config:
         raise ValueError("conversation_config is required.")
     payload: dict[str, Any] = {"conversation_config": conversation_config}
+    payload["platform_settings"] = {"queueing_config": {"enabled": True, "wait_timeout_seconds": 180}}
     if name and name.strip():
         payload["name"] = name.strip()
     response = _request(

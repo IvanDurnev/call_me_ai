@@ -3281,6 +3281,7 @@ def start_call_session_api():
             "character_name": character["name"],
             "provider": provider,
             "created_at": datetime.utcnow().isoformat(),
+            "queue_aware": provider == "elevenlabs" and payload.get("queue_aware") is True,
             "conversation_log": [],
             "technical_log": [],
         },
@@ -3330,6 +3331,22 @@ def start_call_session_api():
     return jsonify(response_payload)
 
 
+@main_bp.post("/api/call-sessions/<int:call_session_id>/connected")
+def call_session_connected_api(call_session_id: int):
+    app_user = _current_app_user() or _current_mobile_user()
+    if not app_user:
+        return jsonify({"ok": False, "error": "Authentication required."}), 401
+    call_session = db.session.get(CallSession, call_session_id)
+    if not call_session or call_session.app_user_id != app_user.id:
+        return jsonify({"ok": False, "error": "Call session not found."}), 404
+    meta = dict(call_session.meta_json or {})
+    if meta.get("queue_aware") and not call_session.ended_at and not meta.get("connected_at"):
+        meta["connected_at"] = datetime.utcnow().isoformat()
+        call_session.meta_json = meta
+        db.session.commit()
+    return jsonify({"ok": True})
+
+
 @main_bp.post("/api/call-sessions/<int:call_session_id>/finish")
 def finish_call_session_api(call_session_id: int):
     app_user = _current_app_user() or _current_mobile_user()
@@ -3339,6 +3356,8 @@ def finish_call_session_api(call_session_id: int):
     call_session = db.session.get(CallSession, call_session_id)
     if not call_session or call_session.app_user_id != app_user.id:
         return jsonify({"ok": False, "error": "Call session not found."}), 404
+    if call_session.ended_at:
+        return jsonify({"ok": True})
 
     payload = request.get_json(silent=True) or {}
     provider = str(payload.get("provider") or (call_session.meta_json or {}).get("provider") or _realtime_provider()).strip().lower()
@@ -3349,6 +3368,7 @@ def finish_call_session_api(call_session_id: int):
     if conversation_id:
         meta["provider_conversation_id"] = conversation_id
 
+    provider_duration = None
     if provider == "elevenlabs" and conversation_id:
         try:
             details = {}
@@ -3373,6 +3393,9 @@ def finish_call_session_api(call_session_id: int):
                     time.sleep(0.6)
             if transcript_items:
                 meta["conversation_log"] = transcript_items[-200:]
+            duration = (details.get("metadata") or {}).get("call_duration_secs")
+            if isinstance(duration, (int, float)) and 0 <= duration <= 86400:
+                provider_duration = duration
             meta["provider_conversation_details"] = {
                 "conversation_id": details.get("conversation_id"),
                 "status": details.get("status"),
@@ -3406,6 +3429,14 @@ def finish_call_session_api(call_session_id: int):
 
     call_session.meta_json = meta
     call_session.mark_finished()
+    if meta.get("queue_aware"):
+        if provider_duration is not None:
+            call_session.started_at = call_session.ended_at - timedelta(seconds=provider_duration)
+        elif meta.get("connected_at"):
+            call_session.started_at = min(datetime.fromisoformat(meta["connected_at"]), call_session.ended_at)
+        else:
+            call_session.started_at = call_session.ended_at
+            call_session.status = "failed"
     db.session.commit()
     return jsonify({"ok": True})
 

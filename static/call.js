@@ -50,6 +50,9 @@ let awaitingResponse = false;
 let manuallyClosed = false;
 let callActive = false;
 let connecting = false;
+let callQueued = false;
+let queueTimedOut = false;
+let callConnectedRequest = null;
 let bufferedAudioMs = 0;
 let turnPrimed = false;
 let cancelInFlight = false;
@@ -588,7 +591,7 @@ function setMicButtonState(text, disabled = false) {
       labelNode.textContent = label;
     }
     if (webCallIconGlyphNode) {
-      if (label === "Завершить") {
+      if (label === "Завершить" || label === "Отменить ожидание") {
         webCallIconGlyphNode.textContent = "✕";
       } else if (label === "Соединяем…") {
         webCallIconGlyphNode.textContent = "…";
@@ -597,6 +600,7 @@ function setMicButtonState(text, disabled = false) {
       }
     }
     micButton.setAttribute("aria-label", label);
+    micButton.title = label;
   } else {
     micButton.textContent = label;
   }
@@ -628,8 +632,8 @@ function syncCallControls() {
     return;
   }
   if (connecting) {
-    setMicButtonState("Соединяем…", true);
-    setMicButtonTone("primary");
+    setMicButtonState(callQueued ? "Отменить ожидание" : "Соединяем…", !socket || socket.readyState !== WebSocket.OPEN);
+    setMicButtonTone("danger");
     return;
   }
 
@@ -1171,7 +1175,7 @@ async function ensureAudioPipeline() {
   monitorGain.gain.value = 0;
 
   processorNode.onaudioprocess = (event) => {
-    if (!micEnabled || socket?.readyState !== WebSocket.OPEN) {
+    if (!micEnabled || socket?.readyState !== WebSocket.OPEN || (realtimeProvider === "elevenlabs" && callQueued)) {
       return;
     }
 
@@ -1317,6 +1321,7 @@ async function startCallSession() {
     body: JSON.stringify({
       character_slug: characterSlug,
       started_from: startedFrom,
+      queue_aware: true,
       app_user_id: appUserId,
       telegram_user_id: tg?.initDataUnsafe?.user?.id ?? null,
       telegram_username: tg?.initDataUnsafe?.user?.username ?? null,
@@ -1336,6 +1341,7 @@ async function finishCallSession(reason = "client") {
   }
   finishingCallSession = true;
   try {
+    if (callConnectedRequest) await callConnectedRequest;
     const response = await fetch(`/api/call-sessions/${callSessionId}/finish`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -1354,8 +1360,10 @@ async function finishCallSession(reason = "client") {
 }
 
 function attachCommonSocketHandlers() {
-  socket.addEventListener("close", () => {
+  socket.addEventListener("close", (event) => {
+    const timedOut = queueTimedOut || (realtimeProvider === "elevenlabs" && event.code === 4300);
     connecting = false;
+    callQueued = false;
     stopRingbackTone();
     callActive = false;
     stopCallTimer();
@@ -1369,12 +1377,12 @@ function attachCommonSocketHandlers() {
     commitPending = false;
     pendingResponseAfterCommit = false;
     pendingAutoEnd = false;
-    setConnectionState("Соединение завершено", false);
+    setConnectionState(timedOut ? "Время ожидания истекло. Попробуйте позвонить позже." : "Соединение завершено", false);
     stopAssistantPlayback();
     awaitingResponse = false;
     syncCallControls();
-    logLine(manuallyClosed ? "Звонок завершён." : "Соединение оборвалось.");
-    void finishCallSession(manuallyClosed ? "manual" : "disconnect");
+    logLine(timedOut ? "Все линии заняты. Попробуйте позвонить позже." : manuallyClosed ? "Звонок завершён." : "Соединение оборвалось.");
+    void finishCallSession(timedOut ? "queue_timeout" : manuallyClosed ? "manual" : "disconnect");
     if (realtimeProvider !== "elevenlabs") void loadWebCallHistory();
   });
 }
@@ -1518,21 +1526,31 @@ function connectOpenAi() {
   attachCommonSocketHandlers();
 }
 
+function admitElevenLabsCall() {
+  if (callActive || manuallyClosed || queueTimedOut) return;
+  callQueued = false;
+  connecting = false;
+  stopRingbackTone();
+  stopAssistantPlayback();
+  callActive = true;
+  startCallTimer();
+  setConnectionState("На линии", true);
+  syncCallControls();
+  callConnectedRequest = fetch(`/api/call-sessions/${callSessionId}/connected`, {method: "POST"}).catch(() => null);
+  logLine(`Соединение с ${characterName} установлено.`);
+}
+
 function connectElevenLabs(sessionPayload) {
   providerConversationId = null;
   socket = new WebSocket(sessionPayload.signed_url);
 
   socket.addEventListener("open", () => {
-    connecting = false;
     stopRingbackTone();
-    callActive = true;
-    startCallTimer();
-    setConnectionState("На линии", true);
+    setConnectionState("Подключаем к разговору…", false);
     syncCallControls();
     const initPayload = JSON.stringify(sessionPayload.conversation_initiation_client_data);
     console.log("[ElevenLabs] sending init:", initPayload);
     socket.send(initPayload);
-    logLine(`Соединение с ${characterName} установлено.`);
   });
 
   socket.addEventListener("close", (event) => {
@@ -1569,13 +1587,34 @@ function connectElevenLabs(sessionPayload) {
     }
 
     if (payload.type === "conversation_initiation_metadata") {
-      logLine("Аудиосессия готова.");
       return;
+    }
+
+    if (payload.type === "queue_status") {
+      const status = payload.queue_status_event?.status;
+      if (status === "waiting" && !callActive) {
+        callQueued = true;
+        setConnectionState("Все линии заняты. Ожидаем подключения — до 3 минут.", false);
+        logLine("Вы в очереди. Соединим автоматически, когда освободится линия. Время ожидания не расходует минуты.");
+        syncCallControls();
+      } else if (status === "admitted") {
+        admitElevenLabsCall();
+      } else if (status === "timed_out") {
+        queueTimedOut = true;
+        setConnectionState("Время ожидания истекло. Попробуйте позвонить позже.", false);
+      }
+      return;
+    }
+
+    // Immediate connections have no queue_status; wait for actual conversation activity.
+    // Queue hold audio arrives after the waiting event and must not start the timer.
+    if (!callQueued && ["audio", "user_transcript", "agent_response", "agent_response_correction"].includes(payload.type)) {
+      admitElevenLabsCall();
     }
 
     if (payload.type === "audio" && payload.audio_event?.audio_base_64) {
       playbackQueue.push(decodePcm16(payload.audio_event.audio_base_64, providerOutputSampleRate));
-      assistantResponseActive = true;
+      assistantResponseActive = !callQueued;
       await playNextChunk();
       return;
     }
@@ -1640,6 +1679,9 @@ function connectElevenLabs(sessionPayload) {
 
 async function connect() {
   connecting = true;
+  callQueued = false;
+  queueTimedOut = false;
+  callConnectedRequest = null;
   manuallyClosed = false;
   finishingCallSession = false;
   syncCallControls();
@@ -1679,6 +1721,7 @@ micButton.addEventListener("click", async () => {
   }
 
   if (connecting) {
+    if (socket) endCall("manual");
     return;
   }
 

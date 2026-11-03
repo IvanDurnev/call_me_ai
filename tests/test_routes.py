@@ -1300,6 +1300,64 @@ class CallSessionRoutesTests(unittest.TestCase):
             self.assertEqual(response.get_json()["hero"]["voice"], "coral")
             create_agent_mock.assert_not_called()
 
+    def _create_queued_call(self):
+        with self.app.app_context():
+            call = CallSession(app_user_id=self.user_id, character_slug="domovenok-kuzya", status="active",
+                               started_at=datetime.utcnow() - timedelta(minutes=3),
+                               meta_json={"provider": "elevenlabs", "queue_aware": True})
+            db.session.add(call)
+            db.session.commit()
+            return call.id
+
+    def test_queue_timeout_does_not_consume_minutes(self) -> None:
+        call_id = self._create_queued_call()
+        response = self.client.post(f"/api/call-sessions/{call_id}/finish", json={"reason": "queue_timeout"})
+        self.assertEqual(response.status_code, 200)
+        with self.app.app_context():
+            call = db.session.get(CallSession, call_id)
+            self.assertEqual(call.status, "failed")
+            self.assertEqual(call.started_at, call.ended_at)
+
+    def test_connected_call_excludes_queue_wait_and_finish_is_idempotent(self) -> None:
+        call_id = self._create_queued_call()
+        response = self.client.post(f"/api/call-sessions/{call_id}/connected")
+        self.assertEqual(response.status_code, 200)
+        with self.app.app_context():
+            connected_at = db.session.get(CallSession, call_id).meta_json["connected_at"]
+        self.client.post(f"/api/call-sessions/{call_id}/connected")
+        self.client.post(f"/api/call-sessions/{call_id}/finish", json={"reason": "manual"})
+        with self.app.app_context():
+            call = db.session.get(CallSession, call_id)
+            self.assertEqual(call.started_at, datetime.fromisoformat(connected_at))
+            self.assertLess((call.ended_at - call.started_at).total_seconds(), 5)
+            ended_at = call.ended_at
+        self.client.post(f"/api/call-sessions/{call_id}/finish", json={"reason": "disconnect"})
+        self.client.post(f"/api/call-sessions/{call_id}/connected")
+        with self.app.app_context():
+            self.assertEqual(db.session.get(CallSession, call_id).ended_at, ended_at)
+
+    def test_queue_aware_call_uses_provider_duration(self) -> None:
+        call_id = self._create_queued_call()
+        with patch("app.routes.get_conversation_details", return_value={
+            "metadata": {"call_duration_secs": 65}, "transcript": [{"role": "agent", "message": "Привет"}]
+        }):
+            self.client.post(f"/api/call-sessions/{call_id}/finish", json={"conversation_id": "conv-queue"})
+        with self.app.app_context():
+            call = db.session.get(CallSession, call_id)
+            self.assertEqual((call.ended_at - call.started_at).total_seconds(), 65)
+            self.assertEqual(call.status, "finished")
+
+    def test_connected_endpoint_requires_call_owner(self) -> None:
+        call_id = self._create_queued_call()
+        with self.app.app_context():
+            call = db.session.get(CallSession, call_id)
+            call.app_user_id = None
+            db.session.commit()
+        self.assertEqual(self.client.post(f"/api/call-sessions/{call_id}/connected").status_code, 404)
+        with self.client.session_transaction() as session:
+            session.clear()
+        self.assertEqual(self.client.post(f"/api/call-sessions/{call_id}/connected").status_code, 401)
+
     def test_finish_call_session_persists_elevenlabs_transcript(self) -> None:
         with self.app.app_context():
             session = CallSession(
