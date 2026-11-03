@@ -1555,7 +1555,6 @@ function connectElevenLabs(sessionPayload) {
 
   socket.addEventListener("close", (event) => {
     console.warn("[ElevenLabs] WebSocket closed", event.code, event.reason);
-    logLine(`[debug] WS закрыт: code=${event.code} reason=${event.reason || "нет"}`);
   });
 
   socket.addEventListener("message", async (event) => {
