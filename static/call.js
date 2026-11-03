@@ -114,6 +114,7 @@ const webCharacters = parseWebCharacters();
 const WEB_CHAT_STORAGE_KEY = "call_me_ai.web_chat_histories.v1";
 const webChatHistories = loadWebChatHistories();
 let webChatSending = false;
+let webChatSendingSlug = null;
 const hasWebTextChat = Boolean(webChatInputNode);
 let webCallHistory = [];
 let webCallHistoryError = "";
@@ -204,10 +205,10 @@ function currentWebChatHistory() {
 }
 
 function setIdleConnectionState() {
-  if (!hasWebTextChat || callActive || connecting || webChatSending) {
+  if (!hasWebTextChat || callActive || connecting) {
     return;
   }
-  setConnectionState("", false);
+  setConnectionState(webChatSendingSlug === characterSlug ? "Печатает..." : "", false);
 }
 
 function closeWebChatSearch({ keepQuery = false } = {}) {
@@ -266,8 +267,8 @@ function scrollChatToBottom() {
   });
 }
 
-function setCurrentWebChatHistory(messages) {
-  webChatHistories.set(characterSlug, normalizeStoredHistory(messages));
+function setCurrentWebChatHistory(messages, slug = characterSlug) {
+  webChatHistories.set(slug, normalizeStoredHistory(messages));
   persistWebChatHistories();
 }
 
@@ -439,6 +440,19 @@ function isArchivedWebCharacter() {
   return hasWebTextChat && webCharacters.find((item) => item.slug === characterSlug)?.is_active === false;
 }
 
+function setWebCharacterTyping(slug, typing) {
+  const card = webCharacterCardNodes.find((node) => node.dataset.characterSlug === slug);
+  const preview = card?.querySelector(".web-contact-preview");
+  if (!preview) return;
+  if (typing) {
+    if (preview.dataset.idleText === undefined) preview.dataset.idleText = preview.textContent;
+    preview.textContent = "Печатает...";
+  } else if (preview.dataset.idleText !== undefined) {
+    preview.textContent = preview.dataset.idleText;
+    delete preview.dataset.idleText;
+  }
+}
+
 async function sendWebChatMessage() {
   if (!webChatInputNode || webChatSending || callActive || connecting) {
     return;
@@ -450,11 +464,14 @@ async function sendWebChatMessage() {
     return;
   }
 
+  const sendingSlug = characterSlug;
   const nextHistory = [...currentWebChatHistory(), { role: "user", text }].slice(-40);
   setCurrentWebChatHistory(nextHistory);
   renderWebChatIntro();
   webChatInputNode.value = "";
   webChatSending = true;
+  webChatSendingSlug = sendingSlug;
+  setWebCharacterTyping(sendingSlug, true);
   setConnectionState("Печатает...", false);
   updateWebChatComposerState();
 
@@ -463,7 +480,7 @@ async function sendWebChatMessage() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        character_slug: characterSlug,
+        character_slug: sendingSlug,
         messages: nextHistory,
       }),
     });
@@ -476,20 +493,22 @@ async function sendWebChatMessage() {
       role: "assistant",
       text: String(payload.message?.text || "").trim() || "…",
     }].slice(-40);
-    setCurrentWebChatHistory(updatedHistory);
-    renderWebChatIntro();
+    setCurrentWebChatHistory(updatedHistory, sendingSlug);
+    if (characterSlug === sendingSlug) renderWebChatIntro();
   } catch (error) {
     const failedHistory = [...nextHistory, {
       role: "assistant",
       text: error instanceof Error ? error.message : String(error),
     }].slice(-40);
-    setCurrentWebChatHistory(failedHistory);
-    renderWebChatIntro();
+    setCurrentWebChatHistory(failedHistory, sendingSlug);
+    if (characterSlug === sendingSlug) renderWebChatIntro();
   } finally {
     webChatSending = false;
+    webChatSendingSlug = null;
+    setWebCharacterTyping(sendingSlug, false);
     setIdleConnectionState();
     updateWebChatComposerState();
-    webChatInputNode?.focus();
+    if (characterSlug === sendingSlug) webChatInputNode?.focus();
   }
 }
 
