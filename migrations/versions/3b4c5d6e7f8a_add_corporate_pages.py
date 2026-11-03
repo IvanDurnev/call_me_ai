@@ -57,4 +57,5 @@ def downgrade():
     op.drop_table("corporate_registration_code")
     op.drop_table("corporate_membership")
     op.drop_table("corporate_page")
-    op.drop_column("email_code", "failed_attempts")
+    with op.batch_alter_table("email_code") as batch:
+        batch.drop_column("failed_attempts")
