@@ -755,22 +755,6 @@ body {
   overflow-wrap: anywhere;
 }
 
-.web-sidebar-account-link {
-  display: inline-flex;
-  justify-self: start;
-  align-items: center;
-  min-height: 22px;
-  gap: 6px;
-  color: #235fb1;
-  font-size: 12px;
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.web-sidebar-account-link:hover {
-  text-decoration: underline;
-}
-
 .web-icon-btn,
 .web-composer-icon,
 .web-composer-send,

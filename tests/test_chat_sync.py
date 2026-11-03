@@ -129,6 +129,7 @@ class ChatSyncTests(unittest.TestCase):
         summary = response.get_json()["summary"]
         self.assertEqual(summary["remaining_minutes"], 17)
         self.assertEqual(summary["minutes_label"], "17 мин")
+        self.assertEqual(summary["subscription_name"], "Пакет 15 минут")
         self.assertIn("Пробные: 2", summary["minutes_detail"])
         self.assertEqual(summary["subscription_status"], "Пакет минут активен")
         self.assertEqual(response.headers["Cache-Control"], "no-store")
@@ -140,6 +141,7 @@ class ChatSyncTests(unittest.TestCase):
             response = self.first.get("/api/web/account-summary")
         summary = response.get_json()["summary"]
         self.assertEqual(summary["minutes_label"], "Безлимит")
+        self.assertEqual(summary["subscription_name"], "Пакет Безлимит на месяц")
         self.assertIn("01.12.2026", summary["subscription_status"])
         self.assertIn("без автопродления", summary["subscription_status"])
         self.assertNotIn("private-token", response.get_data(as_text=True))

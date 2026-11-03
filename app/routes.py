@@ -1656,6 +1656,9 @@ def _web_account_summary(state: dict) -> dict:
     trial = max(0, int(state.get("trial_remaining_minutes") or 0))
     package = max(0, int(state.get("package_remaining_minutes") or 0))
     subscription = state.get("current_subscription") or {}
+    plan_name = str(subscription.get("plan_name") or "").strip()
+    if plan_name and not plan_name.lower().startswith("пакет "):
+        plan_name = f"Пакет {plan_name}"
     unlimited = subscription.get("kind") == "unlimited"
     detail = []
     if trial:
@@ -1676,7 +1679,7 @@ def _web_account_summary(state: dict) -> dict:
         "unlimited": unlimited,
         "minutes_label": "Безлимит" if unlimited else f"{trial + package} мин",
         "minutes_detail": "Без ограничения минут" if unlimited else " · ".join(detail) or "Выберите тариф в личном кабинете",
-        "subscription_name": subscription.get("plan_name") or "Подписка не подключена",
+        "subscription_name": plan_name or "Подписка не подключена",
         "subscription_status": status,
         "has_call_access": bool(state.get("has_call_access")),
     }

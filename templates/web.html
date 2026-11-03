@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Волшебный чат</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='call.css', v='20261103compactaccount') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='call.css', v='20261103accountpackage') }}">
   </head>
   <body
     class="web-page"
@@ -71,7 +71,6 @@
               </div>
               <span class="web-sidebar-subscription" id="web-subscription-status">{{ account_summary.subscription_status }}</span>
               <p class="web-balance-detail" id="web-balance-detail">{{ account_summary.minutes_detail }}</p>
-              <a class="web-sidebar-account-link" href="{{ account_url }}">Личный кабинет <span aria-hidden="true">↗</span></a>
             </div>
           </footer>
         </aside>
