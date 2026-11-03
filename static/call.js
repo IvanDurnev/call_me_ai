@@ -288,6 +288,11 @@ async function loadWebCallHistory() {
   if (!callActive && !connecting) renderWebChatIntro();
 }
 
+function renderMessageContent(node, text) {
+  if (window.ChatMarkdown) window.ChatMarkdown.render(node, text);
+  else node.textContent = String(text ?? "");
+}
+
 function renderWebCallHistory(query) {
   let count = 0;
   for (const call of webCallHistory) {
@@ -305,14 +310,14 @@ function renderWebCallHistory(query) {
     const conversation = document.createElement("div");
     conversation.className = "web-call-transcript";
     for (const line of transcript) {
-      const p = document.createElement("p");
+      const p = document.createElement("div");
       p.className = `log-line ${line.role === "user" ? "log-line-user" : "log-line-character"}`;
       const speaker = document.createElement("span");
       speaker.className = "web-call-speaker";
       speaker.textContent = line.role === "user" ? "Вы" : call.character_name;
-      const text = document.createElement("span");
+      const text = document.createElement("div");
       text.className = "web-call-message";
-      text.textContent = line.text;
+      renderMessageContent(text, line.text);
       p.append(speaker, text);
       conversation.appendChild(p);
     }
@@ -359,9 +364,9 @@ function renderWebChatIntro() {
   }
 
   for (const item of visibleMessages) {
-    const p = document.createElement("p");
+    const p = document.createElement("div");
     p.className = `log-line ${item.role === "user" ? "log-line-user" : "log-line-character"}`;
-    p.textContent = item.text;
+    renderMessageContent(p, item.text);
     logNode.appendChild(p);
   }
   scrollChatToBottom();
@@ -536,9 +541,10 @@ function logLine(text) {
     kind = "character";
   }
 
-  const p = document.createElement("p");
+  const p = document.createElement("div");
   p.className = `log-line log-line-${kind}`;
-  p.textContent = raw;
+  if (kind === "system") p.textContent = raw;
+  else renderMessageContent(p, raw);
   logNode.appendChild(p);
   scrollChatToBottom();
 }

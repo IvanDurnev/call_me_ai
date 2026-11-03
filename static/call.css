@@ -2250,6 +2250,115 @@ body {
   display: block;
 }
 
+.call-log .markdown-body {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+.markdown-body p {
+  margin: 0 0 0.7em;
+}
+
+.markdown-body > :first-child {
+  margin-top: 0;
+}
+
+.markdown-body > :last-child {
+  margin-bottom: 0;
+}
+
+.markdown-body ul,
+.markdown-body ol {
+  margin: 0.6em 0;
+  padding-left: 1.5em;
+}
+
+.markdown-body li + li {
+  margin-top: 0.3em;
+}
+
+.markdown-body li > p {
+  margin-bottom: 0.3em;
+}
+
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4,
+.markdown-body h5,
+.markdown-body h6 {
+  margin: 1em 0 0.45em;
+  font-size: 1.1em;
+  line-height: 1.4;
+}
+
+.markdown-body a {
+  color: #1e64b7;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.markdown-body code {
+  padding: 0.12em 0.3em;
+  border-radius: 5px;
+  background: rgba(58, 91, 133, 0.09);
+  font: 0.88em/1.5 ui-monospace, "SFMono-Regular", Consolas, monospace;
+}
+
+.markdown-body pre {
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 0.7em 0;
+  padding: 12px;
+  border-radius: 10px;
+  background: #edf2f8;
+  white-space: pre;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+.markdown-body pre code {
+  padding: 0;
+  background: transparent;
+}
+
+.markdown-body blockquote {
+  margin: 0.7em 0;
+  padding: 0.15em 0 0.15em 12px;
+  border-left: 3px solid #8cb0de;
+  color: #52657e;
+}
+
+.markdown-body blockquote > :last-child {
+  margin-bottom: 0;
+}
+
+.markdown-body table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 0.7em 0;
+  border-collapse: collapse;
+}
+
+.markdown-body th,
+.markdown-body td {
+  padding: 6px 10px;
+  border: 1px solid #d8e2ed;
+  text-align: left;
+}
+
+.markdown-body th {
+  background: rgba(58, 91, 133, 0.06);
+}
+
+.markdown-body hr {
+  margin: 1em 0;
+  border: 0;
+  border-top: 1px solid #d8e2ed;
+}
+
 @media (max-width: 720px) {
   .web-call-record {
     padding: 12px;
