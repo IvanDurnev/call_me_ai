@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Волшебный чат</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='call.css', v='20261103sidebaraccount') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='call.css', v='20261103compactaccount') }}">
   </head>
   <body
     class="web-page"
@@ -29,9 +29,6 @@
         <aside class="web-sidebar">
           <header class="web-sidebar-header">
             <h1>Беседы</h1>
-            <a class="web-sidebar-account" href="{{ account_url }}" aria-label="Личный кабинет">
-              <span>{{ (app_user.name or app_user.email or "U")[:1] | upper }}</span>
-            </a>
           </header>
 
           <div class="web-search">
@@ -64,17 +61,18 @@
             {% endfor %}
           </nav>
           <footer class="web-sidebar-billing" aria-label="Минуты и подписка">
-            <div class="web-balance-row">
-              <span>Осталось минут</span>
-              <strong id="web-balance-value">{{ account_summary.minutes_label }}</strong>
+            <a class="web-sidebar-account" href="{{ account_url }}" aria-label="Личный кабинет">
+              <span>{{ (app_user.name or app_user.email or "U")[:1] | upper }}</span>
+            </a>
+            <div class="web-sidebar-billing-content">
+              <div class="web-balance-row">
+                <span class="web-sidebar-plan" id="web-subscription-name">{{ account_summary.subscription_name }}</span>
+                <strong id="web-balance-value" aria-label="Осталось минут">{{ account_summary.minutes_label }}</strong>
+              </div>
+              <span class="web-sidebar-subscription" id="web-subscription-status">{{ account_summary.subscription_status }}</span>
+              <p class="web-balance-detail" id="web-balance-detail">{{ account_summary.minutes_detail }}</p>
+              <a class="web-sidebar-account-link" href="{{ account_url }}">Личный кабинет <span aria-hidden="true">↗</span></a>
             </div>
-            <p class="web-balance-detail" id="web-balance-detail">{{ account_summary.minutes_detail }}</p>
-            <div class="web-sidebar-subscription">
-              <span class="web-sidebar-caption">Текущий тариф</span>
-              <strong id="web-subscription-name">{{ account_summary.subscription_name }}</strong>
-              <span id="web-subscription-status">{{ account_summary.subscription_status }}</span>
-            </div>
-            <a class="web-sidebar-account-link" href="{{ account_url }}">Личный кабинет <span aria-hidden="true">↗</span></a>
           </footer>
         </aside>
 

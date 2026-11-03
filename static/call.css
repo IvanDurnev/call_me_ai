@@ -698,11 +698,30 @@ body {
 }
 
 .web-sidebar-billing {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   min-width: 0;
-  padding: 16px 20px max(16px, env(safe-area-inset-bottom));
+  padding: 12px 20px max(12px, env(safe-area-inset-bottom));
   border-top: 1px solid #e5ecf5;
   background: #f8faff;
   color: #172b49;
+}
+
+.web-sidebar-billing-content {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.web-sidebar-plan {
+  min-width: 0;
+  color: #172b49;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .web-balance-row {
@@ -716,60 +735,40 @@ body {
 
 .web-balance-row strong {
   color: #235fb1;
-  font-size: 23px;
+  font-size: 18px;
   line-height: 1.2;
   white-space: nowrap;
 }
 
 .web-balance-detail {
-  margin: 5px 0 12px;
+  margin: 0;
   color: #718097;
-  font-size: 12px;
+  font-size: 11px;
   line-height: 1.4;
 }
 
 .web-sidebar-subscription {
-  display: grid;
-  gap: 3px;
-  margin-bottom: 12px;
+  display: block;
+  color: #64758c;
+  font-size: 11px;
+  line-height: 1.4;
   overflow-wrap: anywhere;
 }
 
-.web-sidebar-caption {
-  font-size: 11px;
-  color: #718097;
-}
-
-.web-sidebar-subscription strong {
-  font-size: 14px;
-  line-height: 1.35;
-}
-
-.web-sidebar-subscription > span:last-child {
-  color: #64758c;
-  font-size: 12px;
-  line-height: 1.4;
-}
-
 .web-sidebar-account-link {
-  display: flex;
-  justify-content: space-between;
+  display: inline-flex;
+  justify-self: start;
   align-items: center;
-  min-height: 42px;
-  gap: 12px;
-  padding: 9px 13px;
-  border: 1px solid #d1def0;
-  border-radius: 12px;
+  min-height: 22px;
+  gap: 6px;
   color: #235fb1;
-  background: #fff;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
   text-decoration: none;
 }
 
 .web-sidebar-account-link:hover {
-  border-color: #8cb3e9;
-  background: #eef4ff;
+  text-decoration: underline;
 }
 
 .web-icon-btn,
