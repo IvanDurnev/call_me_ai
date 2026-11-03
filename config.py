@@ -50,6 +50,7 @@ class Config:
     MAX_BOT_APP_LINK = os.getenv("MAX_BOT_APP_LINK", "/max/miniapp").strip()
     MAX_BOT_LINK = os.getenv("MAX_BOT_LINK", "").strip()
     MAX_WEBHOOK_SECRET = os.getenv("MAX_WEBHOOK_SECRET", "")
+    GAMES_PUBLIC_URL = os.getenv("GAMES_PUBLIC_URL", "").strip().rstrip("/")
     PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "http://127.0.0.1:5000").rstrip("/")
 
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")

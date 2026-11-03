@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="referrer" content="same-origin">
+  <title>Дурак — Звонок другу</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='call.css', v='20260410mobilefix') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='games.css', v='2') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='durak.css', v='1') }}">
+  <script src="{{ url_for('static', filename='durak.js', v='2') }}" defer></script>
+</head>
+<body class="landing-page games-page durak-page" data-mode="{{ mode }}" data-code="{{ code }}">
+  <div class="landing-bg" aria-hidden="true"></div><div class="landing-overlay" aria-hidden="true"></div>
+  <main class="durak-shell">
+    <header class="durak-header">
+      <a href="{{ url_for('main.games') }}">← Игротека</a>
+      <h1>Дурак <span>Подкидной · 36 карт</span></h1>
+      <button type="button" id="table-fullscreen" hidden>⛶ На весь экран</button>
+    </header>
+    <p class="durak-feedback" id="feedback" role="status" aria-live="polite"></p>
+    <section id="join-panel" class="durak-panel join-panel" hidden aria-labelledby="join-heading">
+      <p class="games-eyebrow">Ваше место за столом</p>
+      <h2 id="join-heading">Присоединиться к игре</h2>
+      <p>Введите имя — оно появится на общем экране.</p>
+      <form id="join-form">
+        <label for="room-code">Код комнаты</label>
+        <input id="room-code" name="code" placeholder="Например, A3B7C9" value="{{ code }}" required minlength="6" maxlength="6" autocapitalize="characters" autocomplete="off" spellcheck="false" pattern="[A-Za-z0-9]{6}">
+        <label for="player-name">Как вас зовут?</label>
+        <input id="player-name" name="name" placeholder="Ваше имя" required maxlength="24" autocomplete="given-name">
+        <button type="submit" class="durak-primary" id="join-submit">Занять место →</button>
+      </form>
+      <p class="durak-muted">Карты будут видны только на вашем телефоне.</p>
+    </section>
+    <section id="room-panel" hidden>
+      <div class="room-topline"><span id="room-label"></span><span id="connection" role="status">Подключаемся…</span></div>
+      <div class="durak-layout">
+        <section class="durak-panel table-panel" aria-labelledby="table-title">
+          <div class="table-heading"><div><p class="games-eyebrow" id="phase-label">Комната открыта</p><h2 id="table-title">Собираемся за столом</h2></div><span id="deck-label"></span></div>
+          <div id="players" class="durak-players" aria-label="Игроки"></div>
+          <p id="turn-message" class="turn-message" role="status"></p>
+          <div id="lobby-help" class="lobby-help"><span aria-hidden="true">♠ ♥ ♣ ♦</span><h3>Карты любят компанию</h3><p>Подключитесь с телефонов.<br>Когда все будут здесь, начните игру на общем экране.</p></div>
+          <div id="table-cards" class="durak-table-cards" aria-label="Карты на столе"></div>
+          <div id="result" class="durak-result" hidden></div>
+          <div id="host-controls" class="host-controls" hidden><button class="durak-primary" id="start-game" type="button">Начать игру</button><p class="durak-muted" id="start-hint">Нужно от 2 до 6 игроков.</p></div>
+        </section>
+        <aside class="durak-panel invite-panel" id="invite-panel" hidden aria-labelledby="invite-heading">
+          <p class="games-eyebrow">Телефон — ваши карты</p><h2 id="invite-heading">Заходите в игру</h2>
+          <img id="room-qr" alt="QR-код для подключения к комнате" width="240" height="240">
+          <p>Откройте камеру телефона<br>и наведите на QR-код.</p>
+          <div class="invite-code"><small>Код комнаты</small><strong id="invite-code"></strong></div>
+          <a id="invite-link" class="invite-link"></a>
+          <button type="button" id="copy-link" class="durak-secondary">Скопировать ссылку</button>
+          <p class="durak-muted">Дома подключите все устройства к одной Wi-Fi-сети. Каждый игрок играет со своего телефона.</p>
+        </aside>
+      </div>
+      <section class="durak-panel hand-panel" id="hand-panel" hidden aria-labelledby="hand-title">
+        <div class="hand-heading"><h2 id="hand-title">Ваши карты</h2><span id="your-role"></span></div>
+        <p id="hand-help" class="durak-muted"></p>
+        <div class="durak-hand" id="hand" aria-label="Ваши карты"></div>
+        <div class="player-actions" id="player-actions"></div>
+      </section>
+    </section>
+    <noscript><p class="durak-panel">Для игры включите JavaScript в браузере.</p></noscript>
+  </main>
+  <dialog id="reset-dialog" class="games-dialog" aria-labelledby="reset-heading">
+    <h2 id="reset-heading">Вернуться в лобби?</h2>
+    <p>Текущая партия завершится. Все игроки останутся в комнате, и вы сможете изменить состав или раздать карты заново.</p>
+    <div class="player-actions">
+      <button id="reset-cancel" class="durak-secondary" type="button">Продолжить игру</button>
+      <button id="reset-confirm" class="durak-primary" type="button">Завершить партию</button>
+    </div>
+  </dialog>
+</body>
+</html>

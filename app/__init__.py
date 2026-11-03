@@ -36,6 +36,9 @@ def create_app(config_class: type[Config] = Config) -> Flask:
     from .telegram_bot import telegram_bp
     from .ws import register_ws_routes
 
+    from .game_routes import games_bp
+
+    app.register_blueprint(games_bp)
     app.register_blueprint(main_bp)
     app.register_blueprint(telegram_bp, url_prefix="/telegram")
     app.register_blueprint(max_bp, url_prefix="/max")

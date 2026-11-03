@@ -1522,6 +1522,11 @@ def index():
     return _render_index("telegram")
 
 
+@main_bp.get("/games")
+def games():
+    return render_template("games.html")
+
+
 @main_bp.get("/web")
 def web_messenger_index():
     return _render_web_messenger()
