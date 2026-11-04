@@ -15,10 +15,12 @@ import qrcode.image.svg
 from flask import Blueprint, Response, current_app, jsonify, redirect, render_template, request, url_for
 
 from .durak import GameError
-from . import durak, imposter
+from . import durak, imposter, whos, tag, activity
 
 games_bp = Blueprint('games', __name__)
 ROOM_TTL = 24 * 3600
+GAME_RULES = {'durak': durak, 'imposter': imposter, 'whos': whos, 'tag': tag, 'activity': activity}
+HOST_ENDPOINTS = {'durak': 'games.table_page', 'imposter': 'games.imposter_table_page', 'whos': 'games.whos_table_page', 'tag': 'games.tag_table_page', 'activity': 'games.activity_table_page'}
 
 
 @contextmanager
@@ -39,8 +41,8 @@ def digest(token):
     return hashlib.sha256(token.encode()).hexdigest()
 
 
-def credential(room):
-    token = request.headers.get('Authorization', '').removeprefix('Bearer ')
+def credential(room, token=None):
+    token = token if token is not None else request.headers.get('Authorization', '').removeprefix('Bearer ')
     hashed = digest(token)
     if secrets.compare_digest(hashed, room['host']):
         return 'host', None
@@ -54,7 +56,13 @@ def load_room(connection, code):
     row = connection.execute('SELECT data, touched FROM rooms WHERE code = ?', (code,)).fetchone()
     if not row or row[1] < time.time() - ROOM_TTL:
         raise GameError('Комната не найдена или устарела. Создайте новую.')
-    return json.loads(row[0])
+    try:
+        room = json.loads(row[0])
+        if not isinstance(room, dict): raise ValueError()
+        if room.get('game') == 'activity': activity.validate(room)
+        return room
+    except (ValueError, TypeError):
+        raise GameError('Сохранение комнаты повреждено. Создайте новую комнату в игротеке; старая сохранена.')
 
 
 def save_room(connection, code, room):
@@ -78,7 +86,7 @@ def join_url(code):
 
 
 def rules(room):
-    return imposter if room.get('game') == 'imposter' else durak
+    return GAME_RULES.get(room.get('game'), durak)
 
 
 def room_view(code, room, index=None):
@@ -124,7 +132,7 @@ def join_page(code=''):
         return render_template('games_join.html', error=str(error), code=code), 400
     if request.args.get('code'):
         return redirect(url_for('games.join_page', code=code))
-    template = 'imposter.html' if room.get('game') == 'imposter' else 'durak.html'
+    template = room.get('game', 'durak') + '.html'
     return render_template(template, code=code, mode='player')
 
 
@@ -133,10 +141,26 @@ def imposter_table_page(code):
     return render_template('imposter.html', code=code.upper(), mode='host')
 
 
+@games_bp.get('/games/whos/<code>')
+def whos_table_page(code):
+    return render_template('whos.html', code=code.upper(), mode='host')
+
+
+@games_bp.get('/games/tag/<code>')
+def tag_table_page(code):
+    return render_template('tag.html', code=code.upper(), mode='host')
+
+
+@games_bp.get('/games/activity/<code>')
+def activity_table_page(code):
+    return render_template('activity.html', code=code.upper(), mode='host')
+
+
 @games_bp.post('/api/games/rooms')
 def create_room():
     data = request.get_json(silent=True) if request.is_json else {}
-    if not isinstance(data, dict) or data.get('game', 'durak') not in ('durak', 'imposter'):
+    if (not isinstance(data, dict) or not isinstance(data.get('game', 'durak'), str)
+            or data.get('game', 'durak') not in GAME_RULES):
         raise GameError('Неизвестная игра.')
     game = data.get('game', 'durak')
     with database() as connection:
@@ -147,10 +171,10 @@ def create_room():
         while connection.execute('SELECT 1 FROM rooms WHERE code = ?', (code,)).fetchone():
             code = ''.join(secrets.choice('23456789ABCDEFGHJKLMNPQRSTUVWXYZ') for _ in range(6))
         token = secrets.token_urlsafe(32)
-        room = imposter.new_room() if game == 'imposter' else durak.new_room()
+        room = GAME_RULES[game].new_room()
         room['host'] = digest(token)
         connection.execute('INSERT INTO rooms VALUES (?, ?, ?)', (code, json.dumps(room), time.time()))
-    return jsonify(code=code, token=token, url=url_for('games.imposter_table_page' if game == 'imposter' else 'games.table_page', code=code)), 201
+    return jsonify(code=code, token=token, url=url_for(HOST_ENDPOINTS[game], code=code)), 201
 
 
 @games_bp.post('/api/games/rooms/<code>/join')
@@ -163,13 +187,18 @@ def join_room(code):
         room = load_room(connection, code)
         if room['phase'] != 'lobby':
             raise GameError('Партия уже началась. Дождитесь следующей игры.')
-        capacity = 12 if room.get('game') == 'imposter' else 6
+        capacity = getattr(rules(room), 'MAX_PLAYERS', 6)
         if len(room['players']) >= capacity:
             raise GameError(f'В комнате уже {capacity} игроков.')
         if any(p['name'].casefold() == name.casefold() for p in room['players']):
             raise GameError('Это имя уже занято. Выберите другое.')
         token = secrets.token_urlsafe(32)
-        room['players'].append(dict(name=name, token=digest(token), hand=[], seen=time.time()))
+        player = dict(name=name, token=digest(token), hand=[], seen=time.time())
+        room['players'].append(player)
+        if room.get('game') == 'tag':
+            tag.on_join(room, player)
+        elif room.get('game') == 'activity':
+            room['settings'] = None
         room['revision'] += 1
         save_room(connection, code, room)
     return jsonify(token=token)
@@ -182,6 +211,10 @@ def state(code):
         _, index = credential(room)
         if room.get('game') == 'imposter':
             imposter.expire(room)
+        elif room.get('game') == 'tag':
+            tag.advance(room)
+        elif room.get('game') == 'activity':
+            activity.expire(room)
         if index is not None:
             room['players'][index]['seen'] = time.time()
         save_room(connection, code, room)
@@ -200,9 +233,19 @@ def action(code):
         role, index = credential(room)
         if room.get('game') == 'imposter' and imposter.expire(room):
             save_room(connection, code, room)
+        elif room.get('game') == 'tag' and tag.advance(room):
+            save_room(connection, code, room)
+        elif room.get('game') == 'activity' and activity.expire(room):
+            save_room(connection, code, room)
         independent = (room.get('game') == 'imposter' and data.get('action') in ('ready', 'vote')
                        and data.get('phase') == room['phase'] and data.get('match') == room['match']
                        and data.get('ballot') == room['ballot'])
+        independent = independent or (room.get('game') == 'whos' and data.get('action') == 'vote'
+                       and data.get('phase') == room['phase'] and data.get('match') == room['match']
+                       and data.get('round') == room['round'])
+        independent = independent or (room.get('game') == 'activity' and data.get('action') == 'draw'
+                       and data.get('match') == room['match'] and room.get('active')
+                       and data.get('turn_id') == room['active']['id'])
         if data.get('revision') != room['revision'] and not independent:
             return jsonify(error='Стол изменился. Повторите ход.'), 409
         action_name = data.get('action')
@@ -211,7 +254,7 @@ def action(code):
         elif action_name == 'reset' and role == 'host':
             lobby = rules(room).new_room()
             lobby.update(players=room['players'], host=room['host'], revision=room['revision'])
-            if room.get('game') == 'imposter':
+            if 'match' in room:
                 lobby['match'] = room['match']
             for player in lobby['players']:
                 player['hand'] = []
@@ -221,8 +264,9 @@ def action(code):
             if type(target) is not int or not 0 <= target < len(room['players']):
                 raise GameError('Игрок не найден.')
             room['players'].pop(target)
-        elif role == 'host' and room.get('game') == 'imposter':
-            imposter.host_act(room, data)
+            if room.get('game') == 'activity': room['settings'] = None
+        elif role == 'host' and room.get('game') in ('imposter', 'whos', 'tag', 'activity'):
+            rules(room).host_act(room, data)
         elif role == 'player':
             rules(room).act(room, index, data)
         else:

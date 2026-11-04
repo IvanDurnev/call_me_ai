@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="referrer" content="same-origin">
+  <title>Голя — семейная игротека</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='call.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='games.css', v='9') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='durak.css', v='3') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='tag.css', v='2') }}">
+  <script src="{{ url_for('static', filename='tag.js', v='1') }}" defer></script>
+</head>
+<body class="landing-page games-page durak-page tag-page" data-mode="{{ mode }}" data-code="{{ code }}">
+  <div class="landing-bg" aria-hidden="true"></div><div class="landing-overlay" aria-hidden="true"></div>
+  <main class="durak-shell tag-shell">
+    <header class="durak-header"><a href="{{ url_for('main.games') }}">← Игротека</a><h1>Голя <span>Лови, касайся, убегай</span></h1><button type="button" id="fullscreen" hidden>⛶ На весь экран</button></header>
+    <p class="durak-feedback" id="feedback" role="status" aria-live="polite"></p>
+    <section class="durak-panel join-panel" id="join-panel" hidden>
+      <p class="games-eyebrow">Телефон — ваш джойстик</p><h2>Кто выходит на арену?</h2><p>Введите имя и получите человечка своего цвета.</p>
+      <form id="join-form"><label for="player-name">Имя</label><input id="player-name" name="name" required maxlength="24" autocomplete="given-name" placeholder="Ваше имя"><button class="durak-primary" id="join-submit" type="submit">На арену →</button></form>
+    </section>
+    <section id="room" hidden>
+      <div class="room-topline"><span id="room-code"></span><span id="connection" role="status">Подключаемся…</span></div>
+      <section class="durak-panel tag-phone-lobby" id="phone-lobby" hidden><div id="lobby-avatar" class="tag-own-avatar"></div><h2 id="lobby-name"></h2><p>Ваш человечек ждёт на арене. Начните раунд на общем экране.</p></section>
+      <div class="tag-layout">
+        <section class="durak-panel tag-stage" id="stage-panel" aria-labelledby="stage-title">
+          <div class="tag-stage-heading"><div><p class="games-eyebrow" id="phase-label"></p><h2 id="stage-title">Все на арену!</h2></div><strong id="timer" class="tag-timer" hidden></strong></div>
+          <p id="stage-message" class="tag-message" role="status"></p>
+          <div class="tag-arena-wrap" id="arena-wrap"><canvas id="arena" width="1200" height="720" aria-label="Арена догонялок: цветные человечки, над догоняющим ярлык Голя"></canvas><div id="arena-overlay" class="tag-arena-overlay" hidden><strong id="overlay-title"></strong><span id="overlay-message"></span></div></div>
+          <section id="results" class="tag-results" hidden aria-labelledby="results-title"><h3 id="results-title"></h3><p>Чем меньше времени вы были Голей, тем лучше.</p><ol id="scoreboard"></ol></section>
+        </section>
+        <section class="durak-panel tag-controller" id="controller" hidden aria-labelledby="controller-title">
+          <div class="tag-controller-heading"><div id="own-avatar" class="tag-own-avatar"></div><div><h2 id="controller-title"></h2><p id="own-role" role="status"></p></div><strong id="phone-timer"></strong></div>
+          <p id="controller-note" class="tag-controller-note"></p>
+          <div id="touch-pad" class="tag-touch-pad" tabindex="0" role="application" aria-label="Управление человечком. Ведите пальцем по площадке или используйте стрелки клавиатуры."><span class="tag-pad-hint">Коснитесь здесь<br>и ведите пальцем</span><div id="joystick-base" class="tag-joystick-base" hidden></div><div id="joystick-knob" class="tag-joystick-knob" hidden></div></div>
+          <p class="tag-control-help">Отпустите палец, чтобы остановиться. На компьютере — стрелки или WASD.</p>
+        </section>
+        <aside class="durak-panel tag-sidebar" id="sidebar">
+          <section id="invite" class="invite-panel" hidden aria-labelledby="invite-title"><p class="games-eyebrow">Ваш человечек — ваш цвет</p><h2 id="invite-title">Заходите в игру</h2><img id="qr" width="240" height="240" alt="QR-код подключения к Голе"><p>Отсканируйте QR-код камерой телефона.</p><div class="invite-code"><small>Код комнаты</small><strong id="invite-code"></strong></div><a id="invite-link" class="invite-link"></a></section>
+          <h2 class="tag-players-title">На арене</h2><div id="players" class="durak-players"></div><div id="host-actions" class="tag-host-actions"></div>
+        </aside>
+      </div>
+    </section>
+    <noscript><p class="durak-panel">Для игры включите JavaScript в браузере.</p></noscript>
+  </main>
+  <dialog class="games-dialog" id="confirm-dialog" aria-labelledby="confirm-title"><h2 id="confirm-title">Вернуться в лобби?</h2><p>Текущий раунд завершится. Все игроки останутся в комнате.</p><div class="player-actions"><button class="durak-secondary" id="cancel-reset" type="button">Продолжить игру</button><button class="durak-primary" id="confirm-reset" type="button">Вернуться в лобби</button></div></dialog>
+</body></html>

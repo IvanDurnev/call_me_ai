@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="referrer" content="same-origin"><title>Покажи и объясни — семейная игротека</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='call.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='games.css', v='10') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='durak.css', v='3') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='activity.css', v='2') }}">
+  <script src="{{ url_for('static', filename='activity.js', v='3') }}" defer></script>
+</head>
+<body class="landing-page games-page durak-page activity-page" data-mode="{{ mode }}" data-code="{{ code }}">
+  <div class="landing-bg" aria-hidden="true"></div><div class="landing-overlay" aria-hidden="true"></div>
+  <main class="activity-shell">
+    <header class="durak-header"><a href="{{ url_for('main.games') }}">← Игротека</a><h1>Покажи и объясни</h1><div class="activity-header-actions"><button id="help-button" type="button">Правила</button><button id="sound-button" type="button" aria-pressed="true">Звук включён</button><button id="fullscreen" type="button" hidden>⛶ На весь экран</button></div></header>
+    <p id="feedback" class="durak-feedback" role="status" aria-live="polite"></p>
+    <section id="corrupt-panel" class="durak-panel" hidden><h2>Не удалось восстановить игру</h2><p>Сохранение оставлено без изменений. Можно создать новую комнату.</p><a href="{{ url_for('main.games') }}">В игротеку →</a></section>
+    <section id="join-panel" class="durak-panel join-panel" hidden><p class="games-eyebrow">Рисуем, объясняем, показываем</p><h2>Присоединиться к игре</h2><p>Введите имя. Состав команд выберем на общем экране.</p><form id="join-form"><label for="player-name">Имя</label><input id="player-name" name="name" required maxlength="24" autocomplete="given-name"><button id="join-submit" class="durak-primary" type="submit">Присоединиться →</button></form></section>
+    <section id="room" hidden>
+      <div class="room-topline"><span id="room-code"></span><span id="connection" role="status">Подключаемся…</span></div>
+      <div class="activity-layout">
+        <section id="board-panel" class="durak-panel activity-main">
+          <section id="setup-panel" hidden aria-labelledby="setup-title"><p class="games-eyebrow">Сначала договоримся</p><h2 id="setup-title">Состав и порядок ходов</h2><form id="setup-form"></form></section>
+          <details id="board-details"><summary>Поле: старт → 48 клеток → финиш</summary><div id="board" class="activity-board"><svg id="board-svg" role="img" aria-label="Игровое поле с 48 клетками, стартом и финишем"></svg><div id="tokens" class="activity-tokens"></div></div><div id="board-legend" class="activity-board-legend"></div></details>
+          <section id="sketch-panel" hidden aria-labelledby="sketch-title"><div class="activity-sketch-heading"><h2 id="sketch-title">Рисунок ведущего</h2><span>Можно рисовать на бумаге</span></div><div id="sketch-tools" class="activity-sketch-tools" hidden><button id="pen" type="button" class="durak-secondary" aria-pressed="true">Перо</button><button id="eraser" type="button" class="durak-secondary" aria-pressed="false">Ластик</button><label>Толщина <select id="pen-width"><option value="3">Тонко</option><option value="7" selected>Средне</option><option value="14">Толсто</option></select></label><button id="undo-stroke" type="button" class="durak-secondary">Отменить штрих</button><button id="clear-drawing" type="button" class="durak-secondary">Очистить</button><button id="retry-drawing" type="button" class="durak-secondary" hidden>Повторить отправку</button></div><canvas id="sketch" width="1000" height="620" aria-label="Холст для рисунка ведущего"></canvas><p id="ink-status" class="durak-muted" role="status"></p></section>
+          <details id="history-details" class="activity-history"><summary>Журнал ходов</summary><ol id="history"></ol></details>
+        </section>
+        <aside class="activity-sidebar">
+          <section class="durak-panel activity-turn" aria-labelledby="turn-title"><p id="phase-label" class="games-eyebrow"></p><h2 id="turn-title"></h2><p id="turn-message" role="status"></p><div id="method-badge" class="activity-method" hidden></div><div id="timer" class="activity-timer" role="timer" hidden></div><p id="accuracy" class="activity-accuracy"></p>
+            <section id="recovery" class="activity-neutral" hidden><h3>Игра восстановлена</h3><p>Задание скрыто. Продолжайте только на телефоне ведущего; таймер не останавливался.</p><button id="continue-recovery" class="durak-primary" type="button">Продолжить ход</button></section>
+            <section id="secret-panel" class="activity-secret" hidden aria-labelledby="secret-title"><h3 id="secret-title">Только ведущему</h3><button id="reveal-secret" class="durak-secondary" type="button">Показать только мне</button><div id="secret-content" hidden></div><button id="hide-secret" class="durak-secondary" type="button" hidden>Скрыть задание</button></section>
+            <div id="controls" class="activity-controls"></div><div id="preview" class="activity-preview" hidden></div>
+          </section>
+          <section id="invite" class="durak-panel invite-panel" hidden aria-labelledby="invite-title"><p class="games-eyebrow">Секретное задание — в телефоне</p><h2 id="invite-title">Заходите в игру</h2><img id="qr" width="240" height="240" alt="QR-код подключения к игре Покажи и объясни"><div class="invite-code"><small>Код комнаты</small><strong id="invite-code"></strong></div><a id="invite-link" class="invite-link"></a></section>
+          <details id="roster-details" class="durak-panel activity-roster"><summary>Участники и фишки</summary><div id="players"></div></details>
+        </aside>
+      </div>
+    </section>
+    <noscript><p class="durak-panel">Для игры включите JavaScript в браузере.</p></noscript>
+  </main>
+  <dialog id="confirm-dialog" class="games-dialog" aria-labelledby="confirm-title"><h2 id="confirm-title"></h2><p id="confirm-message"></p><div class="player-actions"><button id="confirm-cancel" type="button" class="durak-secondary">Отмена</button><button id="confirm-accept" type="button" class="durak-primary">Подтвердить</button></div></dialog>
+  <dialog id="help-dialog" class="games-dialog" aria-labelledby="help-title"><div class="rules-heading"><h2 id="help-title">Как играть</h2><form method="dialog"><button class="rules-close" aria-label="Закрыть правила">×</button></form></div><p>Команды: 4–16 человек, 2–4 команды минимум по двое. Втроём: у каждого своя фишка. Ведущие чередуются.</p><ol><li>На своём телефоне ведущий выбирает сложность: легко +3, средне +4, сложно +5. На старте можно выбрать любое из шести заданий. Дальше задание и способ задаёт клетка.</li><li>Запомните задание примерно за 10 секунд. В обычном командном раунде можно отдельно показать карточку соперникам на их телефонах, затем закрыть показ. В открытом раунде и втроём карточка секретна.</li><li>На попытку — 60 секунд. Одно задание за ход. Угадала своя команда — шагайте на 3/4/5. Не угадали или нарушили правила — оставайтесь.</li><li>В открытом раунде угадывают все: своя команда +6; другая команда +4, ведущая +2. Втроём ведущий и угадавший получают по номиналу.</li><li>В командах приземление на чужую фишку сдвигает её на клетку назад, без цепочки. Два получателя одного хода не вытесняют друг друга. На старте и финише вытеснения нет; втроём столкновений нет.</li><li>Финиш или перелёт — победа. Одновременный финиш даёт совместную победу.</li></ol><p><strong>✎ Рисовать:</strong> без речи, жестов, букв и цифр. Кивок при частичной догадке допустим.</p><p><strong>☏ Объяснять:</strong> без самого слова, его частей и производных.</p><p><strong>✋ Показывать:</strong> без речи, звуков, предметов и указания на них. Собственное тело использовать можно.</p><p>Точность ответов согласуйте заранее. Составное выражение можно передавать по частям. Ответы и нарушения оценивают люди. При нарушении отменяется всё продвижение текущей попытки. Последний подтверждённый ход можно отменить целиком, вместе с колодой и очередью; незавершённая следующая попытка тоже сбросится.</p><form method="dialog"><button class="rules-done">Всё понятно</button></form></dialog>
+</body></html>

@@ -1,0 +1,3336 @@
+{
+  "schemaVersion": 1,
+  "locale": "ru",
+  "cards": [
+    {
+      "id": "ru-3-01",
+      "locale": "ru",
+      "difficulty": 3,
+      "tasks": {
+        "drawA": {
+          "id": "ru-3-01-drawA",
+          "text": "Воздушный змей",
+          "isOpenRound": true
+        },
+        "explainA": {
+          "id": "ru-3-01-explainA",
+          "text": "Будильник",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-3-01-mimeA",
+          "text": "Чистить зубы",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-3-01-drawB",
+          "text": "Пиратский сундук",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-3-01-explainB",
+          "text": "Сосед",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-3-01-mimeB",
+          "text": "Идти против ветра",
+          "isOpenRound": true
+        }
+      }
+    },
+    {
+      "id": "ru-3-02",
+      "locale": "ru",
+      "difficulty": 3,
+      "tasks": {
+        "drawA": {
+          "id": "ru-3-02-drawA",
+          "text": "Снеговик",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-3-02-explainA",
+          "text": "Холодильник",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-3-02-mimeA",
+          "text": "Прыгать через лужу",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-3-02-drawB",
+          "text": "Божья коровка",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-3-02-explainB",
+          "text": "Продавец",
+          "isOpenRound": true
+        },
+        "mimeB": {
+          "id": "ru-3-02-mimeB",
+          "text": "Красться на цыпочках",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-3-03",
+      "locale": "ru",
+      "difficulty": 3,
+      "tasks": {
+        "drawA": {
+          "id": "ru-3-03-drawA",
+          "text": "Парусник",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-3-03-explainA",
+          "text": "Библиотека",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-3-03-mimeA",
+          "text": "Кататься на лыжах",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-3-03-drawB",
+          "text": "Звёздное небо",
+          "isOpenRound": true
+        },
+        "explainB": {
+          "id": "ru-3-03-explainB",
+          "text": "Повар",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-3-03-mimeB",
+          "text": "Примерять шляпу",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-3-04",
+      "locale": "ru",
+      "difficulty": 3,
+      "tasks": {
+        "drawA": {
+          "id": "ru-3-04-drawA",
+          "text": "Маяк",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-3-04-explainA",
+          "text": "Лестница",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-3-04-mimeA",
+          "text": "Ловить бабочку",
+          "isOpenRound": true
+        },
+        "drawB": {
+          "id": "ru-3-04-drawB",
+          "text": "Тыква",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-3-04-explainB",
+          "text": "Садовник",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-3-04-mimeB",
+          "text": "Протирать окно",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-3-05",
+      "locale": "ru",
+      "difficulty": 3,
+      "tasks": {
+        "drawA": {
+          "id": "ru-3-05-drawA",
+          "text": "Подсолнух",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-3-05-explainA",
+          "text": "Почтовый ящик",
+          "isOpenRound": true
+        },
+        "mimeA": {
+          "id": "ru-3-05-mimeA",
+          "text": "Надувать шарик",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-3-05-drawB",
+          "text": "Мороженое в рожке",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-3-05-explainB",
+          "text": "Пожарный",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-3-05-mimeB",
+          "text": "Дирижировать оркестром",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-3-06",
+      "locale": "ru",
+      "difficulty": 3,
+      "tasks": {
+        "drawA": {
+          "id": "ru-3-06-drawA",
+          "text": "Замок из песка",
+          "isOpenRound": true
+        },
+        "explainA": {
+          "id": "ru-3-06-explainA",
+          "text": "Рюкзак",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-3-06-mimeA",
+          "text": "Месить тесто",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-3-06-drawB",
+          "text": "Жираф",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-3-06-explainB",
+          "text": "Проводник поезда",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-3-06-mimeB",
+          "text": "Пилить доску",
+          "isOpenRound": true
+        }
+      }
+    },
+    {
+      "id": "ru-3-07",
+      "locale": "ru",
+      "difficulty": 3,
+      "tasks": {
+        "drawA": {
+          "id": "ru-3-07-drawA",
+          "text": "Скворечник",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-3-07-explainA",
+          "text": "Фонарик",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-3-07-mimeA",
+          "text": "Выгонять муху",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-3-07-drawB",
+          "text": "Осьминог",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-3-07-explainB",
+          "text": "Парикмахер",
+          "isOpenRound": true
+        },
+        "mimeB": {
+          "id": "ru-3-07-mimeB",
+          "text": "Собирать грибы",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-3-08",
+      "locale": "ru",
+      "difficulty": 3,
+      "tasks": {
+        "drawA": {
+          "id": "ru-3-08-drawA",
+          "text": "Чайник",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-3-08-explainA",
+          "text": "Пылесос",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-3-08-mimeA",
+          "text": "Поливать цветы",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-3-08-drawB",
+          "text": "Корона",
+          "isOpenRound": true
+        },
+        "explainB": {
+          "id": "ru-3-08-explainB",
+          "text": "Ветеринар",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-3-08-mimeB",
+          "text": "Играть в снежки",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-3-09",
+      "locale": "ru",
+      "difficulty": 3,
+      "tasks": {
+        "drawA": {
+          "id": "ru-3-09-drawA",
+          "text": "Аквариум",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-3-09-explainA",
+          "text": "Термос",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-3-09-mimeA",
+          "text": "Нести тяжёлую сумку",
+          "isOpenRound": true
+        },
+        "drawB": {
+          "id": "ru-3-09-drawB",
+          "text": "Перчаточная кукла",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-3-09-explainB",
+          "text": "Космонавт",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-3-09-mimeB",
+          "text": "Искать потерянный ключ",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-3-10",
+      "locale": "ru",
+      "difficulty": 3,
+      "tasks": {
+        "drawA": {
+          "id": "ru-3-10-drawA",
+          "text": "Качели",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-3-10-explainA",
+          "text": "Пешеходный переход",
+          "isOpenRound": true
+        },
+        "mimeA": {
+          "id": "ru-3-10-mimeA",
+          "text": "Гладить котёнка",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-3-10-drawB",
+          "text": "Снежинка",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-3-10-explainB",
+          "text": "Спасатель",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-3-10-mimeB",
+          "text": "Есть длинные макароны",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-3-11",
+      "locale": "ru",
+      "difficulty": 3,
+      "tasks": {
+        "drawA": {
+          "id": "ru-3-11-drawA",
+          "text": "Паровоз",
+          "isOpenRound": true
+        },
+        "explainA": {
+          "id": "ru-3-11-explainA",
+          "text": "Бассейн",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-3-11-mimeA",
+          "text": "Играть на скрипке",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-3-11-drawB",
+          "text": "Гнездо",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-3-11-explainB",
+          "text": "Письмо",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-3-11-mimeB",
+          "text": "Сдувать пыль",
+          "isOpenRound": true
+        }
+      }
+    },
+    {
+      "id": "ru-3-12",
+      "locale": "ru",
+      "difficulty": 3,
+      "tasks": {
+        "drawA": {
+          "id": "ru-3-12-drawA",
+          "text": "Пальма",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-3-12-explainA",
+          "text": "Компас",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-3-12-mimeA",
+          "text": "Собирать ягоды",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-3-12-drawB",
+          "text": "Дирижабль",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-3-12-explainB",
+          "text": "Праздник",
+          "isOpenRound": true
+        },
+        "mimeB": {
+          "id": "ru-3-12-mimeB",
+          "text": "Поднимать штангу",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-3-13",
+      "locale": "ru",
+      "difficulty": 3,
+      "tasks": {
+        "drawA": {
+          "id": "ru-3-13-drawA",
+          "text": "Велосипед",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-3-13-explainA",
+          "text": "Театр",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-3-13-mimeA",
+          "text": "Лепить снежок",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-3-13-drawB",
+          "text": "Мельница",
+          "isOpenRound": true
+        },
+        "explainB": {
+          "id": "ru-3-13-explainB",
+          "text": "Каникулы",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-3-13-mimeB",
+          "text": "Танцевать вальс",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-3-14",
+      "locale": "ru",
+      "difficulty": 3,
+      "tasks": {
+        "drawA": {
+          "id": "ru-3-14-drawA",
+          "text": "Гриб",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-3-14-explainA",
+          "text": "Конверт",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-3-14-mimeA",
+          "text": "Качать малыша",
+          "isOpenRound": true
+        },
+        "drawB": {
+          "id": "ru-3-14-drawB",
+          "text": "Летающая тарелка",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-3-14-explainB",
+          "text": "Завтрак",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-3-14-mimeB",
+          "text": "Смотреть в телескоп",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-3-15",
+      "locale": "ru",
+      "difficulty": 3,
+      "tasks": {
+        "drawA": {
+          "id": "ru-3-15-drawA",
+          "text": "Барабан",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-3-15-explainA",
+          "text": "Лупа",
+          "isOpenRound": true
+        },
+        "mimeA": {
+          "id": "ru-3-15-mimeA",
+          "text": "Плыть брассом",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-3-15-drawB",
+          "text": "Садовая тачка",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-3-15-explainB",
+          "text": "Прогулка",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-3-15-mimeB",
+          "text": "Сажать дерево",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-3-16",
+      "locale": "ru",
+      "difficulty": 3,
+      "tasks": {
+        "drawA": {
+          "id": "ru-3-16-drawA",
+          "text": "Домик на дереве",
+          "isOpenRound": true
+        },
+        "explainA": {
+          "id": "ru-3-16-explainA",
+          "text": "Пекарня",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-3-16-mimeA",
+          "text": "Расчёсывать волосы",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-3-16-drawB",
+          "text": "Подводная лодка",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-3-16-explainB",
+          "text": "Очередь",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-3-16-mimeB",
+          "text": "Выжимать лимон",
+          "isOpenRound": true
+        }
+      }
+    },
+    {
+      "id": "ru-3-17",
+      "locale": "ru",
+      "difficulty": 3,
+      "tasks": {
+        "drawA": {
+          "id": "ru-3-17-drawA",
+          "text": "Кораблик в бутылке",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-3-17-explainA",
+          "text": "Бинокль",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-3-17-mimeA",
+          "text": "Шагать по канату",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-3-17-drawB",
+          "text": "Почтовая марка",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-3-17-explainB",
+          "text": "Дружба",
+          "isOpenRound": true
+        },
+        "mimeB": {
+          "id": "ru-3-17-mimeB",
+          "text": "Застёгивать молнию",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-3-18",
+      "locale": "ru",
+      "difficulty": 3,
+      "tasks": {
+        "drawA": {
+          "id": "ru-3-18-drawA",
+          "text": "Зубная щётка",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-3-18-explainA",
+          "text": "Перчатки",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-3-18-mimeA",
+          "text": "Забивать гвоздь",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-3-18-drawB",
+          "text": "Черепаха",
+          "isOpenRound": true
+        },
+        "explainB": {
+          "id": "ru-3-18-explainB",
+          "text": "Сюрприз",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-3-18-mimeB",
+          "text": "Копать яму",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-3-19",
+      "locale": "ru",
+      "difficulty": 3,
+      "tasks": {
+        "drawA": {
+          "id": "ru-3-19-drawA",
+          "text": "Радуга",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-3-19-explainA",
+          "text": "Светофор",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-3-19-mimeA",
+          "text": "Подметать пол",
+          "isOpenRound": true
+        },
+        "drawB": {
+          "id": "ru-3-19-drawB",
+          "text": "Букет",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-3-19-explainB",
+          "text": "Ремонт",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-3-19-mimeB",
+          "text": "Идти по горячему песку",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-3-20",
+      "locale": "ru",
+      "difficulty": 3,
+      "tasks": {
+        "drawA": {
+          "id": "ru-3-20-drawA",
+          "text": "Подарочная коробка",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-3-20-explainA",
+          "text": "Ластик",
+          "isOpenRound": true
+        },
+        "mimeA": {
+          "id": "ru-3-20-mimeA",
+          "text": "Завязывать шнурки",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-3-20-drawB",
+          "text": "Варенье",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-3-20-explainB",
+          "text": "Выставка",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-3-20-mimeB",
+          "text": "Слушать тихий звук",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-3-21",
+      "locale": "ru",
+      "difficulty": 3,
+      "tasks": {
+        "drawA": {
+          "id": "ru-3-21-drawA",
+          "text": "Палатка",
+          "isOpenRound": true
+        },
+        "explainA": {
+          "id": "ru-3-21-explainA",
+          "text": "Микрофон",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-3-21-mimeA",
+          "text": "Зевать",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-3-21-drawB",
+          "text": "Ветряная вертушка",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-3-21-explainB",
+          "text": "Соревнование",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-3-21-mimeB",
+          "text": "Дрессировать щенка",
+          "isOpenRound": true
+        }
+      }
+    },
+    {
+      "id": "ru-3-22",
+      "locale": "ru",
+      "difficulty": 3,
+      "tasks": {
+        "drawA": {
+          "id": "ru-3-22-drawA",
+          "text": "Кормушка",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-3-22-explainA",
+          "text": "Календарь",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-3-22-mimeA",
+          "text": "Дуть на горячий чай",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-3-22-drawB",
+          "text": "Ракета",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-3-22-explainB",
+          "text": "Репетиция",
+          "isOpenRound": true
+        },
+        "mimeB": {
+          "id": "ru-3-22-mimeB",
+          "text": "Вытирать мокрую собаку",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-3-23",
+      "locale": "ru",
+      "difficulty": 3,
+      "tasks": {
+        "drawA": {
+          "id": "ru-3-23-drawA",
+          "text": "Самокат",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-3-23-explainA",
+          "text": "Скамейка",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-3-23-mimeA",
+          "text": "Скакать на лошади",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-3-23-drawB",
+          "text": "Клоун",
+          "isOpenRound": true
+        },
+        "explainB": {
+          "id": "ru-3-23-explainB",
+          "text": "Пикник",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-3-23-mimeB",
+          "text": "Крутить обруч",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-3-24",
+      "locale": "ru",
+      "difficulty": 3,
+      "tasks": {
+        "drawA": {
+          "id": "ru-3-24-drawA",
+          "text": "Костёр",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-3-24-explainA",
+          "text": "Кошелёк",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-3-24-mimeA",
+          "text": "Кормить птиц",
+          "isOpenRound": true
+        },
+        "drawB": {
+          "id": "ru-3-24-drawB",
+          "text": "Кувшинка",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-3-24-explainB",
+          "text": "Путешествие",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-3-24-mimeB",
+          "text": "Открывать тугую банку",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-3-25",
+      "locale": "ru",
+      "difficulty": 3,
+      "tasks": {
+        "drawA": {
+          "id": "ru-3-25-drawA",
+          "text": "Вертолёт",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-3-25-explainA",
+          "text": "Гамак",
+          "isOpenRound": true
+        },
+        "mimeA": {
+          "id": "ru-3-25-mimeA",
+          "text": "Нырять",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-3-25-drawB",
+          "text": "Зонтик",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-3-25-explainB",
+          "text": "Посылка",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-3-25-mimeB",
+          "text": "Ловить снежинку языком",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-3-26",
+      "locale": "ru",
+      "difficulty": 3,
+      "tasks": {
+        "drawA": {
+          "id": "ru-3-26-drawA",
+          "text": "Мост",
+          "isOpenRound": true
+        },
+        "explainA": {
+          "id": "ru-3-26-explainA",
+          "text": "Троллейбус",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-3-26-mimeA",
+          "text": "Надевать сапоги",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-3-26-drawB",
+          "text": "Рыбья кость",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-3-26-explainB",
+          "text": "Загадка",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-3-26-mimeB",
+          "text": "Подбрасывать блин",
+          "isOpenRound": true
+        }
+      }
+    },
+    {
+      "id": "ru-3-27",
+      "locale": "ru",
+      "difficulty": 3,
+      "tasks": {
+        "drawA": {
+          "id": "ru-3-27-drawA",
+          "text": "Карусель",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-3-27-explainA",
+          "text": "Фотоаппарат",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-3-27-mimeA",
+          "text": "Обнимать друга",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-3-27-drawB",
+          "text": "Следы на снегу",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-3-27-explainB",
+          "text": "Сказка",
+          "isOpenRound": true
+        },
+        "mimeB": {
+          "id": "ru-3-27-mimeB",
+          "text": "Играть в классики",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-3-28",
+      "locale": "ru",
+      "difficulty": 3,
+      "tasks": {
+        "drawA": {
+          "id": "ru-3-28-drawA",
+          "text": "Робот",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-3-28-explainA",
+          "text": "Удочка",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-3-28-mimeA",
+          "text": "Строить башню",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-3-28-drawB",
+          "text": "Одуванчик",
+          "isOpenRound": true
+        },
+        "explainB": {
+          "id": "ru-3-28-explainB",
+          "text": "Улыбка",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-3-28-mimeB",
+          "text": "Нести поднос",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-3-29",
+      "locale": "ru",
+      "difficulty": 3,
+      "tasks": {
+        "drawA": {
+          "id": "ru-3-29-drawA",
+          "text": "Солнечные очки",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-3-29-explainA",
+          "text": "Песочница",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-3-29-mimeA",
+          "text": "Пускать мыльные пузыри",
+          "isOpenRound": true
+        },
+        "drawB": {
+          "id": "ru-3-29-drawB",
+          "text": "Морская звезда",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-3-29-explainB",
+          "text": "Привычка",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-3-29-mimeB",
+          "text": "Взбивать подушку",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-3-30",
+      "locale": "ru",
+      "difficulty": 3,
+      "tasks": {
+        "drawA": {
+          "id": "ru-3-30-drawA",
+          "text": "Воздушный шар",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-3-30-explainA",
+          "text": "Варежки",
+          "isOpenRound": true
+        },
+        "mimeA": {
+          "id": "ru-3-30-mimeA",
+          "text": "Прятать подарок",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-3-30-drawB",
+          "text": "Пончики",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-3-30-explainB",
+          "text": "Встреча",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-3-30-mimeB",
+          "text": "Складывать одеяло",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-4-01",
+      "locale": "ru",
+      "difficulty": 4,
+      "tasks": {
+        "drawA": {
+          "id": "ru-4-01-drawA",
+          "text": "Дом на колёсах",
+          "isOpenRound": true
+        },
+        "explainA": {
+          "id": "ru-4-01-explainA",
+          "text": "Запасной выход",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-4-01-mimeA",
+          "text": "Ловить ускользающий шарик",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-4-01-drawB",
+          "text": "Трёхэтажный торт",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-4-01-explainB",
+          "text": "Договориться без слов",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-4-01-mimeB",
+          "text": "Репетировать поклон перед зеркалом",
+          "isOpenRound": true
+        }
+      }
+    },
+    {
+      "id": "ru-4-02",
+      "locale": "ru",
+      "difficulty": 4,
+      "tasks": {
+        "drawA": {
+          "id": "ru-4-02-drawA",
+          "text": "Подводный город",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-4-02-explainA",
+          "text": "Обратный билет",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-4-02-mimeA",
+          "text": "Нести переполненную чашку",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-4-02-drawB",
+          "text": "Музыкальный фонтан",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-4-02-explainB",
+          "text": "Смена времён года",
+          "isOpenRound": true
+        },
+        "mimeB": {
+          "id": "ru-4-02-mimeB",
+          "text": "Передавать хрупкую вазу",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-4-03",
+      "locale": "ru",
+      "difficulty": 4,
+      "tasks": {
+        "drawA": {
+          "id": "ru-4-03-drawA",
+          "text": "Рыбалка на рассвете",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-4-03-explainA",
+          "text": "Школьная перемена",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-4-03-mimeA",
+          "text": "Открывать зонт на ветру",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-4-03-drawB",
+          "text": "Прозрачный автобус",
+          "isOpenRound": true
+        },
+        "explainB": {
+          "id": "ru-4-03-explainB",
+          "text": "Выходной день",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-4-03-mimeB",
+          "text": "Делать вид что всё понятно",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-4-04",
+      "locale": "ru",
+      "difficulty": 4,
+      "tasks": {
+        "drawA": {
+          "id": "ru-4-04-drawA",
+          "text": "Почтальон на велосипеде",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-4-04-explainA",
+          "text": "Зимняя спячка",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-4-04-mimeA",
+          "text": "Снимать застрявший свитер",
+          "isOpenRound": true
+        },
+        "drawB": {
+          "id": "ru-4-04-drawB",
+          "text": "Песочный замок с мостом",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-4-04-explainB",
+          "text": "Граница города",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-4-04-mimeB",
+          "text": "Выбирать самый вкусный арбуз",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-4-05",
+      "locale": "ru",
+      "difficulty": 4,
+      "tasks": {
+        "drawA": {
+          "id": "ru-4-05-drawA",
+          "text": "Кот в сапогах для дождя",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-4-05-explainA",
+          "text": "Личный рекорд",
+          "isOpenRound": true
+        },
+        "mimeA": {
+          "id": "ru-4-05-mimeA",
+          "text": "Переходить реку по камням",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-4-05-drawB",
+          "text": "Книжное дерево",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-4-05-explainB",
+          "text": "Пробный полёт",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-4-05-mimeB",
+          "text": "Поднимать упавшее мороженое",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-4-06",
+      "locale": "ru",
+      "difficulty": 4,
+      "tasks": {
+        "drawA": {
+          "id": "ru-4-06-drawA",
+          "text": "Птица с чемоданом",
+          "isOpenRound": true
+        },
+        "explainA": {
+          "id": "ru-4-06-explainA",
+          "text": "Тихий час",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-4-06-mimeA",
+          "text": "Успокаивать испуганную кошку",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-4-06-drawB",
+          "text": "Рыба в акваланге",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-4-06-explainB",
+          "text": "Дорожный знак",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-4-06-mimeB",
+          "text": "Фотографировать непоседливую птицу",
+          "isOpenRound": true
+        }
+      }
+    },
+    {
+      "id": "ru-4-07",
+      "locale": "ru",
+      "difficulty": 4,
+      "tasks": {
+        "drawA": {
+          "id": "ru-4-07-drawA",
+          "text": "Сад на крыше",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-4-07-explainA",
+          "text": "Семейный альбом",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-4-07-mimeA",
+          "text": "Доставать мяч с дерева",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-4-07-drawB",
+          "text": "Ледяной дворец",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-4-07-explainB",
+          "text": "Карта местности",
+          "isOpenRound": true
+        },
+        "mimeB": {
+          "id": "ru-4-07-mimeB",
+          "text": "Мерить глубину лужи",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-4-08",
+      "locale": "ru",
+      "difficulty": 4,
+      "tasks": {
+        "drawA": {
+          "id": "ru-4-08-drawA",
+          "text": "Деревянный лабиринт",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-4-08-explainA",
+          "text": "Кругосветное путешествие",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-4-08-mimeA",
+          "text": "Прятаться от дождя",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-4-08-drawB",
+          "text": "Лифт на вершину горы",
+          "isOpenRound": true
+        },
+        "explainB": {
+          "id": "ru-4-08-explainB",
+          "text": "Урок музыки",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-4-08-mimeB",
+          "text": "Будить сонного друга",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-4-09",
+      "locale": "ru",
+      "difficulty": 4,
+      "tasks": {
+        "drawA": {
+          "id": "ru-4-09-drawA",
+          "text": "Мышка в сырном замке",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-4-09-explainA",
+          "text": "Прогноз погоды",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-4-09-mimeA",
+          "text": "Съехать на ледянке",
+          "isOpenRound": true
+        },
+        "drawB": {
+          "id": "ru-4-09-drawB",
+          "text": "Часы с кукушкой",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-4-09-explainB",
+          "text": "Тайное послание",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-4-09-mimeB",
+          "text": "Перетаскивать тяжёлый диван",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-4-10",
+      "locale": "ru",
+      "difficulty": 4,
+      "tasks": {
+        "drawA": {
+          "id": "ru-4-10-drawA",
+          "text": "Снежный туннель",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-4-10-explainA",
+          "text": "Рабочий инструмент",
+          "isOpenRound": true
+        },
+        "mimeA": {
+          "id": "ru-4-10-mimeA",
+          "text": "Печатать с закрытыми глазами",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-4-10-drawB",
+          "text": "Небоскрёб из кубиков",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-4-10-explainB",
+          "text": "Морское течение",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-4-10-mimeB",
+          "text": "Встречать корабль с берега",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-4-11",
+      "locale": "ru",
+      "difficulty": 4,
+      "tasks": {
+        "drawA": {
+          "id": "ru-4-11-drawA",
+          "text": "Плавающий остров",
+          "isOpenRound": true
+        },
+        "explainA": {
+          "id": "ru-4-11-explainA",
+          "text": "Дальний родственник",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-4-11-mimeA",
+          "text": "Развязывать запутанный узел",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-4-11-drawB",
+          "text": "Площадь воздушных шаров",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-4-11-explainB",
+          "text": "Свободное время",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-4-11-mimeB",
+          "text": "Собирать улетающие листы",
+          "isOpenRound": true
+        }
+      }
+    },
+    {
+      "id": "ru-4-12",
+      "locale": "ru",
+      "difficulty": 4,
+      "tasks": {
+        "drawA": {
+          "id": "ru-4-12-drawA",
+          "text": "Лесная почта",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-4-12-explainA",
+          "text": "Круговорот воды",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-4-12-mimeA",
+          "text": "Собирать высокий шкаф",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-4-12-drawB",
+          "text": "Собака с фотоаппаратом",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-4-12-explainB",
+          "text": "Семейная традиция",
+          "isOpenRound": true
+        },
+        "mimeB": {
+          "id": "ru-4-12-mimeB",
+          "text": "Пытаться сесть на маленький стул",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-4-13",
+      "locale": "ru",
+      "difficulty": 4,
+      "tasks": {
+        "drawA": {
+          "id": "ru-4-13-drawA",
+          "text": "Ночной поезд",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-4-13-explainA",
+          "text": "Солнечное затмение",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-4-13-mimeA",
+          "text": "Удерживать убегающий чемодан",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-4-13-drawB",
+          "text": "Грибная деревня",
+          "isOpenRound": true
+        },
+        "explainB": {
+          "id": "ru-4-13-explainB",
+          "text": "День открытых дверей",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-4-13-mimeB",
+          "text": "Удерживать стопку тарелок",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-4-14",
+      "locale": "ru",
+      "difficulty": 4,
+      "tasks": {
+        "drawA": {
+          "id": "ru-4-14-drawA",
+          "text": "Скамейка под яблоней",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-4-14-explainA",
+          "text": "Северное сияние",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-4-14-mimeA",
+          "text": "Лепить большую снежную бабу",
+          "isOpenRound": true
+        },
+        "drawB": {
+          "id": "ru-4-14-drawB",
+          "text": "Кот на воздушном змее",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-4-14-explainB",
+          "text": "Начало учебного года",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-4-14-mimeB",
+          "text": "Примерять тесные ботинки",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-4-15",
+      "locale": "ru",
+      "difficulty": 4,
+      "tasks": {
+        "drawA": {
+          "id": "ru-4-15-drawA",
+          "text": "Корабль в облаках",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-4-15-explainA",
+          "text": "Вечерняя прогулка",
+          "isOpenRound": true
+        },
+        "mimeA": {
+          "id": "ru-4-15-mimeA",
+          "text": "Протискиваться в узкую дверь",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-4-15-drawB",
+          "text": "Праздничная гирлянда",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-4-15-explainB",
+          "text": "Общее увлечение",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-4-15-mimeB",
+          "text": "Знакомиться с робкой собакой",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-4-16",
+      "locale": "ru",
+      "difficulty": 4,
+      "tasks": {
+        "drawA": {
+          "id": "ru-4-16-drawA",
+          "text": "Городская ферма",
+          "isOpenRound": true
+        },
+        "explainA": {
+          "id": "ru-4-16-explainA",
+          "text": "Домашний кинотеатр",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-4-16-mimeA",
+          "text": "Нести спящего ребёнка",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-4-16-drawB",
+          "text": "Снеговик на пляже",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-4-16-explainB",
+          "text": "Памятный подарок",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-4-16-mimeB",
+          "text": "Ловить рыбу без удочки",
+          "isOpenRound": true
+        }
+      }
+    },
+    {
+      "id": "ru-4-17",
+      "locale": "ru",
+      "difficulty": 4,
+      "tasks": {
+        "drawA": {
+          "id": "ru-4-17-drawA",
+          "text": "Мост над водопадом",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-4-17-explainA",
+          "text": "Детская площадка",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-4-17-mimeA",
+          "text": "Пытаться не чихнуть",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-4-17-drawB",
+          "text": "Лесная библиотека",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-4-17-explainB",
+          "text": "Кулинарный опыт",
+          "isOpenRound": true
+        },
+        "mimeB": {
+          "id": "ru-4-17-mimeB",
+          "text": "Делить последний кусочек торта",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-4-18",
+      "locale": "ru",
+      "difficulty": 4,
+      "tasks": {
+        "drawA": {
+          "id": "ru-4-18-drawA",
+          "text": "Лесенка к луне",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-4-18-explainA",
+          "text": "Морской бриз",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-4-18-mimeA",
+          "text": "Готовить упрямое тесто",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-4-18-drawB",
+          "text": "Паровоз с цветами",
+          "isOpenRound": true
+        },
+        "explainB": {
+          "id": "ru-4-18-explainB",
+          "text": "Дружеский совет",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-4-18-mimeB",
+          "text": "Объяснять дорогу жестами",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-4-19",
+      "locale": "ru",
+      "difficulty": 4,
+      "tasks": {
+        "drawA": {
+          "id": "ru-4-19-drawA",
+          "text": "Лошадь в свитере",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-4-19-explainA",
+          "text": "Зимние запасы",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-4-19-mimeA",
+          "text": "Удерживать равновесие в автобусе",
+          "isOpenRound": true
+        },
+        "drawB": {
+          "id": "ru-4-19-drawB",
+          "text": "Танцующий чайник",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-4-19-explainB",
+          "text": "План на завтра",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-4-19-mimeB",
+          "text": "Вести велосипед по песку",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-4-20",
+      "locale": "ru",
+      "difficulty": 4,
+      "tasks": {
+        "drawA": {
+          "id": "ru-4-20-drawA",
+          "text": "Воздушный оркестр",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-4-20-explainA",
+          "text": "Театральная сцена",
+          "isOpenRound": true
+        },
+        "mimeA": {
+          "id": "ru-4-20-mimeA",
+          "text": "Изображать испорченного робота",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-4-20-drawB",
+          "text": "Слон на самокате",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-4-20-explainB",
+          "text": "Праздник урожая",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-4-20-mimeB",
+          "text": "Нести подарок не раскрывая сюрприз",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-4-21",
+      "locale": "ru",
+      "difficulty": 4,
+      "tasks": {
+        "drawA": {
+          "id": "ru-4-21-drawA",
+          "text": "Солнечная батарея",
+          "isOpenRound": true
+        },
+        "explainA": {
+          "id": "ru-4-21-explainA",
+          "text": "Командный дух",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-4-21-mimeA",
+          "text": "Искать очки на голове",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-4-21-drawB",
+          "text": "Колесо обозрения над рекой",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-4-21-explainB",
+          "text": "Наблюдение за звёздами",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-4-21-mimeB",
+          "text": "Укрощать непослушный воздушный змей",
+          "isOpenRound": true
+        }
+      }
+    },
+    {
+      "id": "ru-4-22",
+      "locale": "ru",
+      "difficulty": 4,
+      "tasks": {
+        "drawA": {
+          "id": "ru-4-22-drawA",
+          "text": "Детская обсерватория",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-4-22-explainA",
+          "text": "Ручная работа",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-4-22-mimeA",
+          "text": "Обходить спящую собаку",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-4-22-drawB",
+          "text": "Аквариум в чемодане",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-4-22-explainB",
+          "text": "Утренний туман",
+          "isOpenRound": true
+        },
+        "mimeB": {
+          "id": "ru-4-22-mimeB",
+          "text": "Прятать зевок на концерте",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-4-23",
+      "locale": "ru",
+      "difficulty": 4,
+      "tasks": {
+        "drawA": {
+          "id": "ru-4-23-drawA",
+          "text": "Акробат на мосту",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-4-23-explainA",
+          "text": "Учебная тревога",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-4-23-mimeA",
+          "text": "Плавать в тесном бассейне",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-4-23-drawB",
+          "text": "Лестница из радуги",
+          "isOpenRound": true
+        },
+        "explainB": {
+          "id": "ru-4-23-explainB",
+          "text": "Велосипедная дорожка",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-4-23-mimeB",
+          "text": "Прислушиваться к далёкому эху",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-4-24",
+      "locale": "ru",
+      "difficulty": 4,
+      "tasks": {
+        "drawA": {
+          "id": "ru-4-24-drawA",
+          "text": "Радужный водопад",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-4-24-explainA",
+          "text": "Спальный вагон",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-4-24-mimeA",
+          "text": "Ловить шляпу на ветру",
+          "isOpenRound": true
+        },
+        "drawB": {
+          "id": "ru-4-24-drawB",
+          "text": "Маяк на черепахе",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-4-24-explainB",
+          "text": "Старинная легенда",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-4-24-mimeB",
+          "text": "Выступать перед невидимой публикой",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-4-25",
+      "locale": "ru",
+      "difficulty": 4,
+      "tasks": {
+        "drawA": {
+          "id": "ru-4-25-drawA",
+          "text": "Автобус с крыльями",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-4-25-explainA",
+          "text": "Остров сокровищ",
+          "isOpenRound": true
+        },
+        "mimeA": {
+          "id": "ru-4-25-mimeA",
+          "text": "Раскрывать секретный замок",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-4-25-drawB",
+          "text": "Сад под стеклянным куполом",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-4-25-explainB",
+          "text": "Отпечаток пальца",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-4-25-mimeB",
+          "text": "Подкрадываться к спящему дракону",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-4-26",
+      "locale": "ru",
+      "difficulty": 4,
+      "tasks": {
+        "drawA": {
+          "id": "ru-4-26-drawA",
+          "text": "Лампа в виде гриба",
+          "isOpenRound": true
+        },
+        "explainA": {
+          "id": "ru-4-26-explainA",
+          "text": "Поисковая экспедиция",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-4-26-mimeA",
+          "text": "Прогонять комара ночью",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-4-26-drawB",
+          "text": "Летающая почта",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-4-26-explainB",
+          "text": "Равновесие в природе",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-4-26-mimeB",
+          "text": "Искать выход из палатки",
+          "isOpenRound": true
+        }
+      }
+    },
+    {
+      "id": "ru-4-27",
+      "locale": "ru",
+      "difficulty": 4,
+      "tasks": {
+        "drawA": {
+          "id": "ru-4-27-drawA",
+          "text": "Садовый лабиринт",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-4-27-explainA",
+          "text": "Невидимые чернила",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-4-27-mimeA",
+          "text": "Надевать слишком длинный шарф",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-4-27-drawB",
+          "text": "Подземная железная дорога",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-4-27-explainB",
+          "text": "Запас прочности",
+          "isOpenRound": true
+        },
+        "mimeB": {
+          "id": "ru-4-27-mimeB",
+          "text": "Успокаивать качающуюся лодку",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-4-28",
+      "locale": "ru",
+      "difficulty": 4,
+      "tasks": {
+        "drawA": {
+          "id": "ru-4-28-drawA",
+          "text": "Плывущий чемодан",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-4-28-explainA",
+          "text": "Взаимная помощь",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-4-28-mimeA",
+          "text": "Складывать огромную карту",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-4-28-drawB",
+          "text": "Оранжерея в снегу",
+          "isOpenRound": true
+        },
+        "explainB": {
+          "id": "ru-4-28-explainB",
+          "text": "Сила привычки",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-4-28-mimeB",
+          "text": "Отряхивать снег с одежды",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-4-29",
+      "locale": "ru",
+      "difficulty": 4,
+      "tasks": {
+        "drawA": {
+          "id": "ru-4-29-drawA",
+          "text": "Повар с гигантской ложкой",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-4-29-explainA",
+          "text": "Карманные часы",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-4-29-mimeA",
+          "text": "Расчесывать запутанную гриву",
+          "isOpenRound": true
+        },
+        "drawB": {
+          "id": "ru-4-29-drawB",
+          "text": "Человек с облаком вместо шляпы",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-4-29-explainB",
+          "text": "Большая перемена",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-4-29-mimeB",
+          "text": "Переходить по шаткому мостику",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-4-30",
+      "locale": "ru",
+      "difficulty": 4,
+      "tasks": {
+        "drawA": {
+          "id": "ru-4-30-drawA",
+          "text": "Трамвай в лесу",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-4-30-explainA",
+          "text": "Живой уголок",
+          "isOpenRound": true
+        },
+        "mimeA": {
+          "id": "ru-4-30-mimeA",
+          "text": "Тянуть репку всей семьёй",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-4-30-drawB",
+          "text": "Космический огород",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-4-30-explainB",
+          "text": "Новый знакомый",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-4-30-mimeB",
+          "text": "Принимать поздравления от толпы",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-5-01",
+      "locale": "ru",
+      "difficulty": 5,
+      "tasks": {
+        "drawA": {
+          "id": "ru-5-01-drawA",
+          "text": "Будильник который боится утра",
+          "isOpenRound": true
+        },
+        "explainA": {
+          "id": "ru-5-01-explainA",
+          "text": "Второе дыхание",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-5-01-mimeA",
+          "text": "Разбудить спящего великана",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-5-01-drawB",
+          "text": "Садовник поливающий звёзды",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-5-01-explainB",
+          "text": "Поймать момент",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-5-01-mimeB",
+          "text": "Спрятать слона в маленькой комнате",
+          "isOpenRound": true
+        }
+      }
+    },
+    {
+      "id": "ru-5-02",
+      "locale": "ru",
+      "difficulty": 5,
+      "tasks": {
+        "drawA": {
+          "id": "ru-5-02-drawA",
+          "text": "Город внутри морской раковины",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-5-02-explainA",
+          "text": "Держать обещание",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-5-02-mimeA",
+          "text": "Искать выход в невидимом лабиринте",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-5-02-drawB",
+          "text": "Пожарный тушащий солнечный луч",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-5-02-explainB",
+          "text": "Закон подлости",
+          "isOpenRound": true
+        },
+        "mimeB": {
+          "id": "ru-5-02-mimeB",
+          "text": "Провести экскурсию по невидимому музею",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-5-03",
+      "locale": "ru",
+      "difficulty": 5,
+      "tasks": {
+        "drawA": {
+          "id": "ru-5-03-drawA",
+          "text": "Школа для динозавров",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-5-03-explainA",
+          "text": "Золотая середина",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-5-03-mimeA",
+          "text": "Удерживать равновесие на луне",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-5-03-drawB",
+          "text": "День рождения океана",
+          "isOpenRound": true
+        },
+        "explainB": {
+          "id": "ru-5-03-explainB",
+          "text": "Чувство локтя",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-5-03-mimeB",
+          "text": "Показать как растёт уверенность",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-5-04",
+      "locale": "ru",
+      "difficulty": 5,
+      "tasks": {
+        "drawA": {
+          "id": "ru-5-04-drawA",
+          "text": "Почтовый голубь на пенсии",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-5-04-explainA",
+          "text": "Заблудиться в трёх соснах",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-5-04-mimeA",
+          "text": "Объяснять инопланетянину правила очереди",
+          "isOpenRound": true
+        },
+        "drawB": {
+          "id": "ru-5-04-drawB",
+          "text": "Снежная почта в пустыне",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-5-04-explainB",
+          "text": "Капля в море",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-5-04-mimeB",
+          "text": "Убедить публику что вы невесомы",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-5-05",
+      "locale": "ru",
+      "difficulty": 5,
+      "tasks": {
+        "drawA": {
+          "id": "ru-5-05-drawA",
+          "text": "Лестница в глубину океана",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-5-05-explainA",
+          "text": "Творческий беспорядок",
+          "isOpenRound": true
+        },
+        "mimeA": {
+          "id": "ru-5-05-mimeA",
+          "text": "Учить дракона чихать тихо",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-5-05-drawB",
+          "text": "Парк аттракционов для великанов",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-5-05-explainB",
+          "text": "Терпение лопнуло",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-5-05-mimeB",
+          "text": "Учить кота соблюдать расписание",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-5-06",
+      "locale": "ru",
+      "difficulty": 5,
+      "tasks": {
+        "drawA": {
+          "id": "ru-5-06-drawA",
+          "text": "Остров на спине великана",
+          "isOpenRound": true
+        },
+        "explainA": {
+          "id": "ru-5-06-explainA",
+          "text": "Точка зрения",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-5-06-mimeA",
+          "text": "Пытаться поймать собственную тень",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-5-06-drawB",
+          "text": "Семейный ужин на орбите",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-5-06-explainB",
+          "text": "Смотреть сквозь пальцы",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-5-06-mimeB",
+          "text": "Открыть магазин на другой планете",
+          "isOpenRound": true
+        }
+      }
+    },
+    {
+      "id": "ru-5-07",
+      "locale": "ru",
+      "difficulty": 5,
+      "tasks": {
+        "drawA": {
+          "id": "ru-5-07-drawA",
+          "text": "Фабрика хорошего настроения",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-5-07-explainA",
+          "text": "Гостеприимство",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-5-07-mimeA",
+          "text": "Нести невидимый хрупкий рояль",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-5-07-drawB",
+          "text": "Королевство внутри карманных часов",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-5-07-explainB",
+          "text": "Ходить вокруг да около",
+          "isOpenRound": true
+        },
+        "mimeB": {
+          "id": "ru-5-07-mimeB",
+          "text": "Потерять равновесие на неподвижном полу",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-5-08",
+      "locale": "ru",
+      "difficulty": 5,
+      "tasks": {
+        "drawA": {
+          "id": "ru-5-08-drawA",
+          "text": "Театр под северным сиянием",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-5-08-explainA",
+          "text": "Предчувствие приключения",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-5-08-mimeA",
+          "text": "Заворачивать слишком большой сюрприз",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-5-08-drawB",
+          "text": "Корабль собирающий осенний дождь",
+          "isOpenRound": true
+        },
+        "explainB": {
+          "id": "ru-5-08-explainB",
+          "text": "Медвежья услуга",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-5-08-mimeB",
+          "text": "Собирать чемодан за десять секунд",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-5-09",
+      "locale": "ru",
+      "difficulty": 5,
+      "tasks": {
+        "drawA": {
+          "id": "ru-5-09-drawA",
+          "text": "Магазин потерянных носков",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-5-09-explainA",
+          "text": "Неожиданное совпадение",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-5-09-mimeA",
+          "text": "Показывать первый полёт птенца",
+          "isOpenRound": true
+        },
+        "drawB": {
+          "id": "ru-5-09-drawB",
+          "text": "Гостиница для заблудившихся облаков",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-5-09-explainB",
+          "text": "Память детства",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-5-09-mimeB",
+          "text": "Разыграть встречу лета и зимы",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-5-10",
+      "locale": "ru",
+      "difficulty": 5,
+      "tasks": {
+        "drawA": {
+          "id": "ru-5-10-drawA",
+          "text": "Зима в стеклянном шаре",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-5-10-explainA",
+          "text": "Семейная реликвия",
+          "isOpenRound": true
+        },
+        "mimeA": {
+          "id": "ru-5-10-mimeA",
+          "text": "Открывать дверь во время урагана",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-5-10-drawB",
+          "text": "Гора вязаных шарфов",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-5-10-explainB",
+          "text": "Маленькая победа над собой",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-5-10-mimeB",
+          "text": "Защищать бутерброд от невидимой чайки",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-5-11",
+      "locale": "ru",
+      "difficulty": 5,
+      "tasks": {
+        "drawA": {
+          "id": "ru-5-11-drawA",
+          "text": "Музей забытых изобретений",
+          "isOpenRound": true
+        },
+        "explainA": {
+          "id": "ru-5-11-explainA",
+          "text": "Принять эстафету",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-5-11-mimeA",
+          "text": "Собирать рассыпавшееся созвездие",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-5-11-drawB",
+          "text": "Площадь с фонтаном из книг",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-5-11-explainB",
+          "text": "Держать руку на пульсе",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-5-11-mimeB",
+          "text": "Показать утро очень рассеянного волшебника",
+          "isOpenRound": true
+        }
+      }
+    },
+    {
+      "id": "ru-5-12",
+      "locale": "ru",
+      "difficulty": 5,
+      "tasks": {
+        "drawA": {
+          "id": "ru-5-12-drawA",
+          "text": "Поезд на дне чайной чашки",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-5-12-explainA",
+          "text": "Работа над ошибками",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-5-12-mimeA",
+          "text": "Управлять непослушным оркестром",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-5-12-drawB",
+          "text": "Чемодан превращающийся в комнату",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-5-12-explainB",
+          "text": "Читать между строк",
+          "isOpenRound": true
+        },
+        "mimeB": {
+          "id": "ru-5-12-mimeB",
+          "text": "Впервые увидеть собственную фотографию",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-5-13",
+      "locale": "ru",
+      "difficulty": 5,
+      "tasks": {
+        "drawA": {
+          "id": "ru-5-13-drawA",
+          "text": "Дворец из осенних листьев",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-5-13-explainA",
+          "text": "Поворотный момент",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-5-13-mimeA",
+          "text": "Уговаривать упрямый чемодан закрыться",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-5-13-drawB",
+          "text": "Маленький мир в капле росы",
+          "isOpenRound": true
+        },
+        "explainB": {
+          "id": "ru-5-13-explainB",
+          "text": "Выдать желаемое за действительное",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-5-13-mimeB",
+          "text": "Пытаться догнать медленно уходящий сон",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-5-14",
+      "locale": "ru",
+      "difficulty": 5,
+      "tasks": {
+        "drawA": {
+          "id": "ru-5-14-drawA",
+          "text": "Карусель для облаков",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-5-14-explainA",
+          "text": "Нестандартное решение",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-5-14-mimeA",
+          "text": "Встречать друга спустя сто лет",
+          "isOpenRound": true
+        },
+        "drawB": {
+          "id": "ru-5-14-drawB",
+          "text": "Пикник на кольцах планеты",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-5-14-explainB",
+          "text": "Перевернуть страницу жизни",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-5-14-mimeB",
+          "text": "Устроить соревнование с собственным отражением",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-5-15",
+      "locale": "ru",
+      "difficulty": 5,
+      "tasks": {
+        "drawA": {
+          "id": "ru-5-15-drawA",
+          "text": "Библиотека на спине слона",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-5-15-explainA",
+          "text": "Право на ошибку",
+          "isOpenRound": true
+        },
+        "mimeA": {
+          "id": "ru-5-15-mimeA",
+          "text": "Учить робота танцевать народный танец",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-5-15-drawB",
+          "text": "Поезд из разных эпох",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-5-15-explainB",
+          "text": "Тянуть время",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-5-15-mimeB",
+          "text": "Показать как зарождается подозрение",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-5-16",
+      "locale": "ru",
+      "difficulty": 5,
+      "tasks": {
+        "drawA": {
+          "id": "ru-5-16-drawA",
+          "text": "Горная деревня над облаками",
+          "isOpenRound": true
+        },
+        "explainA": {
+          "id": "ru-5-16-explainA",
+          "text": "Умение слушать",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-5-16-mimeA",
+          "text": "Шагать по полу который стал липким",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-5-16-drawB",
+          "text": "Лес где вместо листьев письма",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-5-16-explainB",
+          "text": "Зажечь искру интереса",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-5-16-mimeB",
+          "text": "Заменить целый оркестр одним человеком",
+          "isOpenRound": true
+        }
+      }
+    },
+    {
+      "id": "ru-5-17",
+      "locale": "ru",
+      "difficulty": 5,
+      "tasks": {
+        "drawA": {
+          "id": "ru-5-17-drawA",
+          "text": "Плавучий сад для бабочек",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-5-17-explainA",
+          "text": "Эффект неожиданности",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-5-17-mimeA",
+          "text": "Делать вид что ботинки летают",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-5-17-drawB",
+          "text": "Шахматный турнир морских коньков",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-5-17-explainB",
+          "text": "Плыть по течению",
+          "isOpenRound": true
+        },
+        "mimeB": {
+          "id": "ru-5-17-mimeB",
+          "text": "Искать потерянную мысль в карманах",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-5-18",
+      "locale": "ru",
+      "difficulty": 5,
+      "tasks": {
+        "drawA": {
+          "id": "ru-5-18-drawA",
+          "text": "Карта города будущего",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-5-18-explainA",
+          "text": "Сила воображения",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-5-18-mimeA",
+          "text": "Делиться зонтом с великаном",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-5-18-drawB",
+          "text": "Радуга которая ищет начало",
+          "isOpenRound": true
+        },
+        "explainB": {
+          "id": "ru-5-18-explainB",
+          "text": "Оказаться не в своей тарелке",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-5-18-mimeB",
+          "text": "Показать дождь глазами комнатного растения",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-5-19",
+      "locale": "ru",
+      "difficulty": 5,
+      "tasks": {
+        "drawA": {
+          "id": "ru-5-19-drawA",
+          "text": "Пекарня на воздушном шаре",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-5-19-explainA",
+          "text": "Обратная сторона медали",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-5-19-mimeA",
+          "text": "Спасать торт от целой стаи птиц",
+          "isOpenRound": true
+        },
+        "drawB": {
+          "id": "ru-5-19-drawB",
+          "text": "Сказочный город после дождя",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-5-19-explainB",
+          "text": "Поднять настроение без слов",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-5-19-mimeB",
+          "text": "Встретить робота который боится щекотки",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-5-20",
+      "locale": "ru",
+      "difficulty": 5,
+      "tasks": {
+        "drawA": {
+          "id": "ru-5-20-drawA",
+          "text": "Семейный портрет снеговиков",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-5-20-explainA",
+          "text": "Чувство времени",
+          "isOpenRound": true
+        },
+        "mimeA": {
+          "id": "ru-5-20-mimeA",
+          "text": "Пытаться погладить прозрачного кота",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-5-20-drawB",
+          "text": "Подземная станция для кротов",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-5-20-explainB",
+          "text": "Чудеса взаимопонимания",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-5-20-mimeB",
+          "text": "Пытаться незаметно заменить разбитую вазу",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-5-21",
+      "locale": "ru",
+      "difficulty": 5,
+      "tasks": {
+        "drawA": {
+          "id": "ru-5-21-drawA",
+          "text": "Космодром на крыше дома",
+          "isOpenRound": true
+        },
+        "explainA": {
+          "id": "ru-5-21-explainA",
+          "text": "Переоценить свои силы",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-5-21-mimeA",
+          "text": "Перебираться через невидимую реку",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-5-21-drawB",
+          "text": "Небесная мастерская по ремонту луны",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-5-21-explainB",
+          "text": "Привычка замечать хорошее",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-5-21-mimeB",
+          "text": "Учить невидимого щенка новым командам",
+          "isOpenRound": true
+        }
+      }
+    },
+    {
+      "id": "ru-5-22",
+      "locale": "ru",
+      "difficulty": 5,
+      "tasks": {
+        "drawA": {
+          "id": "ru-5-22-drawA",
+          "text": "Велосипед для осьминога",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-5-22-explainA",
+          "text": "Цена любопытства",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-5-22-mimeA",
+          "text": "Тренировать черепаху перед забегом",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-5-22-drawB",
+          "text": "Самый тихий концерт на свете",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-5-22-explainB",
+          "text": "Время пролетело незаметно",
+          "isOpenRound": true
+        },
+        "mimeB": {
+          "id": "ru-5-22-mimeB",
+          "text": "Поздравить великана с тихим праздником",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-5-23",
+      "locale": "ru",
+      "difficulty": 5,
+      "tasks": {
+        "drawA": {
+          "id": "ru-5-23-drawA",
+          "text": "Вечерний рынок на луне",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-5-23-explainA",
+          "text": "Найти общий язык",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-5-23-mimeA",
+          "text": "Доставать звезду с высокой полки",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-5-23-drawB",
+          "text": "Танцующая очередь в булочную",
+          "isOpenRound": true
+        },
+        "explainB": {
+          "id": "ru-5-23-explainB",
+          "text": "Два взгляда на одну историю",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-5-23-mimeB",
+          "text": "Показать путешествие письма без слов",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-5-24",
+      "locale": "ru",
+      "difficulty": 5,
+      "tasks": {
+        "drawA": {
+          "id": "ru-5-24-drawA",
+          "text": "Робот выращивающий радугу",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-5-24-explainA",
+          "text": "Упустить возможность",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-5-24-mimeA",
+          "text": "Прятать радугу в карман",
+          "isOpenRound": true
+        },
+        "drawB": {
+          "id": "ru-5-24-drawB",
+          "text": "Река огибающая спящего дракона",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-5-24-explainB",
+          "text": "Перейти от слов к делу",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-5-24-mimeB",
+          "text": "Изобразить очередь которая двигается назад",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-5-25",
+      "locale": "ru",
+      "difficulty": 5,
+      "tasks": {
+        "drawA": {
+          "id": "ru-5-25-drawA",
+          "text": "Дом с лестницей из книг",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-5-25-explainA",
+          "text": "Вдохнуть жизнь в идею",
+          "isOpenRound": true
+        },
+        "mimeA": {
+          "id": "ru-5-25-mimeA",
+          "text": "Пытаться уснуть на качающемся облаке",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-5-25-drawB",
+          "text": "Галерея портретов ветра",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-5-25-explainB",
+          "text": "Увидеть знакомое по-новому",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-5-25-mimeB",
+          "text": "Отмечать победу стараясь не шуметь",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-5-26",
+      "locale": "ru",
+      "difficulty": 5,
+      "tasks": {
+        "drawA": {
+          "id": "ru-5-26-drawA",
+          "text": "Подводный концерт скрипачей",
+          "isOpenRound": true
+        },
+        "explainA": {
+          "id": "ru-5-26-explainA",
+          "text": "Секрет мастерства",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-5-26-mimeA",
+          "text": "Примерять корону которая всё время растёт",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-5-26-drawB",
+          "text": "Улица вверх тормашками",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-5-26-explainB",
+          "text": "Оставить хорошее впечатление",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-5-26-mimeB",
+          "text": "Принимать гостей в домике для птиц",
+          "isOpenRound": true
+        }
+      }
+    },
+    {
+      "id": "ru-5-27",
+      "locale": "ru",
+      "difficulty": 5,
+      "tasks": {
+        "drawA": {
+          "id": "ru-5-27-drawA",
+          "text": "Мост между временами года",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-5-27-explainA",
+          "text": "Заряд бодрости",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-5-27-mimeA",
+          "text": "Спорить с упрямым отражением",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-5-27-drawB",
+          "text": "Дерево с дверями в разные страны",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-5-27-explainB",
+          "text": "Испытание на терпение",
+          "isOpenRound": true
+        },
+        "mimeB": {
+          "id": "ru-5-27-mimeB",
+          "text": "Показать как скука превращается в восторг",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-5-28",
+      "locale": "ru",
+      "difficulty": 5,
+      "tasks": {
+        "drawA": {
+          "id": "ru-5-28-drawA",
+          "text": "Трамвай путешествующий по звёздам",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-5-28-explainA",
+          "text": "Сделать первый шаг",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-5-28-mimeA",
+          "text": "Учить рыбу ходить по суше",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-5-28-drawB",
+          "text": "Мост сделанный из музыкальных нот",
+          "isOpenRound": true
+        },
+        "explainB": {
+          "id": "ru-5-28-explainB",
+          "text": "Ключ к чужому настроению",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-5-28-mimeB",
+          "text": "Уговорить сонное солнце встать пораньше",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-5-29",
+      "locale": "ru",
+      "difficulty": 5,
+      "tasks": {
+        "drawA": {
+          "id": "ru-5-29-drawA",
+          "text": "Обсерватория на кувшинке",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-5-29-explainA",
+          "text": "Взглянуть другими глазами",
+          "isOpenRound": false
+        },
+        "mimeA": {
+          "id": "ru-5-29-mimeA",
+          "text": "Удерживать улетающий дом",
+          "isOpenRound": true
+        },
+        "drawB": {
+          "id": "ru-5-29-drawB",
+          "text": "Карусель сменяющая времена года",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-5-29-explainB",
+          "text": "Планы изменились в последний момент",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-5-29-mimeB",
+          "text": "Пытаться повернуть слишком длинный автобус",
+          "isOpenRound": false
+        }
+      }
+    },
+    {
+      "id": "ru-5-30",
+      "locale": "ru",
+      "difficulty": 5,
+      "tasks": {
+        "drawA": {
+          "id": "ru-5-30-drawA",
+          "text": "Путешествие одной снежинки",
+          "isOpenRound": false
+        },
+        "explainA": {
+          "id": "ru-5-30-explainA",
+          "text": "Забытое сокровище",
+          "isOpenRound": true
+        },
+        "mimeA": {
+          "id": "ru-5-30-mimeA",
+          "text": "Репетировать выход фокусника без помощника",
+          "isOpenRound": false
+        },
+        "drawB": {
+          "id": "ru-5-30-drawB",
+          "text": "Парад потерянных игрушек",
+          "isOpenRound": false
+        },
+        "explainB": {
+          "id": "ru-5-30-explainB",
+          "text": "Красота простого решения",
+          "isOpenRound": false
+        },
+        "mimeB": {
+          "id": "ru-5-30-mimeB",
+          "text": "Показать гордость за чужой успех",
+          "isOpenRound": false
+        }
+      }
+    }
+  ]
+}

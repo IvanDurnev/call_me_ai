@@ -8,6 +8,11 @@ from .realtime import SocketBridge
 
 
 def register_ws_routes() -> None:
+    @sock.route("/ws/games/tag/<code>")
+    def tag_socket(ws, code: str):
+        from .tag_socket import serve
+        serve(ws, code)
+
     @sock.route("/ws/call/<slug>")
     def call_socket(ws, slug: str):
         corporate_call_id = None

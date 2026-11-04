@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="referrer" content="same-origin">
+  <title>Кто из нас? — семейная игротека</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='call.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='games.css', v='8') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='durak.css', v='3') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='imposter.css', v='1') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='whos.css', v='1') }}">
+  <script src="{{ url_for('static', filename='whos.js', v='1') }}" defer></script>
+</head>
+<body class="landing-page games-page durak-page whos-page" data-mode="{{ mode }}" data-code="{{ code }}">
+  <div class="landing-bg" aria-hidden="true"></div><div class="landing-overlay" aria-hidden="true"></div>
+  <main class="durak-shell">
+    <header class="durak-header"><a href="{{ url_for('main.games') }}">← Игротека</a><h1>Кто из нас?</h1><button type="button" id="fullscreen" hidden>⛶ На весь экран</button></header>
+    <p class="durak-feedback" id="feedback" role="status" aria-live="polite"></p>
+    <section class="durak-panel join-panel" id="join-panel" hidden>
+      <p class="games-eyebrow">Узнаем друг друга поближе</p><h2>Как вас зовут?</h2>
+      <p>Ваше имя появится среди вариантов ответа.</p>
+      <form id="join-form"><label for="player-name">Имя</label><input id="player-name" name="name" required maxlength="24" autocomplete="given-name" placeholder="Ваше имя"><button class="durak-primary" id="join-submit" type="submit">Присоединиться →</button></form>
+    </section>
+    <section id="room" hidden>
+      <div class="room-topline"><span id="room-code"></span><span id="connection" role="status">Подключаемся…</span></div>
+      <div class="imposter-layout whos-layout">
+        <section class="durak-panel whos-stage" aria-labelledby="question-title">
+          <p class="games-eyebrow" id="phase-label"></p><h2 id="question-title"></h2>
+          <p id="stage-message" class="imposter-message" role="status"></p>
+          <div id="lobby-intro" class="whos-lobby" hidden><span aria-hidden="true">☝</span><h3>Одна компания. Много неожиданных ответов.</h3><p>Выбирайте друг друга на телефонах.<br>Узнаем, что о вас думают близкие!</p></div>
+          <section id="ballot" hidden aria-labelledby="ballot-title"><h3 id="ballot-title">Кого выбираете?</h3><div id="choices" class="whos-choices"></div><div id="ballot-actions" class="player-actions"></div></section>
+          <p id="vote-status" class="imposter-waiting" hidden role="status"></p>
+          <section id="results" class="whos-results" hidden aria-labelledby="results-title"><h3 id="results-title"></h3><div id="leaders" class="whos-leaders"></div><div id="bars" class="whos-bars"></div><p id="result-note" class="durak-muted"></p></section>
+          <section id="summary" hidden aria-labelledby="summary-title"><h3 id="summary-title">Герои вечера</h3><p class="durak-muted">Номинации — вопросы, в которых игрок получил больше всего голосов. При равенстве номинация достаётся каждому лидеру.</p><ol id="awards" class="whos-awards"></ol><details class="whos-history"><summary>Вспомнить все вопросы</summary><ol id="history"></ol></details></section>
+        </section>
+        <aside class="durak-panel imposter-sidebar">
+          <section id="invite" class="invite-panel" hidden aria-labelledby="invite-title"><p class="games-eyebrow">Ваш выбор — на телефоне</p><h2 id="invite-title">Заходите в игру</h2><img id="qr" width="240" height="240" alt="QR-код подключения к игре Кто из нас?"><p>Отсканируйте QR-код камерой телефона.</p><div class="invite-code"><small>Код комнаты</small><strong id="invite-code"></strong></div><a id="invite-link" class="invite-link"></a></section>
+          <h2 class="imposter-players-title">Наша компания</h2><div id="players" class="durak-players imposter-players"></div>
+          <div id="host-actions" class="imposter-host-actions"></div>
+        </aside>
+      </div>
+    </section>
+    <noscript><p class="durak-panel">Для игры включите JavaScript в браузере.</p></noscript>
+  </main>
+  <dialog class="games-dialog" id="confirm-dialog" aria-labelledby="confirm-title"><h2 id="confirm-title">Вернуться в лобби?</h2><p>Текущая партия завершится. Все игроки останутся в комнате.</p><div class="player-actions"><button class="durak-secondary" id="cancel-reset" type="button">Продолжить игру</button><button class="durak-primary" id="confirm-reset" type="button">Вернуться в лобби</button></div></dialog>
+</body></html>

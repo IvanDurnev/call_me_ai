@@ -6,7 +6,7 @@
     <title>Игры для всей семьи — Звонок другу</title>
     <meta name="description" content="Семейная игротека: общий экран на телевизоре, личные карты на телефонах. Собирайте семью и друзей за игрой.">
     <link rel="stylesheet" href="{{ url_for('static', filename='call.css', v='20260410mobilefix') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='games.css', v='7') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='games.css', v='10') }}">
     <script src="{{ url_for('static', filename='games.js', v='3') }}" defer></script>
   </head>
   <body class="landing-page games-page">
@@ -61,6 +61,40 @@
               <a class="game-join-link" href="{{ url_for('games.join_page') }}">Присоединиться по коду →</a>
             </div>
           </article>
+          <article class="game-card" aria-labelledby="whos-card-title">
+            <div class="game-art whos-art" aria-hidden="true">
+              <span class="game-art-orbit"></span><span class="game-art-orbit orbit-two"></span>
+              <span class="whos-art-person whos-person-left">☺</span><span class="whos-art-person whos-person-right">☺</span><span class="whos-art-person whos-person-center">☺</span><span class="whos-art-question">?</span>
+              <span class="art-spark spark-one">✦</span><span class="art-spark spark-two">✧</span>
+            </div>
+            <div class="game-info">
+              <div class="game-title-row"><h2 id="whos-card-title">Кто из нас?</h2><span class="game-status">Можно играть</span></div>
+              <p class="game-description">Узнайте, что о вас думает компания.</p>
+              <ul class="game-facts" aria-label="Об игре"><li><span aria-hidden="true">♟</span> 3–12 игроков</li><li><span aria-hidden="true">◷</span> 10 вопросов</li></ul>
+              <div class="game-actions"><button class="game-launch" type="button" data-create-game="whos">Создать комнату <span aria-hidden="true">↗</span></button><button class="game-rules-button" type="button" data-rules-dialog="whos-rules">Как играть <span aria-hidden="true">↗</span></button></div>
+              <a class="game-join-link" href="{{ url_for('games.join_page') }}">Присоединиться по коду →</a>
+            </div>
+          </article>
+          <article class="game-card" aria-labelledby="tag-card-title">
+            <div class="game-art tag-art" aria-hidden="true"><span class="tag-art-path"></span><span class="tag-art-runner runner-one">●<i></i></span><span class="tag-art-runner runner-two">●<i></i></span><span class="tag-art-label">Голя</span><span class="art-spark spark-one">✦</span></div>
+            <div class="game-info">
+              <div class="game-title-row"><h2 id="tag-card-title">Голя</h2><span class="game-status">Можно играть</span></div>
+              <p class="game-description">Догоняйте, касайтесь и убегайте!</p>
+              <ul class="game-facts" aria-label="Об игре"><li><span aria-hidden="true">♟</span> 2–8 игроков</li><li><span aria-hidden="true">◷</span> 2 минуты</li></ul>
+              <div class="game-actions"><button class="game-launch" type="button" data-create-game="tag">Создать комнату <span aria-hidden="true">↗</span></button><button class="game-rules-button" type="button" data-rules-dialog="tag-rules">Как играть <span aria-hidden="true">↗</span></button></div>
+              <a class="game-join-link" href="{{ url_for('games.join_page') }}">Присоединиться по коду →</a>
+            </div>
+          </article>
+          <article class="game-card activity-card" aria-labelledby="activity-card-title">
+            <div class="game-art activity-art" aria-hidden="true"><span class="activity-art-road"></span><span class="activity-art-icon icon-pencil">✎</span><span class="activity-art-icon icon-talk">☏</span><span class="activity-art-icon icon-mime">✋</span><span class="art-spark spark-one">✦</span></div>
+            <div class="game-info">
+              <div class="game-title-row"><h2 id="activity-card-title">Покажи и объясни</h2><span class="game-status">Можно играть</span></div>
+              <p class="game-description">Рисуйте, объясняйте и идите к финишу.</p>
+              <ul class="game-facts" aria-label="Об игре"><li><span aria-hidden="true">♟</span> 3–16 игроков</li><li><span aria-hidden="true">◷</span> Минута на задание</li></ul>
+              <div class="game-actions"><button class="game-launch" type="button" data-create-game="activity">Создать комнату <span aria-hidden="true">↗</span></button><button class="game-rules-button" type="button" data-rules-dialog="activity-rules">Как играть <span aria-hidden="true">↗</span></button></div>
+              <a class="game-join-link" href="{{ url_for('games.join_page') }}">Присоединиться по коду →</a>
+            </div>
+          </article>
         </section>
 
         <section class="games-how" aria-labelledby="how-title">
@@ -100,6 +134,42 @@
         <li>Каждый тайно голосует с телефона. За себя голосовать нельзя. При ничьей голосуем ещё раз среди лидеров. Повторная ничья — победа импостера.</li>
         <li>Если выбрали мирного игрока, импостер побеждает. Если выбрали импостера, у него одна попытка и 30 секунд, чтобы угадать слово. Не угадал — победила компания!</li>
       </ol>
+      <form method="dialog"><button class="rules-done">Всё понятно</button></form>
+    </dialog>
+    <dialog class="games-dialog" id="whos-rules" aria-labelledby="whos-rules-title">
+      <div class="rules-heading"><span class="games-eyebrow">Узнаем друг друга поближе</span><form method="dialog"><button class="rules-close" aria-label="Закрыть правила">×</button></form></div>
+      <h2 id="whos-rules-title">Как играть в «Кто из нас?»</h2>
+      <p>3–12 игроков · 10 случайных вопросов · каждый со своим телефоном.</p>
+      <ol>
+        <li>Подключитесь по QR-коду, введите имена и начните игру на общем экране.</li>
+        <li>Прочитайте вопрос. Тайно выберите на телефоне того, кому он подходит больше всего, и подтвердите ответ. Можно выбрать себя или пропустить вопрос.</li>
+        <li>Когда ответят все, результаты откроются на телевизоре. Видно, сколько голосов получил каждый, а кто за кого голосовал — остаётся секретом.</li>
+        <li>Если голоса разделились, все лидеры получают номинацию. Обсудите результат и перейдите к следующему вопросу кнопкой на общем экране.</li>
+        <li>После 10 вопросов появятся итоги вечера. Можно сыграть ещё раз или вернуться в лобби.</li>
+      </ol>
+      <p class="rules-goal">Кто-то отошёл? Ведущий может раскрыть принятые ответы, не дожидаясь остальных.</p>
+      <form method="dialog"><button class="rules-done">Всё понятно</button></form>
+    </dialog>
+    <dialog class="games-dialog" id="tag-rules" aria-labelledby="tag-rules-title">
+      <div class="rules-heading"><span class="games-eyebrow">Лови, касайся, убегай</span><form method="dialog"><button class="rules-close" aria-label="Закрыть правила">×</button></form></div>
+      <h2 id="tag-rules-title">Как играть в «Голю»</h2>
+      <p>2–8 игроков · раунд 2 минуты · телефон — ваш джойстик.</p>
+      <ol>
+        <li>Подключитесь по QR-коду и введите имя. У каждого человечка свой цвет.</li>
+        <li>Начните раунд на общем экране. После подключения всех устройств начнётся обратный отсчёт. Над случайно выбранным догоняющим появится ярлык «Голя».</li>
+        <li>Коснитесь площадки на телефоне и ведите палец в нужную сторону. Отпустите, чтобы остановиться. На компьютере можно использовать стрелки или WASD.</li>
+        <li>Если вы Голя — догоните и коснитесь другого человечка. Он станет новым Голей. Короткая защита не даст сразу передать роль обратно.</li>
+        <li>Убегайте и старайтесь провести как можно меньше времени Голей. Через 2 минуты появятся результаты, затем можно сыграть ещё раз.</li>
+      </ol>
+      <p class="rules-goal">Если устройство потеряет связь, раунд встанет на паузу. Вернитесь на страницу игры, чтобы продолжить.</p>
+      <form method="dialog"><button class="rules-done">Всё понятно</button></form>
+    </dialog>
+    <dialog class="games-dialog" id="activity-rules" aria-labelledby="activity-rules-title">
+      <div class="rules-heading"><span class="games-eyebrow">Три способа. Одна дорожка.</span><form method="dialog"><button class="rules-close" aria-label="Закрыть правила">×</button></form></div>
+      <h2 id="activity-rules-title">Покажи и объясни</h2>
+      <p>Играйте втроём каждый за себя или соберите 2–4 команды минимум по двое. Подключите телефоны по QR-коду.</p>
+      <ol><li>Ведущий выбирает сложность: легко +3, средне +4 или сложно +5. На старте — любое из шести заданий карточки, дальше — задание по клетке.</li><li>Запомните секретное задание и за 60 секунд нарисуйте его, объясните словами или покажите пантомимой. Один ход — одна попытка.</li><li>Угадала своя команда — продвижение на номинал. Не угадали или нарушили правила — без движения. Ведущие чередуются.</li><li>В открытом раунде угадывают все: своя команда получает +6, другая — +4, а ведущая — +2. Втроём ведущий и угадавший получают по номиналу.</li><li>В командах приземление на соперника сдвигает его на клетку назад без цепочки; втроём столкновений нет. Первые на финише побеждают.</li></ol>
+      <p>Рисование — без речи, жестов, букв и цифр. Объяснение — без слова, его частей и производных. Пантомима — без речи, звуков и предметов. Точность ответов согласуйте заранее; результат подтверждают люди на общем экране.</p>
       <form method="dialog"><button class="rules-done">Всё понятно</button></form>
     </dialog>
   </body>
