@@ -6,7 +6,7 @@
     <title>Игры для всей семьи — Звонок другу</title>
     <meta name="description" content="Семейная игротека: общий экран на телевизоре, личные карты на телефонах. Собирайте семью и друзей за игрой.">
     <link rel="stylesheet" href="{{ url_for('static', filename='call.css', v='20260410mobilefix') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='games.css', v='10') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='games.css', v='12') }}">
     <script src="{{ url_for('static', filename='games.js', v='3') }}" defer></script>
   </head>
   <body class="landing-page games-page">
@@ -40,8 +40,8 @@
                 <li><span aria-hidden="true">◷</span> 15–30 минут</li>
               </ul>
               <div class="game-actions">
-                <button class="game-launch game-launch-ready" type="button" id="create-room" data-create-game="durak">Создать комнату <span aria-hidden="true">↗</span></button>
-                <button class="game-rules-button" type="button" id="rules-button" data-rules-dialog="rules-dialog">Как играть <span aria-hidden="true">↗</span></button>
+                <button class="game-launch game-launch-ready" type="button" id="create-room" data-create-game="durak">Играть</button>
+                <button class="game-rules-button" type="button" id="rules-button" data-rules-dialog="rules-dialog">Правила</button>
               </div>
               <a class="game-join-link" href="{{ url_for('games.join_page') }}">Присоединиться по коду →</a>
             </div>
@@ -57,7 +57,7 @@
               <div class="game-title-row"><h2 id="imposter-card-title">Импостер</h2><span class="game-status">Можно играть</span></div>
               <p class="game-description">Найдите того, кто не знает слово.</p>
               <ul class="game-facts" aria-label="Об игре"><li><span aria-hidden="true">♟</span> 3–12 игроков</li><li><span aria-hidden="true">◷</span> 10–15 минут</li></ul>
-              <div class="game-actions"><button class="game-launch" type="button" data-create-game="imposter">Создать комнату <span aria-hidden="true">↗</span></button><button class="game-rules-button" type="button" data-rules-dialog="imposter-rules">Как играть <span aria-hidden="true">↗</span></button></div>
+              <div class="game-actions"><button class="game-launch" type="button" data-create-game="imposter">Играть</button><button class="game-rules-button" type="button" data-rules-dialog="imposter-rules">Правила</button></div>
               <a class="game-join-link" href="{{ url_for('games.join_page') }}">Присоединиться по коду →</a>
             </div>
           </article>
@@ -71,7 +71,7 @@
               <div class="game-title-row"><h2 id="whos-card-title">Кто из нас?</h2><span class="game-status">Можно играть</span></div>
               <p class="game-description">Узнайте, что о вас думает компания.</p>
               <ul class="game-facts" aria-label="Об игре"><li><span aria-hidden="true">♟</span> 3–12 игроков</li><li><span aria-hidden="true">◷</span> 10 вопросов</li></ul>
-              <div class="game-actions"><button class="game-launch" type="button" data-create-game="whos">Создать комнату <span aria-hidden="true">↗</span></button><button class="game-rules-button" type="button" data-rules-dialog="whos-rules">Как играть <span aria-hidden="true">↗</span></button></div>
+              <div class="game-actions"><button class="game-launch" type="button" data-create-game="whos">Играть</button><button class="game-rules-button" type="button" data-rules-dialog="whos-rules">Правила</button></div>
               <a class="game-join-link" href="{{ url_for('games.join_page') }}">Присоединиться по коду →</a>
             </div>
           </article>
@@ -81,7 +81,7 @@
               <div class="game-title-row"><h2 id="tag-card-title">Голя</h2><span class="game-status">Можно играть</span></div>
               <p class="game-description">Догоняйте, касайтесь и убегайте!</p>
               <ul class="game-facts" aria-label="Об игре"><li><span aria-hidden="true">♟</span> 2–8 игроков</li><li><span aria-hidden="true">◷</span> 2 минуты</li></ul>
-              <div class="game-actions"><button class="game-launch" type="button" data-create-game="tag">Создать комнату <span aria-hidden="true">↗</span></button><button class="game-rules-button" type="button" data-rules-dialog="tag-rules">Как играть <span aria-hidden="true">↗</span></button></div>
+              <div class="game-actions"><button class="game-launch" type="button" data-create-game="tag">Играть</button><button class="game-rules-button" type="button" data-rules-dialog="tag-rules">Правила</button></div>
               <a class="game-join-link" href="{{ url_for('games.join_page') }}">Присоединиться по коду →</a>
             </div>
           </article>
@@ -91,7 +91,7 @@
               <div class="game-title-row"><h2 id="activity-card-title">Покажи и объясни</h2><span class="game-status">Можно играть</span></div>
               <p class="game-description">Рисуйте, объясняйте и идите к финишу.</p>
               <ul class="game-facts" aria-label="Об игре"><li><span aria-hidden="true">♟</span> 3–16 игроков</li><li><span aria-hidden="true">◷</span> Минута на задание</li></ul>
-              <div class="game-actions"><button class="game-launch" type="button" data-create-game="activity">Создать комнату <span aria-hidden="true">↗</span></button><button class="game-rules-button" type="button" data-rules-dialog="activity-rules">Как играть <span aria-hidden="true">↗</span></button></div>
+              <div class="game-actions"><button class="game-launch" type="button" data-create-game="activity">Играть</button><button class="game-rules-button" type="button" data-rules-dialog="activity-rules">Правила</button></div>
               <a class="game-join-link" href="{{ url_for('games.join_page') }}">Присоединиться по коду →</a>
             </div>
           </article>

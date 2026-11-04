@@ -31,10 +31,10 @@
 .game-facts li { white-space: nowrap; }.game-facts span { margin-right: 3px; font-size: 14px; }
 .game-actions { display: flex; gap: 16px; align-items: center; }
 .game-launch, .rules-done { font: inherit; border: 0; border-radius: 10px; padding: 12px 14px; font-size: 13px; font-weight: 650; }
-.game-launch { display: flex; flex: 1; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; background: var(--text); color: white; cursor: pointer; white-space: nowrap; }
+.game-launch { display: flex; flex: 1; align-items: center; justify-content: center; gap: 12px; min-height: 44px; background: var(--text); color: white; cursor: pointer; white-space: nowrap; }
 .game-launch:disabled { opacity: .6; cursor: wait; }
-.game-rules-button { border: 0; padding: 12px 0; background: transparent; font: inherit; font-size: 12px; color: var(--text); cursor: pointer; white-space: nowrap; }
-.game-rules-button span { margin-left: 3px; }
+.game-rules-button { display: flex; flex: 1; align-items: center; justify-content: center; min-height: 44px; border: 1px solid #d8d3e1; border-radius: 10px; padding: 11px 14px; background: #ffffffb3; font: inherit; font-size: 13px; font-weight: 650; color: var(--text); cursor: pointer; white-space: nowrap; }
+.game-rules-button:hover { background: #fff; border-color: #b6afc8; }
 .game-join-link { display: inline-block; margin-top: 12px; font-size: 11px; color: var(--text); }
 .games-how { margin-top: auto; padding: 40px 0 0; }
 .games-how-heading h2 { margin: 0; font-size: 22px; letter-spacing: -.025em; }
@@ -70,5 +70,5 @@
 
 .tag-art { background: radial-gradient(ellipse at center,#f2f7e9,#cfdcbe); }.tag-art-path { position: absolute; width: 210px; height: 100px; border: 2px dashed #a6bb92; border-radius: 50%; transform: rotate(-12deg); }.tag-art-runner { position: absolute; font-size: 31px; line-height: 1; text-align: center; width: 44px; height: 85px; }.tag-art-runner i { display: block; width: 32px; height: 42px; border-radius: 12px; background: currentColor; margin: 0 auto; box-shadow: -13px 8px 0 -7px currentColor,14px -2px 0 -7px currentColor; }.runner-one { color: #e86c60; transform: translate(-48px,7px) rotate(-13deg); }.runner-two { color: #448ed0; transform: translate(50px,-3px) rotate(14deg); }.tag-art-label { position: absolute; top: 12px; left: calc(50% - 81px); padding: 5px 12px; border-radius: 12px; background: #ffc943; color: #65410c; font-size: 15px; font-weight: 800; transform: rotate(-8deg); }
 
-.activity-card { grid-template-rows: 40% 60%; }.activity-card .game-title-row h2 { font-size: 22px; }.activity-art { background: radial-gradient(ellipse at center,#fff5df,#e3d1b4); }.activity-art-road { position: absolute; width: 230px; height: 86px; border: 8px dotted #c9bca7; border-radius: 25px; transform: rotate(-10deg); }.activity-art-icon { position: absolute; display: grid; place-items: center; width: 64px; height: 72px; border: 2px solid white; border-radius: 16px; color: white; font-size: 34px; box-shadow: 0 7px 12px #5e4b3020; }.icon-pencil { background: #d8a136; transform: translate(-70px,8px) rotate(-14deg); }.icon-talk { background: #548fcd; transform: translateY(-8px) rotate(4deg); }.icon-mime { background: #6a9d61; transform: translate(70px,12px) rotate(13deg); }
+.activity-card .game-title-row h2 { font-size: 22px; }.activity-art { background: radial-gradient(ellipse at center,#fff5df,#e3d1b4); }.activity-art-road { position: absolute; width: 230px; height: 86px; border: 8px dotted #c9bca7; border-radius: 25px; transform: rotate(-10deg); }.activity-art-icon { position: absolute; display: grid; place-items: center; width: 64px; height: 72px; border: 2px solid white; border-radius: 16px; color: white; font-size: 34px; box-shadow: 0 7px 12px #5e4b3020; }.icon-pencil { background: #d8a136; transform: translate(-70px,8px) rotate(-14deg); }.icon-talk { background: #548fcd; transform: translateY(-8px) rotate(4deg); }.icon-mime { background: #6a9d61; transform: translate(70px,12px) rotate(13deg); }
 @media(max-width:370px) { .activity-card .game-title-row h2 { font-size: 18px; }.activity-card .game-description { font-size: 10px; } }
