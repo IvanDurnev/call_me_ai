@@ -4,6 +4,7 @@ import secrets
 import time
 
 from .durak import GameError
+from . import tag_arena
 
 MIN_PLAYERS = 2
 MAX_PLAYERS = 8
@@ -22,7 +23,9 @@ def new_room():
                 tagger=None, positions=[], controls=[], elapsed=0, countdown=3,
                 last_tick=0, host_seen=0, host_socket=None, tag_lock_until=0,
                 immunity=[], tag_seconds=[], catches=[], tag_version=0,
-                paused=True, pause_reason='Подключаем телефоны', winners=[])
+                paused=True, pause_reason='Подключаем телефоны', winners=[], round=0,
+                arena=tag_arena.layout(1), hearts=[], next_heart=12, heart_serial=0,
+                shields=[], portal_ready=[], black_inside=[], warps=[])
 
 
 def on_join(room, player):
@@ -30,18 +33,22 @@ def on_join(room, player):
     player['color'] = next(color for color in COLORS if color not in used)
 
 
-def start(room):
+def start(room, now=None, rng=None):
+    now=time.time() if now is None else now
+    rng=rng or secrets.SystemRandom()
     if room['phase'] not in ('lobby', 'finished'):
         raise GameError('Раунд уже идёт.')
     count = len(room['players'])
     if not MIN_PLAYERS <= count <= MAX_PLAYERS:
         raise GameError('Для игры нужны от 2 до 8 игроков.')
-    room.update(phase='playing', match=room.get('match', 0)+1,
-                tagger=secrets.randbelow(count),
-                positions=[dict(x=WIDTH/2 + 260*math.cos(i*2*math.pi/count),
-                                y=HEIGHT/2 + 210*math.sin(i*2*math.pi/count)) for i in range(count)],
+    round_number=room.get('round',room.get('match',0))+1
+    arena=tag_arena.layout(round_number)
+    room.update(phase='playing', match=room.get('match', 0)+1, round=round_number,
+                arena=arena, hearts=[], next_heart=tag_arena.HEART_INTERVAL, heart_serial=0,
+                shields=[0]*count, portal_ready=[0]*count, black_inside=[False]*count, warps=[0]*count,
+                tagger=rng.randrange(count), positions=tag_arena.spawn_positions(count,arena),
                 controls=[dict(x=0, y=0, at=0) for _ in range(count)],
-                elapsed=0, countdown=3, last_tick=time.time(), host_seen=0, host_socket=None,
+                elapsed=0, countdown=3, last_tick=now, host_seen=0, host_socket=None,
                 tag_lock_until=0, immunity=[0]*count, tag_seconds=[0]*count,
                 catches=[0]*count, tag_version=0, paused=True,
                 pause_reason='Ждём подключения всех игроков и общего экрана', winners=[])
@@ -79,10 +86,11 @@ def finish(room):
     room['revision'] += 1
 
 
-def advance(room, now=None):
+def advance(room, now=None, rng=None):
     now = time.time() if now is None else now
     if room['phase'] != 'playing':
         return False
+    tag_arena.ensure(room)
     delta = now-room['last_tick']
     if delta < STEP - 0.002:
         return False
@@ -107,25 +115,33 @@ def advance(room, now=None):
             continue
         # A small speed advantage keeps the chase moving even in an open arena.
         speed = SPEED * (1.07 if i == room['tagger'] else 1)
-        position['x'] = max(40, min(WIDTH-40, position['x']+control['x']*speed*dt))
-        position['y'] = max(40, min(HEIGHT-70, position['y']+control['y']*speed*dt))
+        tag_arena.move(position,control['x']*speed*dt,control['y']*speed*dt,room['arena'])
+    trapped=tag_arena.objects(room,rng or secrets.SystemRandom())
+    if trapped is not None:
+        transfer(room,trapped)
     if room['elapsed'] >= room['tag_lock_until']:
         old = room['tagger']
         pos = room['positions'][old]
         targets = [(math.hypot(other['x']-pos['x'], other['y']-pos['y']), i)
                    for i, other in enumerate(room['positions'])
-                   if i != old and room['immunity'][i] <= room['elapsed']]
+                   if i != old and room['immunity'][i] <= room['elapsed']
+                   and room['shields'][i] <= room['elapsed']]
         if targets:
             distance, target = min(targets)
             if distance <= 2*RADIUS:
-                room['tagger'] = target
                 room['catches'][old] += 1
-                room['tag_lock_until'] = room['elapsed']+1.2
-                room['immunity'][old] = room['elapsed']+2.2
-                room['tag_version'] += 1
+                transfer(room,target)
     if room['elapsed'] >= DURATION:
         finish(room)
     return True
+
+
+def transfer(room,target):
+    old=room['tagger']
+    room['tagger']=target
+    room['tag_lock_until']=room['elapsed']+1.2
+    room['immunity'][old]=room['elapsed']+2.2
+    room['tag_version']+=1
 
 
 def act(room, index, data):
@@ -140,11 +156,13 @@ def host_act(room, data):
 
 
 def view(room, index=None):
+    tag_arena.ensure(room)
     now = time.time()
     active = room['phase'] != 'lobby'
     result = {key: room[key] for key in ('game', 'phase', 'revision', 'match', 'tagger', 'elapsed',
               'countdown', 'paused', 'pause_reason', 'tag_version', 'winners')}
     result.update(you=index, width=WIDTH, height=HEIGHT, radius=RADIUS,
+                  round=room['round'], arena=room['arena'], hearts=room['hearts'],
                   duration=DURATION, server_time=now,
                   players=[dict(name=p['name'], color=p['color'],
                       x=round(room['positions'][i]['x'], 2) if active else None,
@@ -152,6 +170,8 @@ def view(room, index=None):
                       connected=now-p.get('live_seen', 0) <= CONNECTION_TTL,
                       seconds=round(room['tag_seconds'][i], 1) if active else 0,
                       catches=room['catches'][i] if active else 0,
-                      protected=active and room['immunity'][i] > room['elapsed'])
+                      protected=active and max(room['immunity'][i],room['shields'][i]) > room['elapsed'],
+                      shield_seconds=round(max(0,room['shields'][i]-room['elapsed']),2) if active else 0,
+                      warp=room['warps'][i] if active else 0)
                       for i, p in enumerate(room['players'])])
     return result

@@ -20,3 +20,7 @@ body[data-mode="player"].is-playing .tag-layout { display: block; }body[data-mod
   body[data-mode="host"].is-playing .tag-sidebar { min-height: 0; }
   body[data-mode="host"].is-playing .tag-sidebar .durak-players { min-height: 0; overflow-y: auto; }
 }
+
+.tag-arena-legend { color: #617079; font-size: 12px; line-height: 1.65; margin: 12px 0 0; }
+.tag-phone-status { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-top: 16px; font-size: 13px; color: #65736b; }
+#shield-status { color: #b13a6c; padding: 6px 10px; border-radius: 12px; background: #fff0f6; font-variant-numeric: tabular-nums; }

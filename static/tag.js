@@ -10,6 +10,7 @@
   let state = null, previous = null, receivedAt = 0;
   let busy = false, polling = false, timer, socket = null, socketMatch = null;
   let superseded = false, signature = '', lastTag = -1;
+  const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
   let input = {x:0,y:0}, pointer = null, anchor = null;
   const keys = new Set();
   const base = `/api/games/rooms/${encodeURIComponent(code)}`;
@@ -53,9 +54,13 @@
     setText('room-code',`Комната ${code} · ${state.players.length}/8 игроков`);
     $('stage-panel').hidden=!host&&phase!=='finished';$('phone-lobby').hidden=host||!lobby;$('controller').hidden=host||!playing;
     $('timer').hidden=!playing;
-    setText('phase-label',lobby?'Лови, касайся, убегай':playing?'Догонялки на общем экране':'Раунд завершён');
+    setText('phase-label',lobby?'Лови, касайся, убегай':playing?`Раунд ${state.round||1} · Догонялки`:`Раунд ${state.round||1} завершён`);
     setText('stage-title',lobby?'Все на арену!':playing?'Кто сегодня Голя?':'Отлично побегали!');
     setText('stage-message',lobby?'Подключите от 2 до 8 игроков. Каждый получит свой цвет.':playing?`Голя — ${state.players[state.tagger].name}. Коснись другого игрока, чтобы передать роль.`:'Результаты раунда — время в роли Голи и успешные касания.');
+    const arena=state.arena||{walls:[],portals:[],black_holes:[]};
+    const rules=[...(arena.walls.length?['▰ Стенки — обегайте']:[]),...(arena.portals.length?['◎ Кротовые дыры — телепорт']:[]),...(arena.black_holes.length?['● Чёрная дыра — станете Голей']:[]),'♥ Сердечко — защита на 10 сек.'];
+    setText('arena-legend',rules.join(' · '));
+    $('arena-legend').hidden=lobby;
     $('arena-wrap').hidden=phase==='finished';$('results').hidden=phase!=='finished';
     if(playing) {
       setText('timer',clock(state.duration-state.elapsed));setText('phone-timer',clock(state.duration-state.elapsed));
@@ -68,6 +73,9 @@
       const own=state.players[state.you];
       colorAvatar($('own-avatar'),own);colorAvatar($('lobby-avatar'),own);
       $('joystick-knob').style.backgroundColor=own.color;
+      setText('shield-status',playing&&own.shield_seconds>0?`♥ Защита: ${Math.ceil(own.shield_seconds)} сек.`:'');
+      $('shield-status').hidden=!(playing&&own.shield_seconds>0);
+      setText('phone-round',`Раунд ${state.round||1}`);
       setText('lobby-name',own.name);setText('controller-title',own.name);
       setText('own-role',playing&&state.tagger===state.you?'Вы — Голя!':'Убегайте от Голи');
       setText('controller-note',state.paused?state.pause_reason:state.countdown>0?'Скоро старт! Найдите своего человечка на телевизоре.':state.tagger===state.you?'Догоните и коснитесь любого другого игрока.':'Не дайте себя поймать. Управляйте пальцем ниже.');
@@ -88,7 +96,7 @@
     if(host&&lobby){if(!$('qr').getAttribute('src'))$('qr').src=`${base}/qr.svg`;setText('invite-code',code);$('invite-link').textContent=state.join_url.replace(/^https?:\/\//,'');$('invite-link').href=state.join_url;}
     $('host-actions').replaceChildren();
     if(host){
-      if(lobby||phase==='finished'){const start=button(phase==='finished'?'Ещё раунд →':'Начать игру →','start',{},true);start.disabled=busy||state.players.length<2;$('host-actions').append(start);}
+      if(lobby||phase==='finished'){const start=button(phase==='finished'?`Раунд ${(state.round||1)+1} →`:'Начать игру →','start',{},true);start.disabled=busy||state.players.length<2;$('host-actions').append(start);}
       if(playing)$('host-actions').append(button('Завершить раунд','stop'));
       if(!lobby){const reset=node('button','Вернуться в лобби','durak-secondary');reset.type='button';reset.disabled=busy;reset.addEventListener('click',()=>$('confirm-dialog').showModal());$('host-actions').append(reset);}
     }
@@ -142,7 +150,7 @@
   function person(player,x,y,index,now,moving){
     ctx.save();ctx.translate(x,y);ctx.globalAlpha=state.phase==='playing'&&!player.connected?0.5:1;
     ctx.fillStyle='#58744324';ctx.beginPath();ctx.ellipse(0,30,24,8,0,0,Math.PI*2);ctx.fill();
-    if(player.protected){ctx.setLineDash([5,5]);ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(0,5,33,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);}
+    if(player.protected){ctx.setLineDash([5,5]);ctx.strokeStyle=player.shield_seconds>0?'#f067a0':'#fff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(0,5,33,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);}
     if(index===state.tagger&&state.phase==='playing'){ctx.strokeStyle='#f3bd34';ctx.lineWidth=4;ctx.beginPath();ctx.arc(0,4,35+Math.sin(now/150)*2,0,Math.PI*2);ctx.stroke();}
     const walk=moving?Math.sin(now/100+index)*6:0;
     ctx.lineCap='round';ctx.strokeStyle='#364758';ctx.lineWidth=8;
@@ -155,7 +163,42 @@
     ctx.font='700 15px sans-serif';const name=player.name.length>15?player.name.slice(0,14)+'…':player.name;const width=ctx.measureText(name).width+18;
     const nameX=Math.max(8-x,Math.min(-width/2,1200-width-8-x));
     roundRect(nameX,42,width,25,9,'#ffffffdd');ctx.fillStyle='#344452';ctx.textAlign='center';ctx.fillText(name,nameX+width/2,59);
+    if(player.shield_seconds>0){roundRect(-32,71,64,23,10,'#fff0f6');ctx.font='700 14px sans-serif';ctx.fillStyle='#b93d74';ctx.textAlign='center';ctx.fillText(`♥ ${Math.ceil(player.shield_seconds)} с`,0,87);}
     if(index===state.tagger&&state.phase==='playing'){const labelX=Math.max(8-x,Math.min(-39,1114-x)),labelY=Math.max(8-y,-76);roundRect(labelX,labelY,78,29,12,'#ffc943');ctx.font='800 20px sans-serif';ctx.fillStyle='#65410c';ctx.fillText('Голя',labelX+39,labelY+22);}
+    ctx.restore();
+  }
+  function drawObjects(now){
+    const arena=state.arena||{walls:[],portals:[],black_holes:[]};
+    ctx.save();ctx.textAlign='center';
+    for(const wall of arena.walls){
+      roundRect(wall.x,wall.y+6,wall.w,wall.h,7,'#35484d30');
+      roundRect(wall.x,wall.y,wall.w,wall.h,7,'#627b86');
+      roundRect(wall.x+3,wall.y+3,wall.w-6,5,2,'#9bb0b8');
+      ctx.strokeStyle='#d2dfe055';ctx.lineWidth=2;
+      const vertical=wall.h>wall.w;
+      for(let d=30;d<(vertical?wall.h:wall.w);d+=30){ctx.beginPath();if(vertical){ctx.moveTo(wall.x,wall.y+d);ctx.lineTo(wall.x+wall.w,wall.y+d);}else{ctx.moveTo(wall.x+d,wall.y);ctx.lineTo(wall.x+d,wall.y+wall.h);}ctx.stroke();}
+    }
+    for(const [i,hole] of arena.portals.entries()){
+      ctx.save();ctx.translate(hole.x,hole.y);
+      ctx.fillStyle='#d8f2ef';ctx.beginPath();ctx.arc(0,0,hole.r+10,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#236b79';ctx.beginPath();ctx.arc(0,0,hole.r,0,Math.PI*2);ctx.fill();
+      ctx.save();ctx.rotate(reducedMotion?0:now/650);ctx.strokeStyle='#73eadf';ctx.lineWidth=3;
+      ctx.beginPath();for(let t=0;t<Math.PI*4;t+=.12){const radius=3+t*1.7;const x=Math.cos(t)*radius,y=Math.sin(t)*radius;t?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.stroke();ctx.restore();
+      ctx.font='700 14px sans-serif';ctx.fillStyle='#185968';ctx.fillText(`Телепорт ${i+1}`,0,hole.r+27);ctx.restore();
+    }
+    for(const hole of arena.black_holes){
+      const glow=ctx.createRadialGradient(hole.x,hole.y,8,hole.x,hole.y,hole.r+12);
+      glow.addColorStop(0,'#12101e');glow.addColorStop(.65,'#242039');glow.addColorStop(1,'#aa8bc600');
+      ctx.fillStyle=glow;ctx.beginPath();ctx.arc(hole.x,hole.y,hole.r+12,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle='#9d81bc';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(hole.x,hole.y,hole.r+4,11,-.3,0,Math.PI*2);ctx.stroke();
+      ctx.font='700 13px sans-serif';ctx.fillStyle='#483553';ctx.fillText('Станешь Голей',hole.x,hole.y+hole.r+24);
+    }
+    for(const heart of state.hearts||[]){
+      const pulse=reducedMotion?0:Math.sin(now/220)*2;
+      ctx.fillStyle='#ffffffee';ctx.beginPath();ctx.arc(heart.x,heart.y,23+pulse,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle='#f6b8cd';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#ed608f';ctx.font='28px sans-serif';ctx.fillText('♥',heart.x,heart.y+10);
+    }
     ctx.restore();
   }
   function draw(now){
@@ -164,11 +207,12 @@
     ctx.strokeStyle='#cad8bd';ctx.lineWidth=1;for(let x=0;x<1200;x+=60){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,720);ctx.stroke();}for(let y=0;y<720;y+=60){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(1200,y);ctx.stroke();}
     ctx.strokeStyle='#b8cda8';ctx.lineWidth=4;ctx.beginPath();ctx.roundRect(10,10,1180,700,20);ctx.stroke();
     ctx.strokeStyle='#d2dfc7';ctx.lineWidth=3;ctx.beginPath();ctx.arc(600,360,110,0,Math.PI*2);ctx.stroke();
+    drawObjects(now);
     const fraction=Math.min(1,Math.max(0,(now-receivedAt)/50));
     state.players.forEach((player,index)=>{
       const count=state.players.length;
       const current=player.x===null?{x:600+260*Math.cos(index*2*Math.PI/count),y:360+210*Math.sin(index*2*Math.PI/count)}:player;
-      const old=previous?.match===state.match&&previous?.phase===state.phase?previous.players[index]:null;
+      const old=previous?.match===state.match&&previous?.phase===state.phase&&previous.players[index]?.warp===player.warp?previous.players[index]:null;
       const x=old?.x!=null?old.x+(current.x-old.x)*fraction:current.x,y=old?.y!=null?old.y+(current.y-old.y)*fraction:current.y;
       const moving=old?.x!=null&&Math.hypot(current.x-old.x,current.y-old.y)>0.1&&!state.paused;
       person(player,x,y,index,now,moving);

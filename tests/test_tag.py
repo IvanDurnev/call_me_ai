@@ -197,6 +197,28 @@ class TagAPITests(unittest.TestCase):
         self.assertEqual(self.state(a)['phase'],'lobby')
         self.assertEqual(len(self.state()['players']),2)
 
+    def test_round_progression_persists_objects_and_lobby_resets_level(self):
+        a,b=self.join('A'),self.join('B')
+        for number in range(1,7):
+            self.assertEqual(self.action('start').status_code,200)
+            state=self.state(a)
+            self.assertEqual(state['round'],number)
+            self.assertEqual(len(state['arena']['walls']),min(8,(number-1)*2))
+            self.assertEqual(len(state['arena']['portals']),2 if number>=3 else 0)
+            self.assertIn('shield_seconds',state['players'][0])
+            with self.app.app_context(),database() as connection:
+                persisted=load_room(connection,self.code)
+                self.assertEqual(persisted['arena'],state['arena'])
+                self.assertEqual(persisted['round'],number)
+            self.assertEqual(self.action('stop').status_code,200)
+        old_match=self.state()['match']
+        self.assertEqual(self.action('reset').status_code,200)
+        self.assertEqual(self.action('start').status_code,200)
+        state=self.state()
+        self.assertEqual(state['round'],1)
+        self.assertGreater(state['match'],old_match)
+        self.assertEqual(state['arena']['walls'],[])
+
     def test_socket_auth_frames_and_disconnect_stop(self):
         a,b=self.join('A'),self.join('B');self.action('start')
         state=self.state()
