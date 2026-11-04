@@ -144,9 +144,16 @@
     $('room-label').textContent = `Комната ${code} · ${state.players.length}/6 игроков`;
     const lobby = state.phase === 'lobby';
     const finished = state.phase === 'finished';
-    $('phase-label').textContent = lobby ? 'Комната открыта' : finished ? 'Партия завершена' : 'Играем вместе';
+    $('game-sidebar').hidden = lobby;
+    document.querySelector('.table-panel').classList.toggle('active-table', !lobby);
+    for (const [id, destination] of [['players', lobby ? 'lobby-roster' : 'game-roster'], ['host-controls', lobby ? 'lobby-controls' : 'game-controls']]) {
+      if ($(id).parentElement !== $(destination)) $(destination).append($(id));
+    }
+    $('phase-label').hidden = lobby;
+    $('phase-label').textContent = lobby ? '' : finished ? 'Партия завершена' : 'Играем вместе';
     $('table-title').textContent = lobby ? 'Собираемся за столом' : finished ? 'До следующей раздачи!' : 'Игровой стол';
-    $('turn-message').textContent = state.message;
+    $('turn-message').hidden = finished;
+    $('turn-message').textContent = finished ? '' : state.message;
     $('lobby-help').hidden = !lobby;
     $('players').replaceChildren();
     state.players.forEach((player, index) => {
@@ -167,6 +174,7 @@
       }
       $('players').append(item);
     });
+    $('deck-label').hidden = lobby || !state.trump;
     $('deck-label').replaceChildren();
     if (state.trump && !lobby) {
       const trump = cardElement(state.trump);
@@ -187,12 +195,12 @@
       $('table-cards').append(cell);
     });
     $('result').hidden = !finished;
-    $('result').textContent = finished ? (state.loser === null ? 'Все вышли — ничья!' : `${state.players[state.loser].name}, реванш?`) : '';
+    $('result').textContent = finished ? (state.loser === null ? 'Все вышли — ничья!' : `${state.players[state.loser].name} проиграл`) : '';
     $('host-controls').hidden = mode !== 'host';
     $('start-game').textContent = finished ? 'Сыграть ещё раз' : lobby ? 'Начать игру →' : 'Вернуться в лобби';
     $('start-game').disabled = (lobby && state.players.length < 2) || busy;
     $('start-hint').textContent = !lobby && !finished ? 'Возврат в лобби завершит текущую партию.' : state.players.length < 2 ? 'Подключите хотя бы двух игроков с телефонов.' : 'Когда все готовы, можно начинать.';
-    $('invite-panel').hidden = mode !== 'host';
+    $('invite-panel').hidden = mode !== 'host' || !lobby;
     $('room-qr').hidden = false;
     $('invite-heading').textContent = lobby ? 'Заходите в игру' : 'Комната вашей компании';
     if (!$('room-qr').getAttribute('src')) $('room-qr').src = `${endpoint()}/qr.svg`;
@@ -261,10 +269,6 @@
   });
   $('reset-cancel').addEventListener('click', () => $('reset-dialog').close());
   $('reset-confirm').addEventListener('click', () => { $('reset-dialog').close(); send('reset'); });
-  $('copy-link').addEventListener('click', async () => {
-    try { await navigator.clipboard.writeText(state.join_url); feedback('Ссылка скопирована. Отправьте её участникам.'); }
-    catch { feedback('Скопируйте адрес под QR-кодом или откройте ссылку.'); }
-  });
   if (document.fullscreenEnabled && mode === 'host') {
     $('table-fullscreen').hidden = false;
     $('table-fullscreen').addEventListener('click', async () => {

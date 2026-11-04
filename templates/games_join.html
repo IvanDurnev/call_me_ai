@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Присоединиться к игре</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='call.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='games.css', v='7') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='durak.css', v='3') }}">
+</head>
+<body class="landing-page games-page durak-page">
+  <div class="landing-bg" aria-hidden="true"></div><div class="landing-overlay" aria-hidden="true"></div>
+  <main class="durak-shell">
+    <header class="durak-header"><a href="{{ url_for('main.games') }}">← Игротека</a></header>
+    <section class="durak-panel join-panel">
+      <h1>Присоединиться к игре</h1>
+      <p>Введите код с общего экрана.</p>
+      {% if error %}<p class="durak-feedback" role="alert">{{ error }}</p>{% endif %}
+      <form method="get" action="{{ url_for('games.join_page') }}">
+        <label for="room-code">Код комнаты</label>
+        <input id="room-code" name="code" value="{{ code or '' }}" required minlength="6" maxlength="6" pattern="[A-Za-z0-9]{6}" autocapitalize="characters" autocomplete="off" spellcheck="false">
+        <button class="durak-primary" type="submit">Продолжить →</button>
+      </form>
+    </section>
+  </main>
+</body></html>

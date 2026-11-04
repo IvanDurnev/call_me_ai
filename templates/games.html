@@ -6,40 +6,21 @@
     <title>Игры для всей семьи — Звонок другу</title>
     <meta name="description" content="Семейная игротека: общий экран на телевизоре, личные карты на телефонах. Собирайте семью и друзей за игрой.">
     <link rel="stylesheet" href="{{ url_for('static', filename='call.css', v='20260410mobilefix') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='games.css', v='2') }}">
-    <script src="{{ url_for('static', filename='games.js', v='2') }}" defer></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='games.css', v='7') }}">
+    <script src="{{ url_for('static', filename='games.js', v='3') }}" defer></script>
   </head>
   <body class="landing-page games-page">
     <div class="landing-bg" aria-hidden="true"></div>
     <div class="landing-overlay" aria-hidden="true"></div>
 
+    <button class="games-screen-button" type="button" id="fullscreen-button" hidden>
+      <span aria-hidden="true">⛶</span> <span id="fullscreen-label">На весь экран</span>
+    </button>
+
     <div class="games-shell">
-      <header class="games-header">
-        <a class="games-brand" href="{{ url_for('main.index') }}" aria-label="Звонок другу — на главную">
-          <img src="{{ url_for('static', filename='images/logo.webp') }}" alt="" width="64" height="64">
-          <span>Звонок другу<small>Время быть вместе</small></span>
-        </a>
-        <nav class="games-nav" aria-label="Навигация">
-          <a href="{{ url_for('main.index') }}">На главную <span aria-hidden="true">↗</span></a>
-          <button class="games-screen-button" type="button" id="fullscreen-button" hidden>
-            <span aria-hidden="true">⛶</span> <span id="fullscreen-label">На весь экран</span>
-          </button>
-        </nav>
-      </header>
-
       <main>
-        <section class="games-intro" aria-labelledby="games-title">
-          <p class="games-eyebrow"><span aria-hidden="true">✦</span> Семья, друзья и немного азарта</p>
-          <h1 id="games-title">Все вместе.<br><span>За одной игрой.</span></h1>
-          <p class="games-lead">Большой экран — общий стол. Телефон — ваш ход.<br>Собирайте любимых людей, остальное будет здесь.</p>
-          <div class="games-intro-note"><span aria-hidden="true">⌁</span> Для уютных вечеров и шумных компаний</div>
-        </section>
-
-        <section class="games-library" aria-labelledby="library-title">
-          <div class="games-section-heading">
-            <h2 id="library-title">Во что сыграем?</h2>
-            <span>Наша первая игра</span>
-          </div>
+        <h1 class="games-sr-only">Игры для всей семьи</h1>
+        <section class="games-library" aria-label="Выбор игры">
           <article class="game-card">
             <div class="game-art" aria-hidden="true">
               <span class="game-art-orbit orbit-one"></span>
@@ -49,37 +30,48 @@
               <div class="playing-card card-back"><span>✦</span></div>
               <div class="playing-card card-spade"><span class="card-corner">Т<small>♠</small></span><span class="card-center">♠</span><span class="card-corner card-corner-bottom">Т<small>♠</small></span></div>
               <div class="playing-card card-heart"><span class="card-corner">К<small>♥</small></span><span class="card-center">♥</span><span class="card-corner card-corner-bottom">К<small>♥</small></span></div>
-              <span class="game-art-caption">Хорошая компания. Хорошие карты.</span>
+
             </div>
             <div class="game-info">
-              <div class="game-kicker"><span>Карточная классика</span><span class="game-status">Можно играть</span></div>
-              <h3>Дурак</h3>
-              <p class="game-description">Знакомые правила, неожиданные козыри и то самое «а я тебе ещё подкину». Любимая игра — теперь для общего экрана.</p>
+              <div class="game-title-row"><h2>Дурак</h2><span class="game-status">Можно играть</span></div>
+              <p class="game-description">Знаменитая карточная игра.</p>
               <ul class="game-facts" aria-label="Об игре">
                 <li><span aria-hidden="true">♟</span> 2–6 игроков</li>
                 <li><span aria-hidden="true">◷</span> 15–30 минут</li>
-                <li><span aria-hidden="true">♠</span> 36 карт</li>
               </ul>
               <div class="game-actions">
-                <button class="game-launch game-launch-ready" type="button" id="create-room">Создать комнату <span aria-hidden="true">↗</span></button>
-                <button class="game-rules-button" type="button" id="rules-button">Как играть <span aria-hidden="true">↗</span></button>
+                <button class="game-launch game-launch-ready" type="button" id="create-room" data-create-game="durak">Создать комнату <span aria-hidden="true">↗</span></button>
+                <button class="game-rules-button" type="button" id="rules-button" data-rules-dialog="rules-dialog">Как играть <span aria-hidden="true">↗</span></button>
               </div>
-              <a class="game-join-link" href="{{ url_for('games.join_page') }}">Уже есть комната? Присоединиться →</a>
-              <p class="game-availability">Откройте комнату на телевизоре и подключитесь с телефонов по QR-коду.</p>
+              <a class="game-join-link" href="{{ url_for('games.join_page') }}">Присоединиться по коду →</a>
+            </div>
+          </article>
+          <article class="game-card" aria-labelledby="imposter-card-title">
+            <div class="game-art imposter-art" aria-hidden="true">
+              <span class="game-art-orbit"></span><span class="game-art-orbit orbit-two"></span>
+              <span class="imposter-art-person person-left">●</span><span class="imposter-art-person person-right">●</span>
+              <div class="imposter-art-secret"><span>?</span><div class="imposter-art-mask"><i></i><i></i></div></div>
+              <span class="art-spark spark-one">✦</span><span class="art-spark spark-two">✧</span>
+            </div>
+            <div class="game-info">
+              <div class="game-title-row"><h2 id="imposter-card-title">Импостер</h2><span class="game-status">Можно играть</span></div>
+              <p class="game-description">Найдите того, кто не знает слово.</p>
+              <ul class="game-facts" aria-label="Об игре"><li><span aria-hidden="true">♟</span> 3–12 игроков</li><li><span aria-hidden="true">◷</span> 10–15 минут</li></ul>
+              <div class="game-actions"><button class="game-launch" type="button" data-create-game="imposter">Создать комнату <span aria-hidden="true">↗</span></button><button class="game-rules-button" type="button" data-rules-dialog="imposter-rules">Как играть <span aria-hidden="true">↗</span></button></div>
+              <a class="game-join-link" href="{{ url_for('games.join_page') }}">Присоединиться по коду →</a>
             </div>
           </article>
         </section>
 
         <section class="games-how" aria-labelledby="how-title">
-          <div class="games-how-heading"><p class="games-eyebrow">Один экран. Вся компания.</p><h2 id="how-title">Как это работает</h2></div>
+          <div class="games-how-heading"><h2 id="how-title">Как это работает</h2></div>
           <ol class="games-steps">
-            <li><span class="step-number">01</span><div><h3>Откройте на телевизоре</h3><p>Выберите игру на большом экране.<br>Он станет вашим общим столом.</p></div></li>
-            <li><span class="step-number">02</span><div><h3>Подключитесь с телефонов</h3><p>QR-код или код комнаты —<br>и каждый участник в игре.</p></div></li>
-            <li><span class="step-number">03</span><div><h3>Играйте вместе</h3><p>Карты видны только вам.<br>Эмоции — всей компании.</p></div></li>
+            <li><span class="step-number">01</span><div><h3>Откройте на телевизоре</h3></div></li>
+            <li><span class="step-number">02</span><div><h3>Подключитесь с телефонов</h3></div></li>
+            <li><span class="step-number">03</span><div><h3>Играйте вместе</h3></div></li>
           </ol>
         </section>
       </main>
-      <footer class="games-footer"><span>Звонок другу · Семейная игротека</span><span>Больше игр — впереди <span aria-hidden="true">✦</span></span></footer>
       <p id="games-notice" class="games-notice" role="status"></p>
     </div>
 
@@ -95,6 +87,19 @@
         <li>После хода игроки добирают карты до 6: сначала атакующий, последним — защищающийся. Когда колода закончится, избавляйтесь от оставшихся карт.</li>
       </ol>
       <p class="rules-goal">Цель — остаться без карт. Последний игрок с картами — «дурак».</p>
+      <form method="dialog"><button class="rules-done">Всё понятно</button></form>
+    </dialog>
+    <dialog class="games-dialog" id="imposter-rules" aria-labelledby="imposter-rules-title">
+      <div class="rules-heading"><span class="games-eyebrow">Слово знают почти все</span><form method="dialog"><button class="rules-close" aria-label="Закрыть правила">×</button></form></div>
+      <h2 id="imposter-rules-title">Как играть в «Импостера»</h2>
+      <p>3–12 игроков · один импостер · каждый со своим телефоном.</p>
+      <ol>
+        <li>Подключитесь по QR-коду и посмотрите свою роль. Все получают одно слово, кроме импостера: ему нужно блефовать.</li>
+        <li>По очереди называйте ассоциации вслух и отправляйте их с телефона. Не называйте само слово. На общем экране видны очередь и уже сказанные подсказки.</li>
+        <li>Обсудите, кто ведёт себя подозрительно. Ведущий может запустить ещё круг ассоциаций — всего до трёх кругов — или открыть голосование.</li>
+        <li>Каждый тайно голосует с телефона. За себя голосовать нельзя. При ничьей голосуем ещё раз среди лидеров. Повторная ничья — победа импостера.</li>
+        <li>Если выбрали мирного игрока, импостер побеждает. Если выбрали импостера, у него одна попытка и 30 секунд, чтобы угадать слово. Не угадал — победила компания!</li>
+      </ol>
       <form method="dialog"><button class="rules-done">Всё понятно</button></form>
     </dialog>
   </body>

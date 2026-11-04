@@ -75,7 +75,7 @@ def finish_round(room):
     room['table'] = []
     if len(remaining) <= 1:
         room.update(phase='finished', loser=remaining[0] if remaining else None,
-                    message='Ничья!' if not remaining else f"Дурак — {room['players'][remaining[0]]['name']}")
+                    message='Ничья!' if not remaining else f"{room['players'][remaining[0]]['name']} проиграл")
         return
     room['attacker'] = next_player(room, defender) if taking or defender in room['winners'] else defender
     begin_round(room)
