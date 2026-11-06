@@ -24,7 +24,7 @@ def validate_cards(cards, minimum=30):
         seen_ids.add(card['id'])
         for task in card['tasks'].values():
             if (not isinstance(task.get('id'), str) or not isinstance(task.get('text'), str)
-                    or not task['text'].strip() or type(task.get('isOpenRound')) is not bool):
+                    or not 1<=len(task['text'].split())<=2 or task.get('isOpenRound') is not False):
                 raise ValueError('Неполное задание')
             if task['id'] in seen_ids: raise ValueError('Повтор идентификатора задания')
             seen_ids.add(task['id'])

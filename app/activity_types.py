@@ -2,7 +2,7 @@
 from typing import Literal, TypedDict
 
 CategoryKey = Literal['drawA','explainA','mimeA','drawB','explainB','mimeB']
-Phase = Literal['lobby','handoff','choose_difficulty','choose_task','prepare','memorize','opponent_preview','ready','performing','review','board','finished']
+Phase = Literal['lobby','handoff','choose_difficulty','choose_task','prepare','performing','board','finished']
 
 class Task(TypedDict):
     id: str
@@ -19,10 +19,12 @@ class Team(TypedDict):
     name: str
     members: list[int]
     first_presenter: int
+    size: int
 
 class GameSettings(TypedDict):
-    mode: Literal['teams','individual']
+    mode: Literal['teams']
     teams: list[Team]
+    sizes: list[int]
     starting_side: int
     precision: str
 
@@ -43,7 +45,7 @@ class Player(TypedDict):
     name: str
 
 class Participant(TypedDict):
-    """A scoring side: a team or a single player in the three-player mode."""
+    """A scoring side: one team connected through one shared phone."""
     name: str
     members: list[int]
     color: str

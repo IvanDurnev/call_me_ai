@@ -12,3 +12,33 @@
 #sketch { display: block; width: 100%; height: auto; border: 1px solid #c2c8d1; border-radius: 12px; background: white; touch-action: none; }.activity-page.is-drawing #sketch { cursor: crosshair; }.activity-history { margin-top: 22px; border-top: 1px solid #e0e2e8; padding-top: 16px; }.activity-history ol { padding-left: 22px; font-size: 13px; line-height: 1.7; }.activity-history li { margin-bottom: 14px; }.activity-history small { color: #6f7890; display: block; }
 @media(max-width:900px) { .activity-layout { grid-template-columns: 1fr; gap: 16px; }.activity-shell { width: calc(100% - 28px); }.activity-header-actions { gap: 6px; }.activity-header-actions button { padding: 9px 11px; }.activity-header-actions #sound-button { font-size: 11px; }.activity-shell > .durak-header h1 { font-size: 23px; }.activity-sidebar { order: -1; }.activity-main,.activity-sidebar .durak-panel { padding: 18px; }.activity-setup-row,.activity-team-config,.activity-assignment { grid-template-columns: 1fr; }.activity-token { width: 17px; height: 17px; font-size: 9px; }.activity-sketch-heading { align-items: flex-start; flex-direction: column; gap: 6px; }.activity-timer { font-size: 58px; }.activity-roster { font-size: 12px; } }
 @media(prefers-reduced-motion:reduce) { .activity-token { transition: none; } }
+
+/* Compact team-phone setup: one shared-screen view, one connection panel. */
+.activity-team-sizes { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.activity-page.is-lobby #setup-form { gap: 14px; }
+.activity-page.is-lobby .activity-setup-note { margin: 0; }
+.activity-connect .games-eyebrow { margin-bottom: 8px; }
+.activity-connect h2 { font-size: 23px; margin: 0 0 12px; }
+.activity-connect #qr { width: 160px; height: 160px; margin: 0 auto 8px; }
+.activity-connect .invite-code { margin: 6px 0; padding: 4px; }
+.activity-connect .invite-code small { margin-bottom: 2px; }
+.activity-connect .invite-code strong { font-size: 24px; }
+.activity-connect .invite-link { font-size: 10px; margin: 6px 0 12px; }
+.activity-connect .activity-roster { border-top: 1px solid #e0e2e8; padding-top: 12px; }
+.activity-connect .activity-roster summary { padding-bottom: 8px; }
+.activity-connect #players { gap: 6px; }
+.activity-connected-team { display: flex; align-items: center; gap: 8px; padding: 4px 10px; text-align: left; border-radius: 9px; background: #f1f2f5; }
+.activity-connected-team span { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.activity-connected-team small { flex: none; white-space: nowrap; font-size: 10px; color: #677967; }
+.activity-connect .activity-connected-team button { width: 24px; flex: 0 0 24px; min-height: 24px; padding: 0; line-height: 1; margin-left: 0; }
+.activity-page.is-lobby .activity-sidebar .durak-panel { padding: 16px; }
+.activity-secret [data-guessed] { margin-top: 12px; min-height: 52px; font-size: 20px; }
+.activity-secret [data-guessed]:disabled { opacity: .5; cursor: default; }
+@media (min-width:901px) {
+ .activity-page.is-lobby .activity-shell { padding-bottom: 8px; }
+ .activity-page.is-lobby .durak-header { margin-top: 18px; margin-bottom: 16px; }
+ .activity-page.is-lobby .room-topline { margin-bottom: 12px; }
+}
+@media (max-width:900px) { .activity-team-sizes { grid-template-columns: 1fr; } }
+.activity-page.is-lobby { padding-top: 0; padding-bottom: 0; }
+.activity-page.is-lobby .activity-shell { display: flow-root; }

@@ -189,7 +189,7 @@ def join_room(code):
             raise GameError('Партия уже началась. Дождитесь следующей игры.')
         capacity = getattr(rules(room), 'MAX_PLAYERS', 6)
         if len(room['players']) >= capacity:
-            raise GameError(f'В комнате уже {capacity} игроков.')
+            raise GameError(f'В комнате уже {capacity} команд.' if room.get('game')=='activity' else f'В комнате уже {capacity} игроков.')
         if any(p['name'].casefold() == name.casefold() for p in room['players']):
             raise GameError('Это имя уже занято. Выберите другое.')
         token = secrets.token_urlsafe(32)
@@ -243,7 +243,7 @@ def action(code):
         independent = independent or (room.get('game') == 'whos' and data.get('action') == 'vote'
                        and data.get('phase') == room['phase'] and data.get('match') == room['match']
                        and data.get('round') == room['round'])
-        independent = independent or (room.get('game') == 'activity' and data.get('action') == 'draw'
+        independent = independent or (room.get('game') == 'activity' and room['phase'] == 'performing' and data.get('action') in ('draw','guessed')
                        and data.get('match') == room['match'] and room.get('active')
                        and data.get('turn_id') == room['active']['id'])
         if data.get('revision') != room['revision'] and not independent:

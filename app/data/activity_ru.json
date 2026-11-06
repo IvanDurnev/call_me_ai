@@ -10,7 +10,7 @@
         "drawA": {
           "id": "ru-3-01-drawA",
           "text": "Воздушный змей",
-          "isOpenRound": true
+          "isOpenRound": false
         },
         "explainA": {
           "id": "ru-3-01-explainA",
@@ -34,8 +34,8 @@
         },
         "mimeB": {
           "id": "ru-3-01-mimeB",
-          "text": "Идти против ветра",
-          "isOpenRound": true
+          "text": "Икать",
+          "isOpenRound": false
         }
       }
     },
@@ -56,7 +56,7 @@
         },
         "mimeA": {
           "id": "ru-3-02-mimeA",
-          "text": "Прыгать через лужу",
+          "text": "Чихать",
           "isOpenRound": false
         },
         "drawB": {
@@ -67,11 +67,11 @@
         "explainB": {
           "id": "ru-3-02-explainB",
           "text": "Продавец",
-          "isOpenRound": true
+          "isOpenRound": false
         },
         "mimeB": {
           "id": "ru-3-02-mimeB",
-          "text": "Красться на цыпочках",
+          "text": "Храпеть",
           "isOpenRound": false
         }
       }
@@ -93,13 +93,13 @@
         },
         "mimeA": {
           "id": "ru-3-03-mimeA",
-          "text": "Кататься на лыжах",
+          "text": "Приседать",
           "isOpenRound": false
         },
         "drawB": {
           "id": "ru-3-03-drawB",
           "text": "Звёздное небо",
-          "isOpenRound": true
+          "isOpenRound": false
         },
         "explainB": {
           "id": "ru-3-03-explainB",
@@ -131,7 +131,7 @@
         "mimeA": {
           "id": "ru-3-04-mimeA",
           "text": "Ловить бабочку",
-          "isOpenRound": true
+          "isOpenRound": false
         },
         "drawB": {
           "id": "ru-3-04-drawB",
@@ -163,7 +163,7 @@
         "explainA": {
           "id": "ru-3-05-explainA",
           "text": "Почтовый ящик",
-          "isOpenRound": true
+          "isOpenRound": false
         },
         "mimeA": {
           "id": "ru-3-05-mimeA",
@@ -172,7 +172,7 @@
         },
         "drawB": {
           "id": "ru-3-05-drawB",
-          "text": "Мороженое в рожке",
+          "text": "Водопад",
           "isOpenRound": false
         },
         "explainB": {
@@ -194,8 +194,8 @@
       "tasks": {
         "drawA": {
           "id": "ru-3-06-drawA",
-          "text": "Замок из песка",
-          "isOpenRound": true
+          "text": "Телескоп",
+          "isOpenRound": false
         },
         "explainA": {
           "id": "ru-3-06-explainA",
@@ -220,7 +220,7 @@
         "mimeB": {
           "id": "ru-3-06-mimeB",
           "text": "Пилить доску",
-          "isOpenRound": true
+          "isOpenRound": false
         }
       }
     },
@@ -252,7 +252,7 @@
         "explainB": {
           "id": "ru-3-07-explainB",
           "text": "Парикмахер",
-          "isOpenRound": true
+          "isOpenRound": false
         },
         "mimeB": {
           "id": "ru-3-07-mimeB",
@@ -284,7 +284,7 @@
         "drawB": {
           "id": "ru-3-08-drawB",
           "text": "Корона",
-          "isOpenRound": true
+          "isOpenRound": false
         },
         "explainB": {
           "id": "ru-3-08-explainB",
@@ -293,7 +293,7 @@
         },
         "mimeB": {
           "id": "ru-3-08-mimeB",
-          "text": "Играть в снежки",
+          "text": "Отжиматься",
           "isOpenRound": false
         }
       }
@@ -315,8 +315,8 @@
         },
         "mimeA": {
           "id": "ru-3-09-mimeA",
-          "text": "Нести тяжёлую сумку",
-          "isOpenRound": true
+          "text": "Плавать",
+          "isOpenRound": false
         },
         "drawB": {
           "id": "ru-3-09-drawB",
@@ -330,7 +330,7 @@
         },
         "mimeB": {
           "id": "ru-3-09-mimeB",
-          "text": "Искать потерянный ключ",
+          "text": "Ползать",
           "isOpenRound": false
         }
       }
@@ -348,7 +348,7 @@
         "explainA": {
           "id": "ru-3-10-explainA",
           "text": "Пешеходный переход",
-          "isOpenRound": true
+          "isOpenRound": false
         },
         "mimeA": {
           "id": "ru-3-10-mimeA",
@@ -367,7 +367,7 @@
         },
         "mimeB": {
           "id": "ru-3-10-mimeB",
-          "text": "Есть длинные макароны",
+          "text": "Кувыркаться",
           "isOpenRound": false
         }
       }
@@ -380,7 +380,7 @@
         "drawA": {
           "id": "ru-3-11-drawA",
           "text": "Паровоз",
-          "isOpenRound": true
+          "isOpenRound": false
         },
         "explainA": {
           "id": "ru-3-11-explainA",
@@ -389,7 +389,7 @@
         },
         "mimeA": {
           "id": "ru-3-11-mimeA",
-          "text": "Играть на скрипке",
+          "text": "Умываться",
           "isOpenRound": false
         },
         "drawB": {
@@ -405,7 +405,7 @@
         "mimeB": {
           "id": "ru-3-11-mimeB",
           "text": "Сдувать пыль",
-          "isOpenRound": true
+          "isOpenRound": false
         }
       }
     },
@@ -437,7 +437,7 @@
         "explainB": {
           "id": "ru-3-12-explainB",
           "text": "Праздник",
-          "isOpenRound": true
+          "isOpenRound": false
         },
         "mimeB": {
           "id": "ru-3-12-mimeB",
@@ -469,7 +469,7 @@
         "drawB": {
           "id": "ru-3-13-drawB",
           "text": "Мельница",
-          "isOpenRound": true
+          "isOpenRound": false
         },
         "explainB": {
           "id": "ru-3-13-explainB",
@@ -501,7 +501,7 @@
         "mimeA": {
           "id": "ru-3-14-mimeA",
           "text": "Качать малыша",
-          "isOpenRound": true
+          "isOpenRound": false
         },
         "drawB": {
           "id": "ru-3-14-drawB",
@@ -515,7 +515,7 @@
         },
         "mimeB": {
           "id": "ru-3-14-mimeB",
-          "text": "Смотреть в телескоп",
+          "text": "Причёсываться",
           "isOpenRound": false
         }
       }
@@ -533,7 +533,7 @@
         "explainA": {
           "id": "ru-3-15-explainA",
           "text": "Лупа",
-          "isOpenRound": true
+          "isOpenRound": false
         },
         "mimeA": {
           "id": "ru-3-15-mimeA",
@@ -564,8 +564,8 @@
       "tasks": {
         "drawA": {
           "id": "ru-3-16-drawA",
-          "text": "Домик на дереве",
-          "isOpenRound": true
+          "text": "Акведук",
+          "isOpenRound": false
         },
         "explainA": {
           "id": "ru-3-16-explainA",
@@ -590,7 +590,7 @@
         "mimeB": {
           "id": "ru-3-16-mimeB",
           "text": "Выжимать лимон",
-          "isOpenRound": true
+          "isOpenRound": false
         }
       }
     },
@@ -601,7 +601,7 @@
       "tasks": {
         "drawA": {
           "id": "ru-3-17-drawA",
-          "text": "Кораблик в бутылке",
+          "text": "Обсерватория",
           "isOpenRound": false
         },
         "explainA": {
@@ -611,7 +611,7 @@
         },
         "mimeA": {
           "id": "ru-3-17-mimeA",
-          "text": "Шагать по канату",
+          "text": "Подметать",
           "isOpenRound": false
         },
         "drawB": {
@@ -622,7 +622,7 @@
         "explainB": {
           "id": "ru-3-17-explainB",
           "text": "Дружба",
-          "isOpenRound": true
+          "isOpenRound": false
         },
         "mimeB": {
           "id": "ru-3-17-mimeB",
@@ -654,7 +654,7 @@
         "drawB": {
           "id": "ru-3-18-drawB",
           "text": "Черепаха",
-          "isOpenRound": true
+          "isOpenRound": false
         },
         "explainB": {
           "id": "ru-3-18-explainB",
@@ -686,7 +686,7 @@
         "mimeA": {
           "id": "ru-3-19-mimeA",
           "text": "Подметать пол",
-          "isOpenRound": true
+          "isOpenRound": false
         },
         "drawB": {
           "id": "ru-3-19-drawB",
@@ -700,7 +700,7 @@
         },
         "mimeB": {
           "id": "ru-3-19-mimeB",
-          "text": "Идти по горячему песку",
+          "text": "Рыбачить",
           "isOpenRound": false
         }
       }
@@ -718,7 +718,7 @@
         "explainA": {
           "id": "ru-3-20-explainA",
           "text": "Ластик",
-          "isOpenRound": true
+          "isOpenRound": false
         },
         "mimeA": {
           "id": "ru-3-20-mimeA",
@@ -737,7 +737,7 @@
         },
         "mimeB": {
           "id": "ru-3-20-mimeB",
-          "text": "Слушать тихий звук",
+          "text": "Жонглировать",
           "isOpenRound": false
         }
       }
@@ -750,7 +750,7 @@
         "drawA": {
           "id": "ru-3-21-drawA",
           "text": "Палатка",
-          "isOpenRound": true
+          "isOpenRound": false
         },
         "explainA": {
           "id": "ru-3-21-explainA",
@@ -775,7 +775,7 @@
         "mimeB": {
           "id": "ru-3-21-mimeB",
           "text": "Дрессировать щенка",
-          "isOpenRound": true
+          "isOpenRound": false
         }
       }
     },
@@ -796,7 +796,7 @@
         },
         "mimeA": {
           "id": "ru-3-22-mimeA",
-          "text": "Дуть на горячий чай",
+          "text": "Разминаться",
           "isOpenRound": false
         },
         "drawB": {
@@ -807,11 +807,11 @@
         "explainB": {
           "id": "ru-3-22-explainB",
           "text": "Репетиция",
-          "isOpenRound": true
+          "isOpenRound": false
         },
         "mimeB": {
           "id": "ru-3-22-mimeB",
-          "text": "Вытирать мокрую собаку",
+          "text": "Спотыкаться",
           "isOpenRound": false
         }
       }
@@ -833,13 +833,13 @@
         },
         "mimeA": {
           "id": "ru-3-23-mimeA",
-          "text": "Скакать на лошади",
+          "text": "Потягиваться",
           "isOpenRound": false
         },
         "drawB": {
           "id": "ru-3-23-drawB",
           "text": "Клоун",
-          "isOpenRound": true
+          "isOpenRound": false
         },
         "explainB": {
           "id": "ru-3-23-explainB",
@@ -871,7 +871,7 @@
         "mimeA": {
           "id": "ru-3-24-mimeA",
           "text": "Кормить птиц",
-          "isOpenRound": true
+          "isOpenRound": false
         },
         "drawB": {
           "id": "ru-3-24-drawB",
@@ -885,7 +885,7 @@
         },
         "mimeB": {
           "id": "ru-3-24-mimeB",
-          "text": "Открывать тугую банку",
+          "text": "Прятаться",
           "isOpenRound": false
         }
       }
@@ -903,7 +903,7 @@
         "explainA": {
           "id": "ru-3-25-explainA",
           "text": "Гамак",
-          "isOpenRound": true
+          "isOpenRound": false
         },
         "mimeA": {
           "id": "ru-3-25-mimeA",
@@ -922,7 +922,7 @@
         },
         "mimeB": {
           "id": "ru-3-25-mimeB",
-          "text": "Ловить снежинку языком",
+          "text": "Аплодировать",
           "isOpenRound": false
         }
       }
@@ -935,7 +935,7 @@
         "drawA": {
           "id": "ru-3-26-drawA",
           "text": "Мост",
-          "isOpenRound": true
+          "isOpenRound": false
         },
         "explainA": {
           "id": "ru-3-26-explainA",
@@ -960,7 +960,7 @@
         "mimeB": {
           "id": "ru-3-26-mimeB",
           "text": "Подбрасывать блин",
-          "isOpenRound": true
+          "isOpenRound": false
         }
       }
     },
@@ -986,17 +986,17 @@
         },
         "drawB": {
           "id": "ru-3-27-drawB",
-          "text": "Следы на снегу",
+          "text": "Скафандр",
           "isOpenRound": false
         },
         "explainB": {
           "id": "ru-3-27-explainB",
           "text": "Сказка",
-          "isOpenRound": true
+          "isOpenRound": false
         },
         "mimeB": {
           "id": "ru-3-27-mimeB",
-          "text": "Играть в классики",
+          "text": "Укачивать малыша",
           "isOpenRound": false
         }
       }
@@ -1024,7 +1024,7 @@
         "drawB": {
           "id": "ru-3-28-drawB",
           "text": "Одуванчик",
-          "isOpenRound": true
+          "isOpenRound": false
         },
         "explainB": {
           "id": "ru-3-28-explainB",
@@ -1055,8 +1055,8 @@
         },
         "mimeA": {
           "id": "ru-3-29-mimeA",
-          "text": "Пускать мыльные пузыри",
-          "isOpenRound": true
+          "text": "Мыть посуду",
+          "isOpenRound": false
         },
         "drawB": {
           "id": "ru-3-29-drawB",
@@ -1088,7 +1088,7 @@
         "explainA": {
           "id": "ru-3-30-explainA",
           "text": "Варежки",
-          "isOpenRound": true
+          "isOpenRound": false
         },
         "mimeA": {
           "id": "ru-3-30-mimeA",
@@ -1119,8 +1119,8 @@
       "tasks": {
         "drawA": {
           "id": "ru-4-01-drawA",
-          "text": "Дом на колёсах",
-          "isOpenRound": true
+          "text": "Экскаватор",
+          "isOpenRound": false
         },
         "explainA": {
           "id": "ru-4-01-explainA",
@@ -1129,7 +1129,7 @@
         },
         "mimeA": {
           "id": "ru-4-01-mimeA",
-          "text": "Ловить ускользающий шарик",
+          "text": "Сомелье",
           "isOpenRound": false
         },
         "drawB": {
@@ -1139,13 +1139,13 @@
         },
         "explainB": {
           "id": "ru-4-01-explainB",
-          "text": "Договориться без слов",
+          "text": "Взаимовыручка",
           "isOpenRound": false
         },
         "mimeB": {
           "id": "ru-4-01-mimeB",
-          "text": "Репетировать поклон перед зеркалом",
-          "isOpenRound": true
+          "text": "Дрессировщик",
+          "isOpenRound": false
         }
       }
     },
@@ -1166,7 +1166,7 @@
         },
         "mimeA": {
           "id": "ru-4-02-mimeA",
-          "text": "Нести переполненную чашку",
+          "text": "Скрипач",
           "isOpenRound": false
         },
         "drawB": {
@@ -1176,12 +1176,12 @@
         },
         "explainB": {
           "id": "ru-4-02-explainB",
-          "text": "Смена времён года",
-          "isOpenRound": true
+          "text": "Предусмотрительность",
+          "isOpenRound": false
         },
         "mimeB": {
           "id": "ru-4-02-mimeB",
-          "text": "Передавать хрупкую вазу",
+          "text": "Жонглёр",
           "isOpenRound": false
         }
       }
@@ -1193,7 +1193,7 @@
       "tasks": {
         "drawA": {
           "id": "ru-4-03-drawA",
-          "text": "Рыбалка на рассвете",
+          "text": "Метеорит",
           "isOpenRound": false
         },
         "explainA": {
@@ -1203,13 +1203,13 @@
         },
         "mimeA": {
           "id": "ru-4-03-mimeA",
-          "text": "Открывать зонт на ветру",
+          "text": "Фехтовальщик",
           "isOpenRound": false
         },
         "drawB": {
           "id": "ru-4-03-drawB",
           "text": "Прозрачный автобус",
-          "isOpenRound": true
+          "isOpenRound": false
         },
         "explainB": {
           "id": "ru-4-03-explainB",
@@ -1218,7 +1218,7 @@
         },
         "mimeB": {
           "id": "ru-4-03-mimeB",
-          "text": "Делать вид что всё понятно",
+          "text": "Акробат",
           "isOpenRound": false
         }
       }
@@ -1230,7 +1230,7 @@
       "tasks": {
         "drawA": {
           "id": "ru-4-04-drawA",
-          "text": "Почтальон на велосипеде",
+          "text": "Ветряк",
           "isOpenRound": false
         },
         "explainA": {
@@ -1240,12 +1240,12 @@
         },
         "mimeA": {
           "id": "ru-4-04-mimeA",
-          "text": "Снимать застрявший свитер",
-          "isOpenRound": true
+          "text": "Канатоходец",
+          "isOpenRound": false
         },
         "drawB": {
           "id": "ru-4-04-drawB",
-          "text": "Песочный замок с мостом",
+          "text": "Вулкан",
           "isOpenRound": false
         },
         "explainB": {
@@ -1255,7 +1255,7 @@
         },
         "mimeB": {
           "id": "ru-4-04-mimeB",
-          "text": "Выбирать самый вкусный арбуз",
+          "text": "Скульптор",
           "isOpenRound": false
         }
       }
@@ -1267,17 +1267,17 @@
       "tasks": {
         "drawA": {
           "id": "ru-4-05-drawA",
-          "text": "Кот в сапогах для дождя",
+          "text": "Калейдоскоп",
           "isOpenRound": false
         },
         "explainA": {
           "id": "ru-4-05-explainA",
           "text": "Личный рекорд",
-          "isOpenRound": true
+          "isOpenRound": false
         },
         "mimeA": {
           "id": "ru-4-05-mimeA",
-          "text": "Переходить реку по камням",
+          "text": "Стеклодув",
           "isOpenRound": false
         },
         "drawB": {
@@ -1292,7 +1292,7 @@
         },
         "mimeB": {
           "id": "ru-4-05-mimeB",
-          "text": "Поднимать упавшее мороженое",
+          "text": "Заклинатель змей",
           "isOpenRound": false
         }
       }
@@ -1304,8 +1304,8 @@
       "tasks": {
         "drawA": {
           "id": "ru-4-06-drawA",
-          "text": "Птица с чемоданом",
-          "isOpenRound": true
+          "text": "Эскалатор",
+          "isOpenRound": false
         },
         "explainA": {
           "id": "ru-4-06-explainA",
@@ -1314,12 +1314,12 @@
         },
         "mimeA": {
           "id": "ru-4-06-mimeA",
-          "text": "Успокаивать испуганную кошку",
+          "text": "Штангист",
           "isOpenRound": false
         },
         "drawB": {
           "id": "ru-4-06-drawB",
-          "text": "Рыба в акваланге",
+          "text": "Планетарий",
           "isOpenRound": false
         },
         "explainB": {
@@ -1329,8 +1329,8 @@
         },
         "mimeB": {
           "id": "ru-4-06-mimeB",
-          "text": "Фотографировать непоседливую птицу",
-          "isOpenRound": true
+          "text": "Дайвер",
+          "isOpenRound": false
         }
       }
     },
@@ -1341,7 +1341,7 @@
       "tasks": {
         "drawA": {
           "id": "ru-4-07-drawA",
-          "text": "Сад на крыше",
+          "text": "Патефон",
           "isOpenRound": false
         },
         "explainA": {
@@ -1351,7 +1351,7 @@
         },
         "mimeA": {
           "id": "ru-4-07-mimeA",
-          "text": "Доставать мяч с дерева",
+          "text": "Барабанщик",
           "isOpenRound": false
         },
         "drawB": {
@@ -1362,11 +1362,11 @@
         "explainB": {
           "id": "ru-4-07-explainB",
           "text": "Карта местности",
-          "isOpenRound": true
+          "isOpenRound": false
         },
         "mimeB": {
           "id": "ru-4-07-mimeB",
-          "text": "Мерить глубину лужи",
+          "text": "Сёрфер",
           "isOpenRound": false
         }
       }
@@ -1388,13 +1388,13 @@
         },
         "mimeA": {
           "id": "ru-4-08-mimeA",
-          "text": "Прятаться от дождя",
+          "text": "Стрелочник",
           "isOpenRound": false
         },
         "drawB": {
           "id": "ru-4-08-drawB",
-          "text": "Лифт на вершину горы",
-          "isOpenRound": true
+          "text": "Флюгер",
+          "isOpenRound": false
         },
         "explainB": {
           "id": "ru-4-08-explainB",
@@ -1403,7 +1403,7 @@
         },
         "mimeB": {
           "id": "ru-4-08-mimeB",
-          "text": "Будить сонного друга",
+          "text": "Дискобол",
           "isOpenRound": false
         }
       }
@@ -1415,7 +1415,7 @@
       "tasks": {
         "drawA": {
           "id": "ru-4-09-drawA",
-          "text": "Мышка в сырном замке",
+          "text": "Микроскоп",
           "isOpenRound": false
         },
         "explainA": {
@@ -1425,12 +1425,12 @@
         },
         "mimeA": {
           "id": "ru-4-09-mimeA",
-          "text": "Съехать на ледянке",
-          "isOpenRound": true
+          "text": "Кукловод",
+          "isOpenRound": false
         },
         "drawB": {
           "id": "ru-4-09-drawB",
-          "text": "Часы с кукушкой",
+          "text": "Амфитеатр",
           "isOpenRound": false
         },
         "explainB": {
@@ -1440,7 +1440,7 @@
         },
         "mimeB": {
           "id": "ru-4-09-mimeB",
-          "text": "Перетаскивать тяжёлый диван",
+          "text": "Регулировщик",
           "isOpenRound": false
         }
       }
@@ -1458,16 +1458,16 @@
         "explainA": {
           "id": "ru-4-10-explainA",
           "text": "Рабочий инструмент",
-          "isOpenRound": true
+          "isOpenRound": false
         },
         "mimeA": {
           "id": "ru-4-10-mimeA",
-          "text": "Печатать с закрытыми глазами",
+          "text": "Пастух",
           "isOpenRound": false
         },
         "drawB": {
           "id": "ru-4-10-drawB",
-          "text": "Небоскрёб из кубиков",
+          "text": "Парашют",
           "isOpenRound": false
         },
         "explainB": {
@@ -1477,7 +1477,7 @@
         },
         "mimeB": {
           "id": "ru-4-10-mimeB",
-          "text": "Встречать корабль с берега",
+          "text": "Следопыт",
           "isOpenRound": false
         }
       }
@@ -1490,7 +1490,7 @@
         "drawA": {
           "id": "ru-4-11-drawA",
           "text": "Плавающий остров",
-          "isOpenRound": true
+          "isOpenRound": false
         },
         "explainA": {
           "id": "ru-4-11-explainA",
@@ -1499,12 +1499,12 @@
         },
         "mimeA": {
           "id": "ru-4-11-mimeA",
-          "text": "Развязывать запутанный узел",
+          "text": "Разведчик",
           "isOpenRound": false
         },
         "drawB": {
           "id": "ru-4-11-drawB",
-          "text": "Площадь воздушных шаров",
+          "text": "Плотина",
           "isOpenRound": false
         },
         "explainB": {
@@ -1514,8 +1514,8 @@
         },
         "mimeB": {
           "id": "ru-4-11-mimeB",
-          "text": "Собирать улетающие листы",
-          "isOpenRound": true
+          "text": "Скалолаз",
+          "isOpenRound": false
         }
       }
     },
@@ -1536,22 +1536,22 @@
         },
         "mimeA": {
           "id": "ru-4-12-mimeA",
-          "text": "Собирать высокий шкаф",
+          "text": "Археолог",
           "isOpenRound": false
         },
         "drawB": {
           "id": "ru-4-12-drawB",
-          "text": "Собака с фотоаппаратом",
+          "text": "Лабиринт",
           "isOpenRound": false
         },
         "explainB": {
           "id": "ru-4-12-explainB",
           "text": "Семейная традиция",
-          "isOpenRound": true
+          "isOpenRound": false
         },
         "mimeB": {
           "id": "ru-4-12-mimeB",
-          "text": "Пытаться сесть на маленький стул",
+          "text": "Дегустатор",
           "isOpenRound": false
         }
       }
@@ -1573,22 +1573,22 @@
         },
         "mimeA": {
           "id": "ru-4-13-mimeA",
-          "text": "Удерживать убегающий чемодан",
+          "text": "Кузнец",
           "isOpenRound": false
         },
         "drawB": {
           "id": "ru-4-13-drawB",
           "text": "Грибная деревня",
-          "isOpenRound": true
+          "isOpenRound": false
         },
         "explainB": {
           "id": "ru-4-13-explainB",
-          "text": "День открытых дверей",
+          "text": "Находчивость",
           "isOpenRound": false
         },
         "mimeB": {
           "id": "ru-4-13-mimeB",
-          "text": "Удерживать стопку тарелок",
+          "text": "Мельник",
           "isOpenRound": false
         }
       }
@@ -1600,7 +1600,7 @@
       "tasks": {
         "drawA": {
           "id": "ru-4-14-drawA",
-          "text": "Скамейка под яблоней",
+          "text": "Самовар",
           "isOpenRound": false
         },
         "explainA": {
@@ -1610,22 +1610,22 @@
         },
         "mimeA": {
           "id": "ru-4-14-mimeA",
-          "text": "Лепить большую снежную бабу",
-          "isOpenRound": true
+          "text": "Сапожник",
+          "isOpenRound": false
         },
         "drawB": {
           "id": "ru-4-14-drawB",
-          "text": "Кот на воздушном змее",
+          "text": "Фонтан",
           "isOpenRound": false
         },
         "explainB": {
           "id": "ru-4-14-explainB",
-          "text": "Начало учебного года",
+          "text": "Изобретательность",
           "isOpenRound": false
         },
         "mimeB": {
           "id": "ru-4-14-mimeB",
-          "text": "Примерять тесные ботинки",
+          "text": "Швея",
           "isOpenRound": false
         }
       }
@@ -1637,17 +1637,17 @@
       "tasks": {
         "drawA": {
           "id": "ru-4-15-drawA",
-          "text": "Корабль в облаках",
+          "text": "Арбалет",
           "isOpenRound": false
         },
         "explainA": {
           "id": "ru-4-15-explainA",
           "text": "Вечерняя прогулка",
-          "isOpenRound": true
+          "isOpenRound": false
         },
         "mimeA": {
           "id": "ru-4-15-mimeA",
-          "text": "Протискиваться в узкую дверь",
+          "text": "Пчеловод",
           "isOpenRound": false
         },
         "drawB": {
@@ -1662,7 +1662,7 @@
         },
         "mimeB": {
           "id": "ru-4-15-mimeB",
-          "text": "Знакомиться с робкой собакой",
+          "text": "Телохранитель",
           "isOpenRound": false
         }
       }
@@ -1675,7 +1675,7 @@
         "drawA": {
           "id": "ru-4-16-drawA",
           "text": "Городская ферма",
-          "isOpenRound": true
+          "isOpenRound": false
         },
         "explainA": {
           "id": "ru-4-16-explainA",
@@ -1684,12 +1684,12 @@
         },
         "mimeA": {
           "id": "ru-4-16-mimeA",
-          "text": "Нести спящего ребёнка",
+          "text": "Встречать гостей",
           "isOpenRound": false
         },
         "drawB": {
           "id": "ru-4-16-drawB",
-          "text": "Снеговик на пляже",
+          "text": "Канделябр",
           "isOpenRound": false
         },
         "explainB": {
@@ -1699,8 +1699,8 @@
         },
         "mimeB": {
           "id": "ru-4-16-mimeB",
-          "text": "Ловить рыбу без удочки",
-          "isOpenRound": true
+          "text": "Искать клад",
+          "isOpenRound": false
         }
       }
     },
@@ -1711,7 +1711,7 @@
       "tasks": {
         "drawA": {
           "id": "ru-4-17-drawA",
-          "text": "Мост над водопадом",
+          "text": "Проектор",
           "isOpenRound": false
         },
         "explainA": {
@@ -1721,7 +1721,7 @@
         },
         "mimeA": {
           "id": "ru-4-17-mimeA",
-          "text": "Пытаться не чихнуть",
+          "text": "Тащить чемодан",
           "isOpenRound": false
         },
         "drawB": {
@@ -1732,11 +1732,11 @@
         "explainB": {
           "id": "ru-4-17-explainB",
           "text": "Кулинарный опыт",
-          "isOpenRound": true
+          "isOpenRound": false
         },
         "mimeB": {
           "id": "ru-4-17-mimeB",
-          "text": "Делить последний кусочек торта",
+          "text": "Спасать котёнка",
           "isOpenRound": false
         }
       }
@@ -1748,7 +1748,7 @@
       "tasks": {
         "drawA": {
           "id": "ru-4-18-drawA",
-          "text": "Лесенка к луне",
+          "text": "Трамвай",
           "isOpenRound": false
         },
         "explainA": {
@@ -1758,13 +1758,13 @@
         },
         "mimeA": {
           "id": "ru-4-18-mimeA",
-          "text": "Готовить упрямое тесто",
+          "text": "Открывать консерву",
           "isOpenRound": false
         },
         "drawB": {
           "id": "ru-4-18-drawB",
-          "text": "Паровоз с цветами",
-          "isOpenRound": true
+          "text": "Шлагбаум",
+          "isOpenRound": false
         },
         "explainB": {
           "id": "ru-4-18-explainB",
@@ -1773,7 +1773,7 @@
         },
         "mimeB": {
           "id": "ru-4-18-mimeB",
-          "text": "Объяснять дорогу жестами",
+          "text": "Выбирать подарок",
           "isOpenRound": false
         }
       }
@@ -1785,7 +1785,7 @@
       "tasks": {
         "drawA": {
           "id": "ru-4-19-drawA",
-          "text": "Лошадь в свитере",
+          "text": "Спутник",
           "isOpenRound": false
         },
         "explainA": {
@@ -1795,8 +1795,8 @@
         },
         "mimeA": {
           "id": "ru-4-19-mimeA",
-          "text": "Удерживать равновесие в автобусе",
-          "isOpenRound": true
+          "text": "Собирать палатку",
+          "isOpenRound": false
         },
         "drawB": {
           "id": "ru-4-19-drawB",
@@ -1805,12 +1805,12 @@
         },
         "explainB": {
           "id": "ru-4-19-explainB",
-          "text": "План на завтра",
+          "text": "Любознательность",
           "isOpenRound": false
         },
         "mimeB": {
           "id": "ru-4-19-mimeB",
-          "text": "Вести велосипед по песку",
+          "text": "Сушить волосы",
           "isOpenRound": false
         }
       }
@@ -1828,16 +1828,16 @@
         "explainA": {
           "id": "ru-4-20-explainA",
           "text": "Театральная сцена",
-          "isOpenRound": true
+          "isOpenRound": false
         },
         "mimeA": {
           "id": "ru-4-20-mimeA",
-          "text": "Изображать испорченного робота",
+          "text": "Разводить костёр",
           "isOpenRound": false
         },
         "drawB": {
           "id": "ru-4-20-drawB",
-          "text": "Слон на самокате",
+          "text": "Глобус",
           "isOpenRound": false
         },
         "explainB": {
@@ -1847,7 +1847,7 @@
         },
         "mimeB": {
           "id": "ru-4-20-mimeB",
-          "text": "Нести подарок не раскрывая сюрприз",
+          "text": "Перепрыгивать ручей",
           "isOpenRound": false
         }
       }
@@ -1860,7 +1860,7 @@
         "drawA": {
           "id": "ru-4-21-drawA",
           "text": "Солнечная батарея",
-          "isOpenRound": true
+          "isOpenRound": false
         },
         "explainA": {
           "id": "ru-4-21-explainA",
@@ -1869,23 +1869,23 @@
         },
         "mimeA": {
           "id": "ru-4-21-mimeA",
-          "text": "Искать очки на голове",
+          "text": "Настраивать гитару",
           "isOpenRound": false
         },
         "drawB": {
           "id": "ru-4-21-drawB",
-          "text": "Колесо обозрения над рекой",
+          "text": "Манеж",
           "isOpenRound": false
         },
         "explainB": {
           "id": "ru-4-21-explainB",
-          "text": "Наблюдение за звёздами",
+          "text": "Противоречие",
           "isOpenRound": false
         },
         "mimeB": {
           "id": "ru-4-21-mimeB",
-          "text": "Укрощать непослушный воздушный змей",
-          "isOpenRound": true
+          "text": "Протирать очки",
+          "isOpenRound": false
         }
       }
     },
@@ -1906,22 +1906,22 @@
         },
         "mimeA": {
           "id": "ru-4-22-mimeA",
-          "text": "Обходить спящую собаку",
+          "text": "Выгружать картошку",
           "isOpenRound": false
         },
         "drawB": {
           "id": "ru-4-22-drawB",
-          "text": "Аквариум в чемодане",
+          "text": "Картинг",
           "isOpenRound": false
         },
         "explainB": {
           "id": "ru-4-22-explainB",
           "text": "Утренний туман",
-          "isOpenRound": true
+          "isOpenRound": false
         },
         "mimeB": {
           "id": "ru-4-22-mimeB",
-          "text": "Прятать зевок на концерте",
+          "text": "Чинить велосипед",
           "isOpenRound": false
         }
       }
@@ -1933,7 +1933,7 @@
       "tasks": {
         "drawA": {
           "id": "ru-4-23-drawA",
-          "text": "Акробат на мосту",
+          "text": "Фуникулёр",
           "isOpenRound": false
         },
         "explainA": {
@@ -1943,13 +1943,13 @@
         },
         "mimeA": {
           "id": "ru-4-23-mimeA",
-          "text": "Плавать в тесном бассейне",
+          "text": "Ловить такси",
           "isOpenRound": false
         },
         "drawB": {
           "id": "ru-4-23-drawB",
-          "text": "Лестница из радуги",
-          "isOpenRound": true
+          "text": "Ледокол",
+          "isOpenRound": false
         },
         "explainB": {
           "id": "ru-4-23-explainB",
@@ -1958,7 +1958,7 @@
         },
         "mimeB": {
           "id": "ru-4-23-mimeB",
-          "text": "Прислушиваться к далёкому эху",
+          "text": "Нюхать духи",
           "isOpenRound": false
         }
       }
@@ -1980,12 +1980,12 @@
         },
         "mimeA": {
           "id": "ru-4-24-mimeA",
-          "text": "Ловить шляпу на ветру",
-          "isOpenRound": true
+          "text": "Полировать ботинки",
+          "isOpenRound": false
         },
         "drawB": {
           "id": "ru-4-24-drawB",
-          "text": "Маяк на черепахе",
+          "text": "Радиотелескоп",
           "isOpenRound": false
         },
         "explainB": {
@@ -1995,7 +1995,7 @@
         },
         "mimeB": {
           "id": "ru-4-24-mimeB",
-          "text": "Выступать перед невидимой публикой",
+          "text": "Показывать фокус",
           "isOpenRound": false
         }
       }
@@ -2007,22 +2007,22 @@
       "tasks": {
         "drawA": {
           "id": "ru-4-25-drawA",
-          "text": "Автобус с крыльями",
+          "text": "Гидроплан",
           "isOpenRound": false
         },
         "explainA": {
           "id": "ru-4-25-explainA",
           "text": "Остров сокровищ",
-          "isOpenRound": true
+          "isOpenRound": false
         },
         "mimeA": {
           "id": "ru-4-25-mimeA",
-          "text": "Раскрывать секретный замок",
+          "text": "Принимать душ",
           "isOpenRound": false
         },
         "drawB": {
           "id": "ru-4-25-drawB",
-          "text": "Сад под стеклянным куполом",
+          "text": "Батискаф",
           "isOpenRound": false
         },
         "explainB": {
@@ -2032,7 +2032,7 @@
         },
         "mimeB": {
           "id": "ru-4-25-mimeB",
-          "text": "Подкрадываться к спящему дракону",
+          "text": "Заклеивать конверт",
           "isOpenRound": false
         }
       }
@@ -2044,8 +2044,8 @@
       "tasks": {
         "drawA": {
           "id": "ru-4-26-drawA",
-          "text": "Лампа в виде гриба",
-          "isOpenRound": true
+          "text": "Виадук",
+          "isOpenRound": false
         },
         "explainA": {
           "id": "ru-4-26-explainA",
@@ -2054,7 +2054,7 @@
         },
         "mimeA": {
           "id": "ru-4-26-mimeA",
-          "text": "Прогонять комара ночью",
+          "text": "Открывать шампанское",
           "isOpenRound": false
         },
         "drawB": {
@@ -2064,13 +2064,13 @@
         },
         "explainB": {
           "id": "ru-4-26-explainB",
-          "text": "Равновесие в природе",
+          "text": "Равноправие",
           "isOpenRound": false
         },
         "mimeB": {
           "id": "ru-4-26-mimeB",
-          "text": "Искать выход из палатки",
-          "isOpenRound": true
+          "text": "Отряхивать снег",
+          "isOpenRound": false
         }
       }
     },
@@ -2091,22 +2091,22 @@
         },
         "mimeA": {
           "id": "ru-4-27-mimeA",
-          "text": "Надевать слишком длинный шарф",
+          "text": "Читать карту",
           "isOpenRound": false
         },
         "drawB": {
           "id": "ru-4-27-drawB",
-          "text": "Подземная железная дорога",
+          "text": "Кратер",
           "isOpenRound": false
         },
         "explainB": {
           "id": "ru-4-27-explainB",
           "text": "Запас прочности",
-          "isOpenRound": true
+          "isOpenRound": false
         },
         "mimeB": {
           "id": "ru-4-27-mimeB",
-          "text": "Успокаивать качающуюся лодку",
+          "text": "Прислушиваться",
           "isOpenRound": false
         }
       }
@@ -2128,13 +2128,13 @@
         },
         "mimeA": {
           "id": "ru-4-28-mimeA",
-          "text": "Складывать огромную карту",
+          "text": "Защищать ворота",
           "isOpenRound": false
         },
         "drawB": {
           "id": "ru-4-28-drawB",
-          "text": "Оранжерея в снегу",
-          "isOpenRound": true
+          "text": "Мольберт",
+          "isOpenRound": false
         },
         "explainB": {
           "id": "ru-4-28-explainB",
@@ -2143,7 +2143,7 @@
         },
         "mimeB": {
           "id": "ru-4-28-mimeB",
-          "text": "Отряхивать снег с одежды",
+          "text": "Красить забор",
           "isOpenRound": false
         }
       }
@@ -2155,7 +2155,7 @@
       "tasks": {
         "drawA": {
           "id": "ru-4-29-drawA",
-          "text": "Повар с гигантской ложкой",
+          "text": "Штурвал",
           "isOpenRound": false
         },
         "explainA": {
@@ -2165,12 +2165,12 @@
         },
         "mimeA": {
           "id": "ru-4-29-mimeA",
-          "text": "Расчесывать запутанную гриву",
-          "isOpenRound": true
+          "text": "Копать траншею",
+          "isOpenRound": false
         },
         "drawB": {
           "id": "ru-4-29-drawB",
-          "text": "Человек с облаком вместо шляпы",
+          "text": "Маячок",
           "isOpenRound": false
         },
         "explainB": {
@@ -2180,7 +2180,7 @@
         },
         "mimeB": {
           "id": "ru-4-29-mimeB",
-          "text": "Переходить по шаткому мостику",
+          "text": "Перетягивать канат",
           "isOpenRound": false
         }
       }
@@ -2192,17 +2192,17 @@
       "tasks": {
         "drawA": {
           "id": "ru-4-30-drawA",
-          "text": "Трамвай в лесу",
+          "text": "Перископ",
           "isOpenRound": false
         },
         "explainA": {
           "id": "ru-4-30-explainA",
           "text": "Живой уголок",
-          "isOpenRound": true
+          "isOpenRound": false
         },
         "mimeA": {
           "id": "ru-4-30-mimeA",
-          "text": "Тянуть репку всей семьёй",
+          "text": "Гончар",
           "isOpenRound": false
         },
         "drawB": {
@@ -2217,7 +2217,7 @@
         },
         "mimeB": {
           "id": "ru-4-30-mimeB",
-          "text": "Принимать поздравления от толпы",
+          "text": "Плотник",
           "isOpenRound": false
         }
       }
@@ -2229,8 +2229,8 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-01-drawA",
-          "text": "Будильник который боится утра",
-          "isOpenRound": true
+          "text": "Механический замок",
+          "isOpenRound": false
         },
         "explainA": {
           "id": "ru-5-01-explainA",
@@ -2239,12 +2239,12 @@
         },
         "mimeA": {
           "id": "ru-5-01-mimeA",
-          "text": "Разбудить спящего великана",
+          "text": "Невидимый рюкзак",
           "isOpenRound": false
         },
         "drawB": {
           "id": "ru-5-01-drawB",
-          "text": "Садовник поливающий звёзды",
+          "text": "Механический город",
           "isOpenRound": false
         },
         "explainB": {
@@ -2254,8 +2254,8 @@
         },
         "mimeB": {
           "id": "ru-5-01-mimeB",
-          "text": "Спрятать слона в маленькой комнате",
-          "isOpenRound": true
+          "text": "Невесомый чемодан",
+          "isOpenRound": false
         }
       }
     },
@@ -2266,7 +2266,7 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-02-drawA",
-          "text": "Город внутри морской раковины",
+          "text": "Механический корабль",
           "isOpenRound": false
         },
         "explainA": {
@@ -2276,22 +2276,22 @@
         },
         "mimeA": {
           "id": "ru-5-02-mimeA",
-          "text": "Искать выход в невидимом лабиринте",
+          "text": "Горячий снег",
           "isOpenRound": false
         },
         "drawB": {
           "id": "ru-5-02-drawB",
-          "text": "Пожарный тушащий солнечный луч",
+          "text": "Механический дракон",
           "isOpenRound": false
         },
         "explainB": {
           "id": "ru-5-02-explainB",
           "text": "Закон подлости",
-          "isOpenRound": true
+          "isOpenRound": false
         },
         "mimeB": {
           "id": "ru-5-02-mimeB",
-          "text": "Провести экскурсию по невидимому музею",
+          "text": "Сонный дирижёр",
           "isOpenRound": false
         }
       }
@@ -2303,7 +2303,7 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-03-drawA",
-          "text": "Школа для динозавров",
+          "text": "Механический лес",
           "isOpenRound": false
         },
         "explainA": {
@@ -2313,13 +2313,13 @@
         },
         "mimeA": {
           "id": "ru-5-03-mimeA",
-          "text": "Удерживать равновесие на луне",
+          "text": "Испуганный фокусник",
           "isOpenRound": false
         },
         "drawB": {
           "id": "ru-5-03-drawB",
-          "text": "День рождения океана",
-          "isOpenRound": true
+          "text": "Механический остров",
+          "isOpenRound": false
         },
         "explainB": {
           "id": "ru-5-03-explainB",
@@ -2328,7 +2328,7 @@
         },
         "mimeB": {
           "id": "ru-5-03-mimeB",
-          "text": "Показать как растёт уверенность",
+          "text": "Робкий великан",
           "isOpenRound": false
         }
       }
@@ -2340,32 +2340,32 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-04-drawA",
-          "text": "Почтовый голубь на пенсии",
+          "text": "Механический мост",
           "isOpenRound": false
         },
         "explainA": {
           "id": "ru-5-04-explainA",
-          "text": "Заблудиться в трёх соснах",
+          "text": "Репутация",
           "isOpenRound": false
         },
         "mimeA": {
           "id": "ru-5-04-mimeA",
-          "text": "Объяснять инопланетянину правила очереди",
-          "isOpenRound": true
+          "text": "Забывчивый сыщик",
+          "isOpenRound": false
         },
         "drawB": {
           "id": "ru-5-04-drawB",
-          "text": "Снежная почта в пустыне",
+          "text": "Механический сад",
           "isOpenRound": false
         },
         "explainB": {
           "id": "ru-5-04-explainB",
-          "text": "Капля в море",
+          "text": "Компромисс",
           "isOpenRound": false
         },
         "mimeB": {
           "id": "ru-5-04-mimeB",
-          "text": "Убедить публику что вы невесомы",
+          "text": "Замёрзший танцор",
           "isOpenRound": false
         }
       }
@@ -2377,22 +2377,22 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-05-drawA",
-          "text": "Лестница в глубину океана",
+          "text": "Механический дворец",
           "isOpenRound": false
         },
         "explainA": {
           "id": "ru-5-05-explainA",
           "text": "Творческий беспорядок",
-          "isOpenRound": true
+          "isOpenRound": false
         },
         "mimeA": {
           "id": "ru-5-05-mimeA",
-          "text": "Учить дракона чихать тихо",
+          "text": "Важный пингвин",
           "isOpenRound": false
         },
         "drawB": {
           "id": "ru-5-05-drawB",
-          "text": "Парк аттракционов для великанов",
+          "text": "Механический поезд",
           "isOpenRound": false
         },
         "explainB": {
@@ -2402,7 +2402,7 @@
         },
         "mimeB": {
           "id": "ru-5-05-mimeB",
-          "text": "Учить кота соблюдать расписание",
+          "text": "Обидчивый король",
           "isOpenRound": false
         }
       }
@@ -2414,8 +2414,8 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-06-drawA",
-          "text": "Остров на спине великана",
-          "isOpenRound": true
+          "text": "Механический автобус",
+          "isOpenRound": false
         },
         "explainA": {
           "id": "ru-5-06-explainA",
@@ -2424,23 +2424,23 @@
         },
         "mimeA": {
           "id": "ru-5-06-mimeA",
-          "text": "Пытаться поймать собственную тень",
+          "text": "Растерянный робот",
           "isOpenRound": false
         },
         "drawB": {
           "id": "ru-5-06-drawB",
-          "text": "Семейный ужин на орбите",
+          "text": "Механический робот",
           "isOpenRound": false
         },
         "explainB": {
           "id": "ru-5-06-explainB",
-          "text": "Смотреть сквозь пальцы",
+          "text": "Парадокс",
           "isOpenRound": false
         },
         "mimeB": {
           "id": "ru-5-06-mimeB",
-          "text": "Открыть магазин на другой планете",
-          "isOpenRound": true
+          "text": "Ленивый супергерой",
+          "isOpenRound": false
         }
       }
     },
@@ -2451,7 +2451,7 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-07-drawA",
-          "text": "Фабрика хорошего настроения",
+          "text": "Механический фонтан",
           "isOpenRound": false
         },
         "explainA": {
@@ -2461,22 +2461,22 @@
         },
         "mimeA": {
           "id": "ru-5-07-mimeA",
-          "text": "Нести невидимый хрупкий рояль",
+          "text": "Коварный кот",
           "isOpenRound": false
         },
         "drawB": {
           "id": "ru-5-07-drawB",
-          "text": "Королевство внутри карманных часов",
+          "text": "Механический театр",
           "isOpenRound": false
         },
         "explainB": {
           "id": "ru-5-07-explainB",
-          "text": "Ходить вокруг да около",
-          "isOpenRound": true
+          "text": "Интуиция",
+          "isOpenRound": false
         },
         "mimeB": {
           "id": "ru-5-07-mimeB",
-          "text": "Потерять равновесие на неподвижном полу",
+          "text": "Гордый павлин",
           "isOpenRound": false
         }
       }
@@ -2488,7 +2488,7 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-08-drawA",
-          "text": "Театр под северным сиянием",
+          "text": "Механический слон",
           "isOpenRound": false
         },
         "explainA": {
@@ -2498,13 +2498,13 @@
         },
         "mimeA": {
           "id": "ru-5-08-mimeA",
-          "text": "Заворачивать слишком большой сюрприз",
+          "text": "Нетерпеливый фотограф",
           "isOpenRound": false
         },
         "drawB": {
           "id": "ru-5-08-drawB",
-          "text": "Корабль собирающий осенний дождь",
-          "isOpenRound": true
+          "text": "Механический дом",
+          "isOpenRound": false
         },
         "explainB": {
           "id": "ru-5-08-explainB",
@@ -2513,7 +2513,7 @@
         },
         "mimeB": {
           "id": "ru-5-08-mimeB",
-          "text": "Собирать чемодан за десять секунд",
+          "text": "Стеснительный пират",
           "isOpenRound": false
         }
       }
@@ -2525,7 +2525,7 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-09-drawA",
-          "text": "Магазин потерянных носков",
+          "text": "Механический самолёт",
           "isOpenRound": false
         },
         "explainA": {
@@ -2535,12 +2535,12 @@
         },
         "mimeA": {
           "id": "ru-5-09-mimeA",
-          "text": "Показывать первый полёт птенца",
-          "isOpenRound": true
+          "text": "Удивлённый инопланетянин",
+          "isOpenRound": false
         },
         "drawB": {
           "id": "ru-5-09-drawB",
-          "text": "Гостиница для заблудившихся облаков",
+          "text": "Механический кит",
           "isOpenRound": false
         },
         "explainB": {
@@ -2550,7 +2550,7 @@
         },
         "mimeB": {
           "id": "ru-5-09-mimeB",
-          "text": "Разыграть встречу лета и зимы",
+          "text": "Жадный хомяк",
           "isOpenRound": false
         }
       }
@@ -2562,32 +2562,32 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-10-drawA",
-          "text": "Зима в стеклянном шаре",
+          "text": "Механический туннель",
           "isOpenRound": false
         },
         "explainA": {
           "id": "ru-5-10-explainA",
           "text": "Семейная реликвия",
-          "isOpenRound": true
+          "isOpenRound": false
         },
         "mimeA": {
           "id": "ru-5-10-mimeA",
-          "text": "Открывать дверь во время урагана",
+          "text": "Серьёзный клоун",
           "isOpenRound": false
         },
         "drawB": {
           "id": "ru-5-10-drawB",
-          "text": "Гора вязаных шарфов",
+          "text": "Механический велосипед",
           "isOpenRound": false
         },
         "explainB": {
           "id": "ru-5-10-explainB",
-          "text": "Маленькая победа над собой",
+          "text": "Воображение",
           "isOpenRound": false
         },
         "mimeB": {
           "id": "ru-5-10-mimeB",
-          "text": "Защищать бутерброд от невидимой чайки",
+          "text": "Трусливый рыцарь",
           "isOpenRound": false
         }
       }
@@ -2599,8 +2599,8 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-11-drawA",
-          "text": "Музей забытых изобретений",
-          "isOpenRound": true
+          "text": "Механический парк",
+          "isOpenRound": false
         },
         "explainA": {
           "id": "ru-5-11-explainA",
@@ -2609,23 +2609,23 @@
         },
         "mimeA": {
           "id": "ru-5-11-mimeA",
-          "text": "Собирать рассыпавшееся созвездие",
+          "text": "Нервный экзаменатор",
           "isOpenRound": false
         },
         "drawB": {
           "id": "ru-5-11-drawB",
-          "text": "Площадь с фонтаном из книг",
+          "text": "Механический кран",
           "isOpenRound": false
         },
         "explainB": {
           "id": "ru-5-11-explainB",
-          "text": "Держать руку на пульсе",
+          "text": "Перспектива",
           "isOpenRound": false
         },
         "mimeB": {
           "id": "ru-5-11-mimeB",
-          "text": "Показать утро очень рассеянного волшебника",
-          "isOpenRound": true
+          "text": "Самодовольный певец",
+          "isOpenRound": false
         }
       }
     },
@@ -2636,32 +2636,32 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-12-drawA",
-          "text": "Поезд на дне чайной чашки",
+          "text": "Механический лифт",
           "isOpenRound": false
         },
         "explainA": {
           "id": "ru-5-12-explainA",
-          "text": "Работа над ошибками",
+          "text": "Инерция",
           "isOpenRound": false
         },
         "mimeA": {
           "id": "ru-5-12-mimeA",
-          "text": "Управлять непослушным оркестром",
+          "text": "Невидимый поводок",
           "isOpenRound": false
         },
         "drawB": {
           "id": "ru-5-12-drawB",
-          "text": "Чемодан превращающийся в комнату",
+          "text": "Механический космонавт",
           "isOpenRound": false
         },
         "explainB": {
           "id": "ru-5-12-explainB",
-          "text": "Читать между строк",
-          "isOpenRound": true
+          "text": "Сострадание",
+          "isOpenRound": false
         },
         "mimeB": {
           "id": "ru-5-12-mimeB",
-          "text": "Впервые увидеть собственную фотографию",
+          "text": "Непослушная тень",
           "isOpenRound": false
         }
       }
@@ -2673,7 +2673,7 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-13-drawA",
-          "text": "Дворец из осенних листьев",
+          "text": "Механический динозавр",
           "isOpenRound": false
         },
         "explainA": {
@@ -2683,22 +2683,22 @@
         },
         "mimeA": {
           "id": "ru-5-13-mimeA",
-          "text": "Уговаривать упрямый чемодан закрыться",
+          "text": "Прозрачная стена",
           "isOpenRound": false
         },
         "drawB": {
           "id": "ru-5-13-drawB",
-          "text": "Маленький мир в капле росы",
-          "isOpenRound": true
+          "text": "Механический самовар",
+          "isOpenRound": false
         },
         "explainB": {
           "id": "ru-5-13-explainB",
-          "text": "Выдать желаемое за действительное",
+          "text": "Вдохновение",
           "isOpenRound": false
         },
         "mimeB": {
           "id": "ru-5-13-mimeB",
-          "text": "Пытаться догнать медленно уходящий сон",
+          "text": "Волшебные ботинки",
           "isOpenRound": false
         }
       }
@@ -2710,7 +2710,7 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-14-drawA",
-          "text": "Карусель для облаков",
+          "text": "Механический вулкан",
           "isOpenRound": false
         },
         "explainA": {
@@ -2720,22 +2720,22 @@
         },
         "mimeA": {
           "id": "ru-5-14-mimeA",
-          "text": "Встречать друга спустя сто лет",
-          "isOpenRound": true
+          "text": "Тяжёлое облако",
+          "isOpenRound": false
         },
         "drawB": {
           "id": "ru-5-14-drawB",
-          "text": "Пикник на кольцах планеты",
+          "text": "Механический лабиринт",
           "isOpenRound": false
         },
         "explainB": {
           "id": "ru-5-14-explainB",
-          "text": "Перевернуть страницу жизни",
+          "text": "Деликатность",
           "isOpenRound": false
         },
         "mimeB": {
           "id": "ru-5-14-mimeB",
-          "text": "Устроить соревнование с собственным отражением",
+          "text": "Скользкая лестница",
           "isOpenRound": false
         }
       }
@@ -2747,22 +2747,22 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-15-drawA",
-          "text": "Библиотека на спине слона",
+          "text": "Механический спутник",
           "isOpenRound": false
         },
         "explainA": {
           "id": "ru-5-15-explainA",
-          "text": "Право на ошибку",
-          "isOpenRound": true
+          "text": "Справедливость",
+          "isOpenRound": false
         },
         "mimeA": {
           "id": "ru-5-15-mimeA",
-          "text": "Учить робота танцевать народный танец",
+          "text": "Сбежавший будильник",
           "isOpenRound": false
         },
         "drawB": {
           "id": "ru-5-15-drawB",
-          "text": "Поезд из разных эпох",
+          "text": "Механический телескоп",
           "isOpenRound": false
         },
         "explainB": {
@@ -2772,7 +2772,7 @@
         },
         "mimeB": {
           "id": "ru-5-15-mimeB",
-          "text": "Показать как зарождается подозрение",
+          "text": "Убегающая шляпа",
           "isOpenRound": false
         }
       }
@@ -2784,8 +2784,8 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-16-drawA",
-          "text": "Горная деревня над облаками",
-          "isOpenRound": true
+          "text": "Зеркальный замок",
+          "isOpenRound": false
         },
         "explainA": {
           "id": "ru-5-16-explainA",
@@ -2794,23 +2794,23 @@
         },
         "mimeA": {
           "id": "ru-5-16-mimeA",
-          "text": "Шагать по полу который стал липким",
+          "text": "Лунная походка",
           "isOpenRound": false
         },
         "drawB": {
           "id": "ru-5-16-drawB",
-          "text": "Лес где вместо листьев письма",
+          "text": "Зеркальный город",
           "isOpenRound": false
         },
         "explainB": {
           "id": "ru-5-16-explainB",
-          "text": "Зажечь искру интереса",
+          "text": "Благодарность",
           "isOpenRound": false
         },
         "mimeB": {
           "id": "ru-5-16-mimeB",
-          "text": "Заменить целый оркестр одним человеком",
-          "isOpenRound": true
+          "text": "Замедленная съёмка",
+          "isOpenRound": false
         }
       }
     },
@@ -2821,7 +2821,7 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-17-drawA",
-          "text": "Плавучий сад для бабочек",
+          "text": "Зеркальный корабль",
           "isOpenRound": false
         },
         "explainA": {
@@ -2831,22 +2831,22 @@
         },
         "mimeA": {
           "id": "ru-5-17-mimeA",
-          "text": "Делать вид что ботинки летают",
+          "text": "Обратное время",
           "isOpenRound": false
         },
         "drawB": {
           "id": "ru-5-17-drawB",
-          "text": "Шахматный турнир морских коньков",
+          "text": "Зеркальный дракон",
           "isOpenRound": false
         },
         "explainB": {
           "id": "ru-5-17-explainB",
-          "text": "Плыть по течению",
-          "isOpenRound": true
+          "text": "Скромность",
+          "isOpenRound": false
         },
         "mimeB": {
           "id": "ru-5-17-mimeB",
-          "text": "Искать потерянную мысль в карманах",
+          "text": "Зеркальное отражение",
           "isOpenRound": false
         }
       }
@@ -2858,7 +2858,7 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-18-drawA",
-          "text": "Карта города будущего",
+          "text": "Зеркальный лес",
           "isOpenRound": false
         },
         "explainA": {
@@ -2868,22 +2868,22 @@
         },
         "mimeA": {
           "id": "ru-5-18-mimeA",
-          "text": "Делиться зонтом с великаном",
+          "text": "Невидимая дверь",
           "isOpenRound": false
         },
         "drawB": {
           "id": "ru-5-18-drawB",
-          "text": "Радуга которая ищет начало",
-          "isOpenRound": true
+          "text": "Зеркальный остров",
+          "isOpenRound": false
         },
         "explainB": {
           "id": "ru-5-18-explainB",
-          "text": "Оказаться не в своей тарелке",
+          "text": "Расточительность",
           "isOpenRound": false
         },
         "mimeB": {
           "id": "ru-5-18-mimeB",
-          "text": "Показать дождь глазами комнатного растения",
+          "text": "Лопнувшее терпение",
           "isOpenRound": false
         }
       }
@@ -2895,32 +2895,32 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-19-drawA",
-          "text": "Пекарня на воздушном шаре",
+          "text": "Зеркальный мост",
           "isOpenRound": false
         },
         "explainA": {
           "id": "ru-5-19-explainA",
-          "text": "Обратная сторона медали",
+          "text": "Самоирония",
           "isOpenRound": false
         },
         "mimeA": {
           "id": "ru-5-19-mimeA",
-          "text": "Спасать торт от целой стаи птиц",
-          "isOpenRound": true
+          "text": "Тайная зависть",
+          "isOpenRound": false
         },
         "drawB": {
           "id": "ru-5-19-drawB",
-          "text": "Сказочный город после дождя",
+          "text": "Зеркальный сад",
           "isOpenRound": false
         },
         "explainB": {
           "id": "ru-5-19-explainB",
-          "text": "Поднять настроение без слов",
+          "text": "Суеверие",
           "isOpenRound": false
         },
         "mimeB": {
           "id": "ru-5-19-mimeB",
-          "text": "Встретить робота который боится щекотки",
+          "text": "Скрытая радость",
           "isOpenRound": false
         }
       }
@@ -2932,22 +2932,22 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-20-drawA",
-          "text": "Семейный портрет снеговиков",
+          "text": "Зеркальный дворец",
           "isOpenRound": false
         },
         "explainA": {
           "id": "ru-5-20-explainA",
           "text": "Чувство времени",
-          "isOpenRound": true
+          "isOpenRound": false
         },
         "mimeA": {
           "id": "ru-5-20-mimeA",
-          "text": "Пытаться погладить прозрачного кота",
+          "text": "Неожиданная победа",
           "isOpenRound": false
         },
         "drawB": {
           "id": "ru-5-20-drawB",
-          "text": "Подземная станция для кротов",
+          "text": "Зеркальный поезд",
           "isOpenRound": false
         },
         "explainB": {
@@ -2957,7 +2957,7 @@
         },
         "mimeB": {
           "id": "ru-5-20-mimeB",
-          "text": "Пытаться незаметно заменить разбитую вазу",
+          "text": "Показное равнодушие",
           "isOpenRound": false
         }
       }
@@ -2969,33 +2969,33 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-21-drawA",
-          "text": "Космодром на крыше дома",
-          "isOpenRound": true
+          "text": "Зеркальный автобус",
+          "isOpenRound": false
         },
         "explainA": {
           "id": "ru-5-21-explainA",
-          "text": "Переоценить свои силы",
+          "text": "Предрассудок",
           "isOpenRound": false
         },
         "mimeA": {
           "id": "ru-5-21-mimeA",
-          "text": "Перебираться через невидимую реку",
+          "text": "Неловкое молчание",
           "isOpenRound": false
         },
         "drawB": {
           "id": "ru-5-21-drawB",
-          "text": "Небесная мастерская по ремонту луны",
+          "text": "Зеркальный робот",
           "isOpenRound": false
         },
         "explainB": {
           "id": "ru-5-21-explainB",
-          "text": "Привычка замечать хорошее",
+          "text": "Невозмутимость",
           "isOpenRound": false
         },
         "mimeB": {
           "id": "ru-5-21-mimeB",
-          "text": "Учить невидимого щенка новым командам",
-          "isOpenRound": true
+          "text": "Незаслуженная похвала",
+          "isOpenRound": false
         }
       }
     },
@@ -3006,7 +3006,7 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-22-drawA",
-          "text": "Велосипед для осьминога",
+          "text": "Зеркальный фонтан",
           "isOpenRound": false
         },
         "explainA": {
@@ -3016,22 +3016,22 @@
         },
         "mimeA": {
           "id": "ru-5-22-mimeA",
-          "text": "Тренировать черепаху перед забегом",
+          "text": "Притворная смелость",
           "isOpenRound": false
         },
         "drawB": {
           "id": "ru-5-22-drawB",
-          "text": "Самый тихий концерт на свете",
+          "text": "Зеркальный театр",
           "isOpenRound": false
         },
         "explainB": {
           "id": "ru-5-22-explainB",
-          "text": "Время пролетело незаметно",
-          "isOpenRound": true
+          "text": "Непредсказуемость",
+          "isOpenRound": false
         },
         "mimeB": {
           "id": "ru-5-22-mimeB",
-          "text": "Поздравить великана с тихим праздником",
+          "text": "Упущенная возможность",
           "isOpenRound": false
         }
       }
@@ -3043,32 +3043,32 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-23-drawA",
-          "text": "Вечерний рынок на луне",
+          "text": "Зеркальный слон",
           "isOpenRound": false
         },
         "explainA": {
           "id": "ru-5-23-explainA",
-          "text": "Найти общий язык",
+          "text": "Соперничество",
           "isOpenRound": false
         },
         "mimeA": {
           "id": "ru-5-23-mimeA",
-          "text": "Доставать звезду с высокой полки",
+          "text": "Мнимая опасность",
           "isOpenRound": false
         },
         "drawB": {
           "id": "ru-5-23-drawB",
-          "text": "Танцующая очередь в булочную",
-          "isOpenRound": true
+          "text": "Зеркальный дом",
+          "isOpenRound": false
         },
         "explainB": {
           "id": "ru-5-23-explainB",
-          "text": "Два взгляда на одну историю",
+          "text": "Сотрудничество",
           "isOpenRound": false
         },
         "mimeB": {
           "id": "ru-5-23-mimeB",
-          "text": "Показать путешествие письма без слов",
+          "text": "Случайная встреча",
           "isOpenRound": false
         }
       }
@@ -3080,7 +3080,7 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-24-drawA",
-          "text": "Робот выращивающий радугу",
+          "text": "Зеркальный самолёт",
           "isOpenRound": false
         },
         "explainA": {
@@ -3090,22 +3090,22 @@
         },
         "mimeA": {
           "id": "ru-5-24-mimeA",
-          "text": "Прятать радугу в карман",
-          "isOpenRound": true
+          "text": "Приятное предвкушение",
+          "isOpenRound": false
         },
         "drawB": {
           "id": "ru-5-24-drawB",
-          "text": "Река огибающая спящего дракона",
+          "text": "Зеркальный кит",
           "isOpenRound": false
         },
         "explainB": {
           "id": "ru-5-24-explainB",
-          "text": "Перейти от слов к делу",
+          "text": "Обаяние",
           "isOpenRound": false
         },
         "mimeB": {
           "id": "ru-5-24-mimeB",
-          "text": "Изобразить очередь которая двигается назад",
+          "text": "Неудержимое любопытство",
           "isOpenRound": false
         }
       }
@@ -3117,32 +3117,32 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-25-drawA",
-          "text": "Дом с лестницей из книг",
+          "text": "Зеркальный туннель",
           "isOpenRound": false
         },
         "explainA": {
           "id": "ru-5-25-explainA",
-          "text": "Вдохнуть жизнь в идею",
-          "isOpenRound": true
+          "text": "Импровизация",
+          "isOpenRound": false
         },
         "mimeA": {
           "id": "ru-5-25-mimeA",
-          "text": "Пытаться уснуть на качающемся облаке",
+          "text": "Тяжёлое решение",
           "isOpenRound": false
         },
         "drawB": {
           "id": "ru-5-25-drawB",
-          "text": "Галерея портретов ветра",
+          "text": "Зеркальный велосипед",
           "isOpenRound": false
         },
         "explainB": {
           "id": "ru-5-25-explainB",
-          "text": "Увидеть знакомое по-новому",
+          "text": "Выдержка",
           "isOpenRound": false
         },
         "mimeB": {
           "id": "ru-5-25-mimeB",
-          "text": "Отмечать победу стараясь не шуметь",
+          "text": "Внезапное озарение",
           "isOpenRound": false
         }
       }
@@ -3154,8 +3154,8 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-26-drawA",
-          "text": "Подводный концерт скрипачей",
-          "isOpenRound": true
+          "text": "Зеркальный парк",
+          "isOpenRound": false
         },
         "explainA": {
           "id": "ru-5-26-explainA",
@@ -3164,23 +3164,23 @@
         },
         "mimeA": {
           "id": "ru-5-26-mimeA",
-          "text": "Примерять корону которая всё время растёт",
+          "text": "Хитрый план",
           "isOpenRound": false
         },
         "drawB": {
           "id": "ru-5-26-drawB",
-          "text": "Улица вверх тормашками",
+          "text": "Зеркальный кран",
           "isOpenRound": false
         },
         "explainB": {
           "id": "ru-5-26-explainB",
-          "text": "Оставить хорошее впечатление",
+          "text": "Убедительность",
           "isOpenRound": false
         },
         "mimeB": {
           "id": "ru-5-26-mimeB",
-          "text": "Принимать гостей в домике для птиц",
-          "isOpenRound": true
+          "text": "Сонное царство",
+          "isOpenRound": false
         }
       }
     },
@@ -3191,7 +3191,7 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-27-drawA",
-          "text": "Мост между временами года",
+          "text": "Зеркальный лифт",
           "isOpenRound": false
         },
         "explainA": {
@@ -3201,22 +3201,22 @@
         },
         "mimeA": {
           "id": "ru-5-27-mimeA",
-          "text": "Спорить с упрямым отражением",
+          "text": "Забытый пароль",
           "isOpenRound": false
         },
         "drawB": {
           "id": "ru-5-27-drawB",
-          "text": "Дерево с дверями в разные страны",
+          "text": "Зеркальный космонавт",
           "isOpenRound": false
         },
         "explainB": {
           "id": "ru-5-27-explainB",
-          "text": "Испытание на терпение",
-          "isOpenRound": true
+          "text": "Пунктуальность",
+          "isOpenRound": false
         },
         "mimeB": {
           "id": "ru-5-27-mimeB",
-          "text": "Показать как скука превращается в восторг",
+          "text": "Непобедимый соперник",
           "isOpenRound": false
         }
       }
@@ -3228,32 +3228,32 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-28-drawA",
-          "text": "Трамвай путешествующий по звёздам",
+          "text": "Зеркальный динозавр",
           "isOpenRound": false
         },
         "explainA": {
           "id": "ru-5-28-explainA",
-          "text": "Сделать первый шаг",
+          "text": "Вежливость",
           "isOpenRound": false
         },
         "mimeA": {
           "id": "ru-5-28-mimeA",
-          "text": "Учить рыбу ходить по суше",
+          "text": "Сомнительное угощение",
           "isOpenRound": false
         },
         "drawB": {
           "id": "ru-5-28-drawB",
-          "text": "Мост сделанный из музыкальных нот",
-          "isOpenRound": true
+          "text": "Зеркальный самовар",
+          "isOpenRound": false
         },
         "explainB": {
           "id": "ru-5-28-explainB",
-          "text": "Ключ к чужому настроению",
+          "text": "Непоседливость",
           "isOpenRound": false
         },
         "mimeB": {
           "id": "ru-5-28-mimeB",
-          "text": "Уговорить сонное солнце встать пораньше",
+          "text": "Хрупкое равновесие",
           "isOpenRound": false
         }
       }
@@ -3265,32 +3265,32 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-29-drawA",
-          "text": "Обсерватория на кувшинке",
+          "text": "Зеркальный вулкан",
           "isOpenRound": false
         },
         "explainA": {
           "id": "ru-5-29-explainA",
-          "text": "Взглянуть другими глазами",
+          "text": "Откровенность",
           "isOpenRound": false
         },
         "mimeA": {
           "id": "ru-5-29-mimeA",
-          "text": "Удерживать улетающий дом",
-          "isOpenRound": true
+          "text": "Внутренний спор",
+          "isOpenRound": false
         },
         "drawB": {
           "id": "ru-5-29-drawB",
-          "text": "Карусель сменяющая времена года",
+          "text": "Зеркальный лабиринт",
           "isOpenRound": false
         },
         "explainB": {
           "id": "ru-5-29-explainB",
-          "text": "Планы изменились в последний момент",
+          "text": "Загадочность",
           "isOpenRound": false
         },
         "mimeB": {
           "id": "ru-5-29-mimeB",
-          "text": "Пытаться повернуть слишком длинный автобус",
+          "text": "Тихое торжество",
           "isOpenRound": false
         }
       }
@@ -3302,32 +3302,32 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-30-drawA",
-          "text": "Путешествие одной снежинки",
+          "text": "Зеркальный спутник",
           "isOpenRound": false
         },
         "explainA": {
           "id": "ru-5-30-explainA",
           "text": "Забытое сокровище",
-          "isOpenRound": true
+          "isOpenRound": false
         },
         "mimeA": {
           "id": "ru-5-30-mimeA",
-          "text": "Репетировать выход фокусника без помощника",
+          "text": "Потерянное вдохновение",
           "isOpenRound": false
         },
         "drawB": {
           "id": "ru-5-30-drawB",
-          "text": "Парад потерянных игрушек",
+          "text": "Зеркальный телескоп",
           "isOpenRound": false
         },
         "explainB": {
           "id": "ru-5-30-explainB",
-          "text": "Красота простого решения",
+          "text": "Притяжение",
           "isOpenRound": false
         },
         "mimeB": {
           "id": "ru-5-30-mimeB",
-          "text": "Показать гордость за чужой успех",
+          "text": "Секретная миссия",
           "isOpenRound": false
         }
       }
