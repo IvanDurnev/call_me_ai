@@ -116,13 +116,19 @@ class ActivityRulesTests(unittest.TestCase):
         with self.assertRaises(GameError):a.act(r,p,dict(action='difficulty',difficulty=5))
         with self.assertRaises(GameError):a.act(r,p,dict(action='task',category='mimeA'))
 
-    def test_collisions_no_chain_and_finish_clamps(self):
+    def test_teams_share_cells_without_moving_others_and_finish_clamps(self):
         t=a.build_move_transaction([0,3,3,2],{0:3},'id')
-        self.assertEqual(t['after'],[3,2,2,2]);self.assertEqual(t['bumped'],[1,2])
+        self.assertEqual(t['after'],[3,3,3,2]);self.assertEqual(t['bumped'],[])
         t=a.build_move_transaction([47,49],{0:5},'id')
         self.assertEqual(t['after'],[49,49]);self.assertEqual(t['raw_destinations'][0],52)
         r=room();r['positions'][0]=47;p=prepare(r,5);a.act(r,p,dict(action='perform'),now=100);guessed(r)
         self.assertEqual(r['phase'],'finished');self.assertEqual(r['winners'],[0])
+
+    def test_success_only_moves_active_team_onto_an_occupied_cell(self):
+        r=room(4);r['positions']=[0,5,5,2]
+        p=prepare(r,5);a.act(r,p,dict(action='perform'),now=100);guessed(r)
+        self.assertEqual(r['positions'],[5,5,5,2])
+        self.assertEqual(r['history'][-1]['transaction']['bumped'],[])
 
     def test_undo_restores_card_deck_queue_and_discards_next_attempt(self):
         r=room();before=copy.deepcopy(r['decks']);p=prepare(r);card=r['active']['card']
@@ -202,6 +208,16 @@ class ActivityAPITests(unittest.TestCase):
         self.assertEqual(self.action('guessed',self.players[1]).status_code,400)
         self.assertEqual(self.action('guessed',headers).status_code,200)
         self.assertEqual(self.state()['positions'],[3,0]);self.assertEqual(self.state()['phase'],'board')
+
+    def test_second_team_lands_on_first_without_pushing_it_back(self):
+        self.start();headers=self.perform();self.action('guessed',headers)
+        self.assertEqual(self.state()['positions'],[3,0])
+        self.action('next');headers=self.perform();self.action('guessed',headers)
+        state=self.state()
+        self.assertEqual(state['positions'],[3,3])
+        self.assertEqual(state['last_transaction']['bumped'],[])
+        self.assertEqual(state['last_transaction']['before'],[3,0])
+        self.action('undo');self.assertEqual(self.state()['positions'],[3,0])
 
     def test_concurrent_success_is_applied_once(self):
         self.start();headers=self.perform();state=self.state(headers)

@@ -151,23 +151,13 @@ def expire(room,now=None):
     return False
 
 
-def resolve_occupancy(before, advances, collisions=True):
+def build_move_transaction(before,advances,turn_id) -> MoveTransaction:
+    # Teams can share a cell. Only the successful team advances.
     after=list(before)
     for index,amount in advances.items(): after[index]=min(FINISH,before[index]+amount)
-    bumped=[]
-    if collisions:
-        destinations={after[i] for i in advances if after[i] not in (START,FINISH)}
-        for i,position in enumerate(before):
-            if i not in advances and position in destinations:
-                after[i]=max(START,position-1);bumped.append(i)
-    return after,bumped
-
-
-def build_move_transaction(before,advances,turn_id,collisions=True) -> MoveTransaction:
-    after,bumped=resolve_occupancy(before,advances,collisions)
     return dict(turn_id=turn_id,before=list(before),after=after,advances=dict(advances),
                 raw_destinations={i:before[i]+amount for i,amount in advances.items()},
-                bumped=bumped,winners=[i for i,p in enumerate(after) if p>=FINISH])
+                bumped=[],winners=[i for i,p in enumerate(after) if p>=FINISH])
 
 
 def resolve_turn(room,result:TurnResult) -> MoveTransaction:
