@@ -90,3 +90,43 @@ Back up the database first. This creates corporate pages, memberships and code
 tables, adds the nullable company reference to calls, and adds the email-code
 failed-attempt counter. It preserves existing records and Alembic history.
 The `static/uploads/corporate` directory must persist across deployments.
+
+## Games subdomains (2026-11-06)
+
+`https://games.domovoice.ai/` and `https://www.games.domovoice.ai/` serve the
+existing games catalogue directly. Nginx internally proxies the exact root `/`
+to the Flask path `/games`; it does not redirect the browser to the main domain
+or add `/games` to the address. Existing `/games/*`, `/api/games/*`, `/static/*`
+and `/ws/games/*` paths retain their normal routes on both subdomains.
+HTTP upgrades to HTTPS on the same hostname. The original main domain remains
+available.
+
+The deployed configuration is `/etc/nginx/sites-available/games_domovoice.conf`,
+linked from `sites-enabled`; its source is `deploy/nginx/games_domovoice.conf`.
+Both DNS A records point to `212.24.99.132`. The separate Let's Encrypt lineage
+`games.domovoice.ai` covers both names and uses the webroot
+`/var/www/letsencrypt-games`. The existing `certbot.timer` renews certificates;
+`/etc/letsencrypt/renewal-hooks/deploy/reload-games-nginx` validates and reloads
+Nginx after this lineage renews. Its source is in `deploy/letsencrypt/`.
+
+Production `.env` now sets `GAMES_PUBLIC_URL=https://games.domovoice.ai` so room
+invitations and QR codes consistently contain the HTTPS games address. This
+setting is independent of the existing main-site `PUBLIC_BASE_URL`. A graceful
+Gunicorn HUP loads the setting into new workers. Nginx and environment backups
+were saved under `/home/idurnev/backups/call_me_ai/` before applying changes.
+
+To recheck the proxy: run `sudo nginx -t`, request each HTTPS root without
+following redirects (expect 200 and no Location), create a test room, check its
+`join_url` and QR endpoint, then authenticate a host and phone at
+`wss://<games-host>/ws/games/tag/<code>`. The backend service and games database
+are shared with the original main domain. To roll back the new entrypoints,
+disable this site and restore the previous `GAMES_PUBLIC_URL` setting from its
+backup, then validate/reload Nginx and HUP Gunicorn.
+
+Verification on 2026-11-06: Nginx validation and reload succeeded; a Certbot
+renewal dry run succeeded and the deploy hook was exercised separately. External
+checks using normal DNS and certificate verification passed for both roots
+(HTTP 200, zero redirects), static assets, room creation, the HTTPS join URL,
+QR endpoint, and authenticated host/phone WebSockets. Both root pages were also
+opened in the browser with their original subdomain preserved. The main domain's
+health and games page continued to respond normally.

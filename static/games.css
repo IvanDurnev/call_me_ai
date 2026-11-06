@@ -6,7 +6,18 @@
 .games-screen-button[hidden] { display: none; }
 .games-screen-button > span:first-child { font-size: 24px; line-height: 1; }
 .games-eyebrow { margin: 0 0 16px; font-size: 11px; font-weight: 750; letter-spacing: .13em; text-transform: uppercase; color: #65617a; }
-.games-library { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 360px)); gap: 24px; }
+.games-library { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; width: 100%; max-width: 940px; margin: 0 auto; }
+.games-library .game-card { flex: 0 1 300px; width: 300px; max-width: 100%; }
+.games-library .game-info { padding: 12px 14px; }
+.games-library .game-title-row { gap: 8px; }
+.games-library .game-title-row h2 { font-size: 24px; }
+.games-library .activity-card .game-title-row h2 { font-size: 17px; }
+.games-library .game-status { padding: 4px 7px; font-size: 8px; }
+.games-library .game-description { margin-top: 4px; font-size: 11px; }
+.games-library .game-facts { gap: 8px; margin: 6px 0 8px; font-size: 10px; }
+.games-library .game-actions { gap: 10px; }
+.games-library .game-launch, .games-library .game-rules-button { min-height: 40px; padding: 10px; font-size: 12px; }
+.games-library .game-join-link { margin-top: 8px; font-size: 10px; }
 .game-card { display: grid; grid-template-rows: 45% 55%; aspect-ratio: 1; min-width: 0; overflow: hidden; border: 1px solid rgba(255,255,255,.8); border-radius: 24px; background: rgba(255,255,255,.88); box-shadow: 0 16px 48px rgba(46,53,87,.08); backdrop-filter: blur(20px); }
 .game-art { position: relative; overflow: hidden; display: grid; place-items: center; background: radial-gradient(ellipse at 50% 45%, #fff8df 0, #f2dfca 65%, #e8d5c8 100%); }
 .game-art-orbit { position: absolute; border: 1px solid rgba(158,118,90,.16); border-radius: 50%; width: 180px; height: 180px; }
@@ -51,7 +62,7 @@
 .rules-goal { background: #eee7d9; padding: 14px; border-radius: 12px; }.rules-done { background: var(--text); color: white; width: 100%; cursor: pointer; }
 .games-page :focus-visible { outline: 3px solid #8e432e; outline-offset: 5px; }
 @media (max-width: 900px) { .games-shell { width: calc(100% - 48px); }.games-steps { gap: 16px; }.games-steps li { gap: 10px; }.games-steps br { display: none; } }
-@media (max-width: 640px) { .games-shell { width: calc(100% - 32px); padding-top: 88px; }.games-screen-button { top: 16px; right: 16px; }.games-library { grid-template-columns: minmax(0, 360px); }.games-steps { grid-template-columns: 1fr; gap: 22px; }.games-steps h3 { font-size: 15px; }.games-steps p { font-size: 13px; }.games-dialog { padding: 20px; } }
+@media (max-width: 640px) { .games-shell { width: calc(100% - 32px); padding-top: 88px; }.games-screen-button { top: 16px; right: 16px; }.games-steps { grid-template-columns: 1fr; gap: 22px; }.games-steps h3 { font-size: 15px; }.games-steps p { font-size: 13px; }.games-dialog { padding: 20px; } }
 @media (max-width: 370px) { .game-info { padding: 12px 14px; }.game-title-row h2 { font-size: 26px; }.game-facts { gap: 8px; margin: 8px 0 10px; font-size: 10px; }.game-actions { gap: 10px; }.game-launch { padding: 10px; font-size: 12px; }.game-rules-button { font-size: 11px; }.game-description { margin-top: 4px; font-size: 11px; }.game-facts { margin: 6px 0; }.game-join-link { margin-top: 6px; font-size: 10px; } }
 
 .imposter-art { background: radial-gradient(ellipse at 50% 45%, #f4eaf8 0, #e2d3e9 65%, #cdbfd8 100%); }
@@ -72,3 +83,10 @@
 
 .activity-card .game-title-row h2 { font-size: 22px; }.activity-art { background: radial-gradient(ellipse at center,#fff5df,#e3d1b4); }.activity-art-road { position: absolute; width: 230px; height: 86px; border: 8px dotted #c9bca7; border-radius: 25px; transform: rotate(-10deg); }.activity-art-icon { position: absolute; display: grid; place-items: center; width: 64px; height: 72px; border: 2px solid white; border-radius: 16px; color: white; font-size: 34px; box-shadow: 0 7px 12px #5e4b3020; }.icon-pencil { background: #d8a136; transform: translate(-70px,8px) rotate(-14deg); }.icon-talk { background: #548fcd; transform: translateY(-8px) rotate(4deg); }.icon-mime { background: #6a9d61; transform: translate(70px,12px) rotate(13deg); }
 @media(max-width:370px) { .activity-card .game-title-row h2 { font-size: 18px; }.activity-card .game-description { font-size: 10px; } }
+
+@media (min-width: 901px) {
+  .games-library .game-card { flex-basis: calc((100% - 40px) / 3); }
+}
+@media (min-width: 901px) and (max-width: 1000px) {
+  .games-library .activity-card .game-title-row h2 { font-size: 16px; }
+}
