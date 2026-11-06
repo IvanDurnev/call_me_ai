@@ -13,12 +13,10 @@
 .games-library .game-title-row { gap: 8px; }
 .games-library .game-title-row h2 { font-size: 24px; }
 .games-library .activity-card .game-title-row h2 { font-size: 17px; }
-.games-library .game-status { padding: 4px 7px; font-size: 8px; }
 .games-library .game-description { margin-top: 4px; font-size: 11px; }
 .games-library .game-facts { gap: 8px; margin: 6px 0 8px; font-size: 10px; }
 .games-library .game-actions { gap: 10px; margin-top: auto; }
 .games-library .game-launch, .games-library .game-rules-button { min-height: 40px; padding: 10px; font-size: 12px; }
-.games-library .game-join-link { margin-top: 8px; font-size: 10px; }
 .game-card { display: grid; grid-template-rows: 45% 55%; aspect-ratio: 1; min-width: 0; overflow: hidden; border: 1px solid rgba(255,255,255,.8); border-radius: 24px; background: rgba(255,255,255,.88); box-shadow: 0 16px 48px rgba(46,53,87,.08); backdrop-filter: blur(20px); }
 .game-art { position: relative; overflow: hidden; display: grid; place-items: center; background: radial-gradient(ellipse at 50% 45%, #fff8df 0, #f2dfca 65%, #e8d5c8 100%); }
 .game-art-orbit { position: absolute; border: 1px solid rgba(158,118,90,.16); border-radius: 50%; width: 180px; height: 180px; }
@@ -38,7 +36,6 @@
 .game-title-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .game-title-row h2 { margin: 0; font-size: 29px; line-height: 1.1; letter-spacing: -.04em; }
 .game-description { margin: 6px 0 0; font-size: 12px; line-height: 1.4; color: #60697e; }
-.game-status { background: #f1e9da; color: #806441; border: 1px solid #e6dcc8; border-radius: 30px; padding: 5px 9px; font-size: 9px; letter-spacing: .04em; white-space: nowrap; }
 .game-facts { display: flex; gap: 12px; list-style: none; padding: 0; margin: 8px 0 10px; font-size: 11px; color: #4b566d; }
 .game-facts li { white-space: nowrap; }.game-facts span { margin-right: 3px; font-size: 14px; }
 .game-actions { display: flex; gap: 16px; align-items: center; }
@@ -47,7 +44,6 @@
 .game-launch:disabled { opacity: .6; cursor: wait; }
 .game-rules-button { display: flex; flex: 1; align-items: center; justify-content: center; min-height: 44px; border: 1px solid #d8d3e1; border-radius: 10px; padding: 11px 14px; background: #ffffffb3; font: inherit; font-size: 13px; font-weight: 650; color: var(--text); cursor: pointer; white-space: nowrap; }
 .game-rules-button:hover { background: #fff; border-color: #b6afc8; }
-.game-join-link { display: inline-block; margin-top: 12px; font-size: 11px; color: var(--text); }
 .games-how { margin-top: auto; padding: 40px 0 0; }
 .games-how-heading h2 { margin: 0; font-size: 22px; letter-spacing: -.025em; }
 .games-steps { display: grid; grid-template-columns: repeat(3, 1fr); list-style: none; margin: 22px 0 0; padding: 0; gap: 24px; }
@@ -64,7 +60,7 @@
 .games-page :focus-visible { outline: 3px solid #8e432e; outline-offset: 5px; }
 @media (max-width: 900px) { .games-shell { width: calc(100% - 48px); }.games-steps { gap: 16px; }.games-steps li { gap: 10px; }.games-steps br { display: none; } }
 @media (max-width: 640px) { .games-shell { width: calc(100% - 32px); padding-top: 88px; }.games-screen-button { top: 16px; right: 16px; }.games-steps { grid-template-columns: 1fr; gap: 22px; }.games-steps h3 { font-size: 15px; }.games-steps p { font-size: 13px; }.games-dialog { padding: 20px; } }
-@media (max-width: 370px) { .game-info { padding: 12px 14px; }.game-title-row h2 { font-size: 26px; }.game-facts { gap: 8px; margin: 8px 0 10px; font-size: 10px; }.game-actions { gap: 10px; }.game-launch { padding: 10px; font-size: 12px; }.game-rules-button { font-size: 11px; }.game-description { margin-top: 4px; font-size: 11px; }.game-facts { margin: 6px 0; }.game-join-link { margin-top: 6px; font-size: 10px; } }
+@media (max-width: 370px) { .game-info { padding: 12px 14px; }.game-title-row h2 { font-size: 26px; }.game-facts { gap: 8px; margin: 8px 0 10px; font-size: 10px; }.game-actions { gap: 10px; }.game-launch { padding: 10px; font-size: 12px; }.game-rules-button { font-size: 11px; }.game-description { margin-top: 4px; font-size: 11px; }.game-facts { margin: 6px 0; }}
 
 .imposter-art { background: radial-gradient(ellipse at 50% 45%, #f4eaf8 0, #e2d3e9 65%, #cdbfd8 100%); }
 .imposter-art .art-spark { color: #8b6a9c; }

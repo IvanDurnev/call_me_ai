@@ -6,7 +6,7 @@
     <title>Игры для всей семьи — Звонок другу</title>
     <meta name="description" content="Семейная игротека: общий экран на телевизоре, личные карты на телефонах. Собирайте семью и друзей за игрой.">
     <link rel="stylesheet" href="{{ url_for('static', filename='call.css', v='20260410mobilefix') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='games.css', v='14') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='games.css', v='15') }}">
     <script src="{{ url_for('static', filename='games.js', v='3') }}" defer></script>
   </head>
   <body class="landing-page games-page">
@@ -33,7 +33,7 @@
 
             </div>
             <div class="game-info">
-              <div class="game-title-row"><h2>Дурак</h2><span class="game-status">Можно играть</span></div>
+              <div class="game-title-row"><h2>Дурак</h2></div>
               <p class="game-description">Знаменитая карточная игра.</p>
               <ul class="game-facts" aria-label="Об игре">
                 <li><span aria-hidden="true">♟</span> 2–6 игроков</li>
@@ -43,7 +43,6 @@
                 <button class="game-launch game-launch-ready" type="button" id="create-room" data-create-game="durak">Играть</button>
                 <button class="game-rules-button" type="button" id="rules-button" data-rules-dialog="rules-dialog">Правила</button>
               </div>
-              <a class="game-join-link" href="{{ url_for('games.join_page') }}">Присоединиться по коду →</a>
             </div>
           </article>
           <article class="game-card" aria-labelledby="imposter-card-title">
@@ -54,11 +53,10 @@
               <span class="art-spark spark-one">✦</span><span class="art-spark spark-two">✧</span>
             </div>
             <div class="game-info">
-              <div class="game-title-row"><h2 id="imposter-card-title">Импостер</h2><span class="game-status">Можно играть</span></div>
+              <div class="game-title-row"><h2 id="imposter-card-title">Импостер</h2></div>
               <p class="game-description">Найдите того, кто не знает слово.</p>
               <ul class="game-facts" aria-label="Об игре"><li><span aria-hidden="true">♟</span> 3–12 игроков</li><li><span aria-hidden="true">◷</span> 10–15 минут</li></ul>
               <div class="game-actions"><button class="game-launch" type="button" data-create-game="imposter">Играть</button><button class="game-rules-button" type="button" data-rules-dialog="imposter-rules">Правила</button></div>
-              <a class="game-join-link" href="{{ url_for('games.join_page') }}">Присоединиться по коду →</a>
             </div>
           </article>
           <article class="game-card" aria-labelledby="whos-card-title">
@@ -68,31 +66,28 @@
               <span class="art-spark spark-one">✦</span><span class="art-spark spark-two">✧</span>
             </div>
             <div class="game-info">
-              <div class="game-title-row"><h2 id="whos-card-title">Кто из нас?</h2><span class="game-status">Можно играть</span></div>
+              <div class="game-title-row"><h2 id="whos-card-title">Кто из нас?</h2></div>
               <p class="game-description">Узнайте, что о вас думает компания.</p>
               <ul class="game-facts" aria-label="Об игре"><li><span aria-hidden="true">♟</span> 3–12 игроков</li><li><span aria-hidden="true">◷</span> 10 вопросов</li></ul>
               <div class="game-actions"><button class="game-launch" type="button" data-create-game="whos">Играть</button><button class="game-rules-button" type="button" data-rules-dialog="whos-rules">Правила</button></div>
-              <a class="game-join-link" href="{{ url_for('games.join_page') }}">Присоединиться по коду →</a>
             </div>
           </article>
           <article class="game-card" aria-labelledby="tag-card-title">
             <div class="game-art tag-art" aria-hidden="true"><span class="tag-art-path"></span><span class="tag-art-runner runner-one">●<i></i></span><span class="tag-art-runner runner-two">●<i></i></span><span class="tag-art-label">Голя</span><span class="art-spark spark-one">✦</span></div>
             <div class="game-info">
-              <div class="game-title-row"><h2 id="tag-card-title">Голя</h2><span class="game-status">Можно играть</span></div>
+              <div class="game-title-row"><h2 id="tag-card-title">Голя</h2></div>
               <p class="game-description">Догоняйте, касайтесь и убегайте!</p>
               <ul class="game-facts" aria-label="Об игре"><li><span aria-hidden="true">♟</span> 2–8 игроков</li><li><span aria-hidden="true">◷</span> 2 минуты</li></ul>
               <div class="game-actions"><button class="game-launch" type="button" data-create-game="tag">Играть</button><button class="game-rules-button" type="button" data-rules-dialog="tag-rules">Правила</button></div>
-              <a class="game-join-link" href="{{ url_for('games.join_page') }}">Присоединиться по коду →</a>
             </div>
           </article>
           <article class="game-card activity-card" aria-labelledby="activity-card-title">
             <div class="game-art activity-art" aria-hidden="true"><span class="activity-art-road"></span><span class="activity-art-icon icon-pencil">✎</span><span class="activity-art-icon icon-talk">☏</span><span class="activity-art-icon icon-mime">✋</span><span class="art-spark spark-one">✦</span></div>
             <div class="game-info">
-              <div class="game-title-row"><h2 id="activity-card-title">Покажи и объясни</h2><span class="game-status">Можно играть</span></div>
+              <div class="game-title-row"><h2 id="activity-card-title">Покажи и объясни</h2></div>
               <p class="game-description">Рисуйте, объясняйте и идите к финишу.</p>
               <ul class="game-facts" aria-label="Об игре"><li><span aria-hidden="true">♟</span> 3–16 игроков</li><li><span aria-hidden="true">◷</span> Минута на задание</li></ul>
               <div class="game-actions"><button class="game-launch" type="button" data-create-game="activity">Играть</button><button class="game-rules-button" type="button" data-rules-dialog="activity-rules">Правила</button></div>
-              <a class="game-join-link" href="{{ url_for('games.join_page') }}">Присоединиться по коду →</a>
             </div>
           </article>
         </section>
