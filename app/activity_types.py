@@ -81,6 +81,7 @@ class GameEvent(TypedDict):
     open: bool
     task: str
     outcome: Literal['success', 'failure', 'violation']
+    expired: bool
     guesser: int | None
     transaction: MoveTransaction
 

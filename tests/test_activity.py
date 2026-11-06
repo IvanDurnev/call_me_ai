@@ -73,7 +73,7 @@ class ActivityRulesTests(unittest.TestCase):
         for difficulty in (3,4,5):
             r=room();p=prepare(r,difficulty);a.act(r,p,dict(action='perform'),now=100)
             guessed(r,159.99)
-            self.assertEqual(r['phase'],'board');self.assertEqual(r['positions'],[difficulty,0])
+            self.assertEqual(r['phase'],'handoff');self.assertEqual(r['positions'],[difficulty,0])
             self.assertEqual(len(r['history']),1)
             with self.assertRaises(GameError):guessed(r,159.999)
             self.assertEqual(r['positions'],[difficulty,0])
@@ -82,8 +82,8 @@ class ActivityRulesTests(unittest.TestCase):
         for now in (160,161,10000):
             r=room();p=prepare(r);a.act(r,p,dict(action='perform'),now=100)
             with self.assertRaises(GameError):guessed(r,now)
-            self.assertEqual(r['phase'],'board');self.assertEqual(r['positions'],[0,0])
-            self.assertTrue(r['active']['expired']);self.assertEqual(r['history'][0]['outcome'],'failure')
+            self.assertEqual(r['phase'],'handoff');self.assertEqual(r['positions'],[0,0])
+            self.assertTrue(a.view(r)['last_result']['expired']);self.assertEqual(r['history'][0]['outcome'],'failure')
             self.assertFalse(a.expire(r,now+1));self.assertEqual(len(r['history']),1)
 
     def test_unauthorised_or_stale_success_is_rejected(self):
@@ -107,10 +107,38 @@ class ActivityRulesTests(unittest.TestCase):
     def test_failed_turn_rotates_teams_and_phone_is_reused(self):
         r=room();p=prepare(r);a.act(r,p,dict(action='give_up'))
         self.assertEqual(r['positions'],[0,0])
-        a.host_act(r,dict(action='next'));self.assertEqual(r['active']['presenter'],1)
-        p=prepare(r);a.act(r,p,dict(action='give_up'));a.host_act(r,dict(action='next'))
+        self.assertEqual(r['active']['presenter'],1)
+        p=prepare(r);a.act(r,p,dict(action='give_up'))
         self.assertEqual(r['active']['presenter'],0)
         p=prepare(r,4,'mimeB');self.assertEqual(r['active']['category'],'mimeB')
+
+    def test_results_auto_advance_through_four_teams_without_tv_commands(self):
+        r=room(4)
+        for i,outcome in enumerate(['success','give_up','timeout','success']):
+            p=prepare(r);self.assertEqual(p,i)
+            if outcome=='success':
+                a.act(r,p,dict(action='perform'),now=100);guessed(r)
+            elif outcome=='give_up':a.act(r,p,dict(action='give_up'))
+            else:
+                a.act(r,p,dict(action='perform'),now=100);self.assertTrue(a.expire(r,160))
+            self.assertEqual(r['phase'],'handoff')
+            self.assertEqual(r['active']['presenter'],(i+1)%4)
+            self.assertEqual(len(r['history']),i+1)
+            self.assertIsNone(r['deadline']);self.assertIsNone(r['active']['card'])
+            self.assertFalse(a.expire(r,161))
+            with self.assertRaises(GameError):a.host_act(r,dict(action='next'))
+        self.assertEqual(r['positions'],[3,0,0,3])
+
+    def test_saved_manual_board_resumes_automatically_only_once(self):
+        r=room();p=prepare(r);a.act(r,p,dict(action='perform'),now=100)
+        previous=copy.deepcopy(r['active']);guessed(r)
+        r.update(phase='board',active=previous)
+        a.validate(r)
+        self.assertTrue(a.expire(r,160));self.assertEqual(r['phase'],'handoff')
+        self.assertEqual(r['active']['presenter'],1);self.assertEqual(r['positions'],[3,0])
+        turn_id=r['active']['id']
+        self.assertFalse(a.expire(r,161));self.assertEqual(r['active']['id'],turn_id)
+        self.assertEqual(len(r['history']),1)
 
     def test_cell_controls_type_and_offers_both_matching_tasks(self):
         for position,expected in [(0,{'drawA','drawB','explainA','explainB','mimeA','mimeB'}),(1,{'drawA','drawB'}),(2,{'explainA','explainB'}),(3,{'mimeA','mimeB'}),(4,{'drawA','drawB'}),(5,{'explainA','explainB'}),(6,{'mimeA','mimeB'})]:
@@ -152,7 +180,7 @@ class ActivityRulesTests(unittest.TestCase):
     def test_undo_restores_card_deck_queue_and_discards_next_attempt(self):
         r=room();before=copy.deepcopy(r['decks']);p=prepare(r);card=r['active']['card']
         a.act(r,p,dict(action='perform'),now=100);guessed(r)
-        a.host_act(r,dict(action='next'));prepare(r,4)
+        prepare(r,4)
         a.host_act(r,dict(action='undo'))
         self.assertEqual(r['positions'],[0,0]);self.assertEqual(r['decks'],before)
         self.assertEqual(r['active']['presenter'],0);self.assertEqual(r['history'],[])
@@ -226,12 +254,12 @@ class ActivityAPITests(unittest.TestCase):
         self.assertNotIn(word,json.dumps(self.state(),ensure_ascii=False))
         self.assertEqual(self.action('guessed',self.players[1]).status_code,400)
         self.assertEqual(self.action('guessed',headers).status_code,200)
-        self.assertEqual(self.state()['positions'],[3,0]);self.assertEqual(self.state()['phase'],'board')
+        self.assertEqual(self.state()['positions'],[3,0]);self.assertEqual(self.state()['phase'],'handoff')
 
     def test_second_team_lands_on_first_without_pushing_it_back(self):
         self.start();headers=self.perform();self.action('guessed',headers)
         self.assertEqual(self.state()['positions'],[3,0])
-        self.action('next');headers=self.perform();self.action('guessed',headers)
+        headers=self.perform();self.action('guessed',headers)
         state=self.state()
         self.assertEqual(state['positions'],[3,3])
         self.assertEqual(state['last_transaction']['bumped'],[])
@@ -240,7 +268,7 @@ class ActivityAPITests(unittest.TestCase):
 
     def test_non_start_phone_only_gets_tasks_matching_cell_method(self):
         self.start();headers=self.perform();self.action('guessed',headers)
-        self.action('next');headers=self.perform();self.action('give_up',headers);self.action('next')
+        headers=self.perform();self.action('give_up',headers)
         headers=self.players[0]
         self.action('take_turn',headers);self.action('difficulty',headers,difficulty=3)
         private=self.state(headers)
@@ -261,6 +289,7 @@ class ActivityAPITests(unittest.TestCase):
         with ThreadPoolExecutor(max_workers=2) as pool:statuses=list(pool.map(apply,range(2)))
         self.assertEqual(sorted(statuses),[200,409]);self.assertEqual(self.state()['positions'],[3,0])
         self.assertEqual(len(self.state()['history']),1)
+        self.assertEqual(self.state()['phase'],'handoff');self.assertEqual(self.state()['presenter'],1)
 
     def test_timeout_saved_even_when_late_button_is_rejected(self):
         self.start();headers=self.perform();state=self.state(headers)
@@ -270,7 +299,7 @@ class ActivityAPITests(unittest.TestCase):
         response=self.client.post(self.base+'/action',headers=headers,json=body)
         self.assertEqual(response.status_code,409)
         state=self.state();self.assertEqual(state['positions'],[0,0]);self.assertTrue(state['expired'])
-        self.assertEqual(len(state['history']),1);self.assertEqual(state['phase'],'board')
+        self.assertEqual(len(state['history']),1);self.assertEqual(state['phase'],'handoff')
 
     def test_late_drawing_saves_timeout_before_rejecting_stroke(self):
         self.start();headers=self.perform();state=self.state(headers)
@@ -278,7 +307,7 @@ class ActivityAPITests(unittest.TestCase):
         with self.app.app_context(),database() as db:
             r=load_room(db,self.room['code']);r['deadline']=1;save_room(db,self.room['code'],r)
         self.assertEqual(self.client.post(self.base+'/action',headers=headers,json=body).status_code,409)
-        state=self.state();self.assertEqual(state['phase'],'board');self.assertTrue(state['expired'])
+        state=self.state();self.assertEqual(state['phase'],'handoff');self.assertTrue(state['expired'])
         self.assertEqual(len(state['history']),1);self.assertEqual(state['drawing']['strokes'],[])
 
     def test_drawing_revision_does_not_block_guessed_and_undo_restores(self):
@@ -288,7 +317,7 @@ class ActivityAPITests(unittest.TestCase):
         for _ in range(2):self.assertEqual(self.client.post(self.base+'/action',headers=headers,json=stroke).status_code,200)
         self.assertEqual(len(self.state()['drawing']['strokes'][0]['points']),1)
         self.assertEqual(self.client.post(self.base+'/action',headers=headers,json=body).status_code,200)
-        self.action('next');self.assertEqual(self.state()['presenter'],1)
+        self.assertEqual(self.state()['presenter'],1)
         self.assertEqual(self.action('undo').status_code,200)
         self.assertEqual(self.state()['presenter'],0);self.assertEqual(self.state()['positions'],[0,0])
         self.assertNotEqual(self.state()['turn_id'],body['turn_id'])
@@ -298,9 +327,9 @@ class ActivityAPITests(unittest.TestCase):
         self.start();self.perform()
         with self.app.app_context(),database() as db:
             r=load_room(db,self.room['code']);r['deadline']=1;save_room(db,self.room['code'],r)
-        self.assertEqual(self.state()['phase'],'board');self.action('next')
+        self.assertEqual(self.state()['phase'],'handoff')
         headers=self.perform();self.assertEqual(self.action('guessed',headers).status_code,200)
-        self.assertEqual(self.state()['positions'],[0,3]);self.action('next')
+        self.assertEqual(self.state()['positions'],[0,3])
         self.assertEqual(self.state()['presenter'],0)
         other=Flask('restored');other.config.update(TESTING=True,GAMES_DB_PATH=self.app.config['GAMES_DB_PATH']);other.register_blueprint(games_bp)
         restored=other.test_client().get(self.base,headers=self.host).json

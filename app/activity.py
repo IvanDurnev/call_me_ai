@@ -145,11 +145,15 @@ def choose_task(room,category):
     room['phase']='prepare'
 
 
-def expire(room,now=None):
+def expire(room,now=None,rng=None):
     now=time.time() if now is None else now
+    if room['phase']=='board':
+        # Resume rooms saved by the former manual-next version.
+        begin_turn(room,rng);room['revision']+=1
+        return True
     if room['phase']=='performing' and now>=room['deadline']:
         room['active'].update(expired=True,draft=dict(outcome='failure',guesser=None))
-        apply_result(room)
+        apply_result(room,rng)
         room['revision']+=1
         return True
     return False
@@ -172,7 +176,7 @@ def resolve_turn(room,result:TurnResult) -> MoveTransaction:
     return build_move_transaction(room['positions'],advances,active['id'])
 
 
-def apply_result(room):
+def apply_result(room,rng=None):
     if room['phase'] not in ('prepare','performing'): raise GameError('Попытка уже завершена.')
     active=room['active'];draft=active.get('draft')
     if not draft: raise GameError('Сначала выберите и проверьте результат.')
@@ -183,12 +187,13 @@ def apply_result(room):
     task=CARD_BY_ID[active['card']]['tasks'][active['category']]
     event=dict(turn_id=active['id'],number=room['turn_number'],presenter=active['presenter'],side=active['side'],
                difficulty=active['difficulty'],category=active['category'],open=active['open'],
-               task=task['text'],outcome=draft['outcome'],guesser=draft.get('guesser'),transaction=transaction)
+               task=task['text'],outcome=draft['outcome'],expired=active.get('expired',False),guesser=draft.get('guesser'),transaction=transaction)
     room['history'].append(event);room['last_transaction']=transaction
     side=active['side'];room['offsets'][side]=(room['offsets'][side]+1)%len(room['settings']['teams'][side]['members'])
     room['cursor']=(side+1)%len(room['settings']['teams']);room['turn_number']+=1
-    room.update(winners=transaction['winners'],phase='finished' if transaction['winners'] else 'board',
-                deadline=None,memorize_deadline=None)
+    room.update(winners=transaction['winners'],deadline=None,memorize_deadline=None)
+    if transaction['winners']: room['phase']='finished'
+    else: begin_turn(room,rng)
 
 
 def undo_last(room,rng=None):
@@ -213,27 +218,26 @@ def presenter_action(room,index,data,now=None,rng=None):
             raise GameError('Эта попытка уже завершена.')
         if now>=room['deadline']: raise GameError('Время вышло. В этой попытке команда не продвигается.')
         room['active']['draft']=dict(outcome='success',guesser=None)
-        apply_result(room)
+        apply_result(room,rng)
     elif action=='give_up' and phase in ('prepare','performing'):
         room['active'].update(gave_up=True,draft=dict(outcome='failure',guesser=None))
-        apply_result(room)
+        apply_result(room,rng)
     else: raise GameError('Сейчас это действие недоступно.')
 
 
 def act(room,index,data,now=None,rng=None):
     validate(room)
-    expire(room,now)
+    expire(room,now,rng)
     if data.get('action')=='draw': draw_action(room,index,data)
     else: presenter_action(room,index,data,now,rng)
 
 
 def host_act(room,data,now=None,rng=None):
-    validate(room);expire(room,now)
+    validate(room);expire(room,now,rng)
     action=data.get('action');phase=room['phase']
     if action in ('configure','launch') and phase=='lobby':
         room['settings']=validate_settings(data.get('settings'),room['players'])
         if action=='launch':start(room,rng,now)
-    elif action=='next' and phase=='board': begin_turn(room,rng)
     elif action=='undo' and room['undo'] is not None: undo_last(room,rng)
     else: raise GameError('Сейчас это действие недоступно.')
 
@@ -278,6 +282,8 @@ def draw_action(room,index,data):
 def view(room,index=None):
     validate(room)
     active=room['active'];settings=validate_settings(room['settings'],room['players']) if room['settings'] is not None else None;phase=room['phase']
+    event=room['history'][-1] if room['history'] else None
+    last_result=({key:event[key] for key in ('turn_id','side','outcome','transaction')} | dict(expired=event.get('expired',False))) if event else None
     sides=[]
     if settings:
         for i,team in enumerate(settings['teams']): sides.append(dict(name=team['name'],members=team['members'],size=team['size'],color=COLORS[i],symbol=SYMBOLS[i]))
@@ -290,7 +296,8 @@ def view(room,index=None):
                 deadline=room['deadline'],memorize_deadline=room['memorize_deadline'],history=room['history'],
                 winners=room['winners'],last_transaction=room['last_transaction'],can_undo=room['undo'] is not None,
                 drawing=dict(strokes=room['drawing']['strokes'],revision=room['drawing']['revision']),
-                draft=active.get('draft') if active else None,expired=active.get('expired',False) if active else False,
+                draft=active.get('draft') if active else None,last_result=last_result,
+                expired=bool(last_result and last_result['expired']) if phase in ('handoff','finished','board') else False,
                 preview=None,secret_task=None,card_options=None,opponent_card=None)
     if active and active.get('card'):
         card=CARD_BY_ID[active['card']]

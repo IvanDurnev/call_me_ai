@@ -96,11 +96,11 @@
     if(transaction.winners.length)result.push(`Финиш: ${transaction.winners.map(sideName).join(', ')}`);
     return result.join('\n');
   }
+  function lastResultText(){const r=state.last_result;if(!r)return '';return r.outcome==='success'?`${sideName(r.side)}: угадано, +${Object.values(r.transaction.advances)[0]||0}. `:`${sideName(r.side)}: ${r.expired?'время вышло':'попытка завершена'}, без продвижения. `;}
   function renderControls(){
     const c=$('controls');c.replaceChildren();if(recovery)return;
     const phase=state.phase;
     if(host){
-      if(phase==='board')c.append(button('Следующий ход','next',{},true));
       if(phase==='finished')c.append(button('Сыграть ещё раз','start',{},true));
       if(state.can_undo)c.append(customButton('Отменить последний ход',()=>confirm('Отменить последний ход?','Вернутся позиции и очередь команд. Текущая незавершённая попытка тоже сбросится.',()=>send('undo'))));
       if(phase!=='lobby')c.append(customButton('Вернуться в лобби',()=>confirm('Вернуться в лобби?','Партия завершится. Команды останутся в комнате.',()=>send('reset'))));
@@ -129,7 +129,7 @@
     const phase=state.phase;document.body.classList.toggle('is-lobby',phase==='lobby');if(['lobby','handoff','board','finished'].includes(phase))recovery=false;
     const method=category(),view=drawingView(),drawing=!!view;
     document.body.classList.toggle('is-table-drawing',view==='table');
-    if(previousPhase!==phase){if(phase==='performing'){$('board-details').open=host;}if(phase==='lobby')$('board-details').open=false;else if(host&&['handoff','board','finished'].includes(phase))$('board-details').open=true;if(phase==='board'&&previousPhase==='performing'&&state.expired&&beepTurn!==state.turn_id){beepTurn=state.turn_id;beep();}previousPhase=phase;}
+    if(previousPhase!==phase){if(phase==='performing'){$('board-details').open=host;}if(phase==='lobby')$('board-details').open=false;else if(host&&['handoff','board','finished'].includes(phase))$('board-details').open=true;if(previousPhase==='performing'&&state.last_result?.expired&&beepTurn!==state.last_result.turn_id){beepTurn=state.last_result.turn_id;beep();}previousPhase=phase;}
     $('setup-panel').hidden=!host||phase!=='lobby';$('board-details').hidden=phase==='lobby';$('board-panel').hidden=!host&&phase==='lobby';
     const phoneDrawing=view==='phone';
     const target=phoneDrawing?$('secret-drawing-slot'):$('table-drawing-slot');
@@ -139,7 +139,7 @@
     const renderKey=JSON.stringify([state.revision-state.drawing.revision,phase,state.turn_id,secretOpen,hasSeen,recovery,busy,state.players.map(p=>p.online)]);
     if(force||lastRender!==renderKey){
       lastRender=renderKey;
-      const titles={lobby:['Один телефон на команду','Собираемся играть',host?'Подключитесь справа и передавайте телефон внутри команды.':'Ждём старта на общем экране. Передавайте этот телефон ведущему вашей команды.'],handoff:['Передайте телефон',`Ход команды «${playerName(state.presenter)}»`,'Следующий ведущий берёт телефон своей команды.'],choose_difficulty:['Сложность','Выберите колоду','Легко: +3, средне: +4, сложно: +5.'],choose_task:['Выбор задания','Выберите задание',method?`Клетка «${method.label}»: выберите одно из двух заданий.`:'На старте доступны все шесть заданий карточки.'],prepare:['Подготовка','Готовы?','Откройте карточку на телефоне и начните минуту.'],performing:['Угадывает своя команда',method?.label||'Выполнение','На телефоне ведущего видно задание. Нажмите «Угадано!» до конца минуты.'],board:[state.expired?'Время вышло':'Ход завершён',state.last_transaction&&Object.keys(state.last_transaction.advances).length?'Угадано!':'Без продвижения',state.last_transaction?previewText(state.last_transaction):''],finished:['Финиш!',`Победила команда ${state.winners.map(sideName).join(', ')}`,'Сыграем ещё?']};
+      const titles={lobby:['Один телефон на команду','Собираемся играть',host?'Подключитесь справа и передавайте телефон внутри команды.':'Ждём старта на общем экране. Передавайте этот телефон ведущему вашей команды.'],handoff:['Передайте телефон',`Ход команды «${playerName(state.presenter)}»`,`${lastResultText()}Следующий ведущий берёт телефон своей команды.`],choose_difficulty:['Сложность','Выберите колоду','Легко: +3, средне: +4, сложно: +5.'],choose_task:['Выбор задания','Выберите задание',method?`Клетка «${method.label}»: выберите одно из двух заданий.`:'На старте доступны все шесть заданий карточки.'],prepare:['Подготовка','Готовы?','Откройте карточку на телефоне и начните минуту.'],performing:['Угадывает своя команда',method?.label||'Выполнение','На телефоне ведущего видно задание. Нажмите «Угадано!» до конца минуты.'],board:[state.expired?'Время вышло':'Ход завершён',state.last_transaction&&Object.keys(state.last_transaction.advances).length?'Угадано!':'Без продвижения',state.last_transaction?previewText(state.last_transaction):''],finished:['Финиш!',`Победила команда ${state.winners.map(sideName).join(', ')}`,'Сыграем ещё?']};
       const t=titles[phase];text('phase-label',t[0]);text('turn-title',t[1]);text('turn-message',t[2]);
       $('method-badge').hidden=!method;text('method-badge',method?`${method.icon} ${method.label}${Number.isInteger(state.difficulty)?` · +${state.difficulty}`:''}`:'');
       $('recovery').hidden=!recovery;
