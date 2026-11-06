@@ -26,7 +26,6 @@ class GameSettings(TypedDict):
     teams: list[Team]
     sizes: list[int]
     starting_side: int
-    precision: str
 
 class TurnResult(TypedDict):
     outcome: Literal['success','failure','violation']

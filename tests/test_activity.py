@@ -23,7 +23,9 @@ def prepare(r,difficulty=3,category='drawA'):
     p=r['active']['presenter']
     a.act(r,p,dict(action='take_turn'))
     a.act(r,p,dict(action='difficulty',difficulty=difficulty),rng=random.Random(4))
-    if r['phase']=='choose_task':a.act(r,p,dict(action='task',category=category))
+    if r['phase']=='choose_task':
+        options=a.view(r,p)['card_options']
+        a.act(r,p,dict(action='task',category=category if category in options else next(iter(options))))
     return p
 
 
@@ -110,11 +112,28 @@ class ActivityRulesTests(unittest.TestCase):
         self.assertEqual(r['active']['presenter'],0)
         p=prepare(r,4,'mimeB');self.assertEqual(r['active']['category'],'mimeB')
 
-    def test_cell_controls_method_after_start_and_no_redraw(self):
-        r=room();r['positions'][0]=2;p=prepare(r)
-        self.assertEqual(r['active']['category'],'explainA')
-        with self.assertRaises(GameError):a.act(r,p,dict(action='difficulty',difficulty=5))
-        with self.assertRaises(GameError):a.act(r,p,dict(action='task',category='mimeA'))
+    def test_cell_controls_type_and_offers_both_matching_tasks(self):
+        for position,expected in [(0,{'drawA','drawB','explainA','explainB','mimeA','mimeB'}),(1,{'drawA','drawB'}),(2,{'explainA','explainB'}),(3,{'mimeA','mimeB'}),(4,{'drawA','drawB'}),(5,{'explainA','explainB'}),(6,{'mimeA','mimeB'})]:
+            r=room();r['positions'][0]=position
+            a.act(r,0,dict(action='take_turn'));a.act(r,0,dict(action='difficulty',difficulty=3))
+            self.assertEqual(r['phase'],'choose_task')
+            self.assertEqual(set(a.view(r,0)['card_options']),expected)
+            self.assertIsNone(a.view(r)['card_options']);self.assertIsNone(a.view(r,1)['card_options'])
+            if position:
+                forbidden=next(k for k in ['drawA','explainA','mimeA'] if k not in expected)
+                with self.assertRaises(GameError):a.act(r,0,dict(action='task',category=forbidden))
+                self.assertEqual(r['phase'],'choose_task')
+            choice=sorted(expected)[-1]
+            a.act(r,0,dict(action='task',category=choice))
+            self.assertEqual(r['active']['category'],choice)
+            with self.assertRaises(GameError):a.act(r,0,dict(action='difficulty',difficulty=5))
+
+    def test_precision_setting_removed_and_old_saved_rooms_still_load(self):
+        r=room();self.assertNotIn('precision',r['settings'])
+        r['settings']['precision']='Legacy setting'
+        a.validate(r)
+        self.assertNotIn('precision',a.view(r)['settings'])
+
 
     def test_teams_share_cells_without_moving_others_and_finish_clamps(self):
         t=a.build_move_transaction([0,3,3,2],{0:3},'id')
@@ -218,6 +237,21 @@ class ActivityAPITests(unittest.TestCase):
         self.assertEqual(state['last_transaction']['bumped'],[])
         self.assertEqual(state['last_transaction']['before'],[3,0])
         self.action('undo');self.assertEqual(self.state()['positions'],[3,0])
+
+    def test_non_start_phone_only_gets_tasks_matching_cell_method(self):
+        self.start();headers=self.perform();self.action('guessed',headers)
+        self.action('next');headers=self.perform();self.action('give_up',headers);self.action('next')
+        headers=self.players[0]
+        self.action('take_turn',headers);self.action('difficulty',headers,difficulty=3)
+        private=self.state(headers)
+        self.assertEqual(private['phase'],'choose_task')
+        self.assertEqual(set(private['card_options']),{'mimeA','mimeB'})
+        self.assertIsNone(self.state()['card_options'])
+        self.assertIsNone(self.state(self.players[1])['card_options'])
+        self.assertEqual(self.action('task',headers,category='drawA').status_code,400)
+        self.assertEqual(self.action('task',headers,category='mimeB').status_code,200)
+        self.assertEqual(self.state(headers)['category'],'mimeB')
+        self.assertNotIn('precision',self.state()['settings'])
 
     def test_concurrent_success_is_applied_once(self):
         self.start();headers=self.perform();state=self.state(headers)

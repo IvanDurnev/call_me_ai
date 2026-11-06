@@ -4,10 +4,10 @@ from pathlib import Path
 
 CATEGORIES = [
     dict(key='drawA', method='draw', label='Рисовать', icon='✎', color='amber', hex='#d8a136'),
-    dict(key='explainA', method='explain', label='Объяснять', icon='☏', color='blue', hex='#548fcd'),
+    dict(key='explainA', method='explain', label='Объяснять', icon='👄', color='blue', hex='#548fcd'),
     dict(key='mimeA', method='mime', label='Показывать', icon='✋', color='green', hex='#6a9d61'),
     dict(key='drawB', method='draw', label='Рисовать', icon='✎', color='violet', hex='#9a79bc'),
-    dict(key='explainB', method='explain', label='Объяснять', icon='☏', color='coral', hex='#d47f72'),
+    dict(key='explainB', method='explain', label='Объяснять', icon='👄', color='coral', hex='#d47f72'),
     dict(key='mimeB', method='mime', label='Показывать', icon='✋', color='teal', hex='#50a49b'),
 ]
 CATEGORY_BY_KEY = {category['key']: category for category in CATEGORIES}

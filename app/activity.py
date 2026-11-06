@@ -44,10 +44,8 @@ def validate_settings(settings, players):
         raise GameError('В каждой команде должно быть минимум двое игроков.')
     starting=settings.get('starting_side',0)
     if not integer(starting,0,len(players)-1): raise GameError('Выберите команду, которая начнёт игру.')
-    precision=settings.get('precision','Принимаем точное слово или верный смысл — договоритесь перед игрой.')
-    if not isinstance(precision,str) or not 1<=len(precision.strip())<=200: raise GameError('Укажите точность ответов (до 200 символов).')
     teams=[dict(name=p['name'],members=[i],first_presenter=i,size=sizes[i]) for i,p in enumerate(players)]
-    return dict(mode='teams',teams=teams,sizes=list(sizes),starting_side=starting,precision=precision.strip())
+    return dict(mode='teams',teams=teams,sizes=list(sizes),starting_side=starting)
 
 
 def validate(room):
@@ -58,7 +56,7 @@ def validate(room):
             if room['settings'] is not None: validate_settings(room['settings'],room['players'])
             return
         settings=validate_settings(room['settings'],room['players'])
-        if room['settings']!=settings: raise ValueError()
+        if {k:v for k,v in room['settings'].items() if k!='precision'}!=settings: raise ValueError()
         count=len(settings['teams'])
         if len(room['positions'])!=count or any(not integer(p,START,FINISH) for p in room['positions']): raise ValueError()
         if not integer(room['cursor'],0,count-1) or len(room['offsets'])!=count: raise ValueError()
@@ -68,6 +66,7 @@ def validate(room):
         if active['presenter'] not in settings['teams'][active['side']]['members']: raise ValueError()
         if active['side']!=room['cursor'] and room['phase'] not in ('board','finished'): raise ValueError()
         if active.get('category') is not None and active['category'] not in CATEGORY_BY_KEY: raise ValueError()
+        if room['phase'] in ('prepare','performing') and active.get('category') not in allowed_categories(room['positions'][active['side']]): raise ValueError()
         if active.get('card') is not None and (active['card'] not in CARD_BY_ID or CARD_BY_ID[active['card']]['difficulty']!=active.get('difficulty')): raise ValueError()
         if room['phase'] in ('prepare','performing','board','finished') and (not active.get('card') or active.get('category') not in CATEGORY_BY_KEY): raise ValueError()
         held=active.get('card') if room['phase'] not in ('board','finished') else None
@@ -116,11 +115,18 @@ def cell_category(position):
     return None if position in (START,FINISH) else CATEGORIES[(position-1)%6]['key']
 
 
+def allowed_categories(position):
+    if position==START: return [c['key'] for c in CATEGORIES]
+    cell=cell_category(position)
+    if cell is None: return []
+    method=CATEGORY_BY_KEY[cell]['method']
+    return [c['key'] for c in CATEGORIES if c['method']==method]
+
+
 def select_task(card_id, position, category=None):
-    card=CARD_BY_ID[card_id]
-    chosen=category if position==START else cell_category(position)
-    if chosen not in CATEGORY_BY_KEY: raise GameError('Выберите задание и способ для стартовой клетки.')
-    return chosen, copy.deepcopy(card['tasks'][chosen])
+    if category not in allowed_categories(position):
+        raise GameError('Выберите задание того же типа, что и клетка команды.')
+    return category, copy.deepcopy(CARD_BY_ID[card_id]['tasks'][category])
 
 
 def draw_card(room,difficulty,rng=None):
@@ -130,9 +136,7 @@ def draw_card(room,difficulty,rng=None):
         deck['draw']=list(deck['discard']);deck['discard']=[];(rng or RNG).shuffle(deck['draw'])
     if not deck['draw']: raise GameError('В колоде нет карточек.')
     card=deck['draw'].pop();room['active'].update(card=card,difficulty=difficulty)
-    position=room['positions'][room['active']['side']]
-    if position==START: room['phase']='choose_task'
-    else: choose_task(room,cell_category(position))
+    room['phase']='choose_task'
 
 
 def choose_task(room,category):
@@ -273,7 +277,7 @@ def draw_action(room,index,data):
 
 def view(room,index=None):
     validate(room)
-    active=room['active'];settings=room['settings'];phase=room['phase']
+    active=room['active'];settings=validate_settings(room['settings'],room['players']) if room['settings'] is not None else None;phase=room['phase']
     sides=[]
     if settings:
         for i,team in enumerate(settings['teams']): sides.append(dict(name=team['name'],members=team['members'],size=team['size'],color=COLORS[i],symbol=SYMBOLS[i]))
@@ -281,7 +285,7 @@ def view(room,index=None):
                 you=index,server_time=time.time(),players=[dict(name=p['name']) for p in room['players']],settings=settings,
                 sides=sides,positions=list(room['positions']),cursor=room['cursor'],turn_number=room['turn_number'],
                 categories=CATEGORIES,turn_id=active['id'] if active else None,presenter=active['presenter'] if active else None,
-                active_side=active['side'] if active else None,category=active['category'] if active else None,
+                active_side=active['side'] if active else None,category=(active['category'] or cell_category(room['positions'][active['side']])) if active else None,
                 difficulty=active['difficulty'] if active else None,open_round=active['open'] if active else False,
                 deadline=room['deadline'],memorize_deadline=room['memorize_deadline'],history=room['history'],
                 winners=room['winners'],last_transaction=room['last_transaction'],can_undo=room['undo'] is not None,
@@ -291,7 +295,7 @@ def view(room,index=None):
     if active and active.get('card'):
         card=CARD_BY_ID[active['card']]
         if index==active['presenter']:
-            if phase=='choose_task': result['card_options']=card['tasks']
+            if phase=='choose_task': result['card_options']={key:card['tasks'][key] for key in allowed_categories(room['positions'][active['side']])}
             if active.get('category') and phase in ('prepare','performing'):
                 result['secret_task']=card['tasks'][active['category']]
     return result

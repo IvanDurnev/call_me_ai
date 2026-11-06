@@ -31,17 +31,16 @@
 
   function select(name,options,value){const e=el('select');e.name=name;for(const [v,label] of options){const option=el('option',label);option.value=v;e.append(option);}e.value=String(value);return e;}
   function label(caption,input){const e=el('label',caption);e.append(input);return e;}
-  function readSetup(){if(!setupDraft)return;const f=$('setup-form');setupDraft.sizes=state.players.map((_,i)=>Number(f.elements.namedItem(`size-${i}`)?.value||2));setupDraft.starting_side=Number(f.elements.namedItem('starting')?.value||0);setupDraft.precision=f.elements.namedItem('precision')?.value||'';}
+  function readSetup(){if(!setupDraft)return;const f=$('setup-form');setupDraft.sizes=state.players.map((_,i)=>Number(f.elements.namedItem(`size-${i}`)?.value||2));setupDraft.starting_side=Number(f.elements.namedItem('starting')?.value||0);}
   function renderSetup(){
     const roster=state.players.map(p=>p.name).join('\n');
     if(setupRoster===roster&&$('setup-form').children.length)return;
-    setupRoster=roster;setupDraft={sizes:state.settings?.sizes||state.players.map(()=>2),starting_side:state.settings?.starting_side||0,precision:state.settings?.precision||'Достаточно точного смысла; спорные ответы обсуждаем вместе.'};
+    setupRoster=roster;setupDraft={sizes:state.settings?.sizes||state.players.map(()=>2),starting_side:state.settings?.starting_side||0};
     const f=$('setup-form');f.replaceChildren();
     f.append(el('p','От 4 игроков, 2–4 команды. В каждой команде минимум двое и один телефон. После хода передайте его следующему ведущему.','activity-setup-note'));
     const sizes=el('div',undefined,'activity-team-sizes');
     state.players.forEach((p,i)=>{const n=el('input');n.type='number';n.name=`size-${i}`;n.min=2;n.max=99;n.required=true;n.value=setupDraft.sizes[i]||2;sizes.append(label(`Игроков: ${p.name}`,n));});f.append(sizes);
     f.append(label('Первая команда',select('starting',state.players.map((p,i)=>[i,p.name]),setupDraft.starting_side)));
-    const precision=el('input');precision.name='precision';precision.required=true;precision.maxLength=200;precision.value=setupDraft.precision;f.append(label('Какие ответы принимаем?',precision));
     const start=el('button','Начать игру','durak-primary');start.type='submit';start.disabled=busy||state.players.length<2;f.append(start);
     if(state.players.length<2)f.append(el('p','Подключите минимум два телефона: по одному на команду.','activity-setup-note'));
   }
@@ -79,12 +78,12 @@
     const available=!recovery&&(state.secret_task||state.card_options),performing=state.phase==='performing';
     const visible=secretOpen||performing;
     $('secret-panel').hidden=!available;$('secret-content').hidden=!visible;$('reveal-secret').hidden=visible;$('hide-secret').hidden=!visible||performing;
-    $('reveal-secret').disabled=busy;$('hide-secret').disabled=busy;$('secret-content').replaceChildren();text('secret-title','Карточка ведущего');
+    $('reveal-secret').disabled=busy;$('hide-secret').disabled=busy;$('secret-content').replaceChildren();$('secret-actions').replaceChildren();text('secret-title','Карточка ведущего');
     if(!available||!visible)return;
-    if(state.card_options){for(const c of state.categories){const task=state.card_options[c.key],b=button('','task',{category:c.key});b.className='task-choice';b.append(el('small',`${c.icon} ${c.label}`),el('span',task.text));$('secret-content').append(b);}}
+    if(state.card_options){for(const c of state.categories){const task=state.card_options[c.key];if(!task)continue;const b=button('','task',{category:c.key});b.className='task-choice';b.append(el('small',`${c.icon} ${c.label}`),el('span',task.text));$('secret-content').append(b);}}
     else if(state.secret_task){
       $('secret-content').append(el('strong',state.secret_task.text));
-      if(performing){const guessed=button('Угадано!','guessed',{},true);guessed.dataset.guessed='true';guessed.disabled=!canGuess();$('secret-content').append(guessed);}
+      if(performing){const guessed=button('Угадано!','guessed',{},true);guessed.dataset.guessed='true';guessed.disabled=!canGuess();$('secret-actions').append(guessed);}
       else $('secret-content').append(el('p','Слово останется на телефоне во время выполнения. Не показывайте экран угадывающим.'));
     }
   }
@@ -115,6 +114,12 @@
     $('preview').hidden=true;
   }
 
+  function drawingView(){
+    if(!state||state.phase!=='performing'||category()?.method!=='draw')return null;
+    if(host)return 'table';
+    return mine()&&!recovery?'phone':null;
+  }
+
   function render(force=false){
     if(!state)return;
     const key=`${state.match}:${state.turn_id}`;
@@ -122,22 +127,25 @@
     $('join-panel').hidden=true;$('room').hidden=false;
     text('room-code',`Комната ${code} · ${state.players.length}/4 команд`);
     const phase=state.phase;document.body.classList.toggle('is-lobby',phase==='lobby');if(['lobby','handoff','board','finished'].includes(phase))recovery=false;
-    const method=category(),drawing=method?.method==='draw'&&['performing','board'].includes(phase);
-    if(previousPhase!==phase){if(phase==='performing'){$('board-details').open=!drawing&&host;}if(phase==='lobby')$('board-details').open=false;else if(host&&['handoff','board','finished'].includes(phase))$('board-details').open=true;if(phase==='board'&&previousPhase==='performing'&&state.expired&&beepTurn!==state.turn_id){beepTurn=state.turn_id;beep();}previousPhase=phase;}
+    const method=category(),view=drawingView(),drawing=!!view;
+    document.body.classList.toggle('is-table-drawing',view==='table');
+    if(previousPhase!==phase){if(phase==='performing'){$('board-details').open=host;}if(phase==='lobby')$('board-details').open=false;else if(host&&['handoff','board','finished'].includes(phase))$('board-details').open=true;if(phase==='board'&&previousPhase==='performing'&&state.expired&&beepTurn!==state.turn_id){beepTurn=state.turn_id;beep();}previousPhase=phase;}
     $('setup-panel').hidden=!host||phase!=='lobby';$('board-details').hidden=phase==='lobby';$('board-panel').hidden=!host&&phase==='lobby';
+    const phoneDrawing=view==='phone';
+    const target=phoneDrawing?$('secret-drawing-slot'):$('table-drawing-slot');
+    if($('sketch-panel').parentElement!==target)target.append($('sketch-panel'));
+    $('secret-drawing-slot').hidden=!phoneDrawing;
     $('sketch-panel').hidden=!drawing;$('sketch-tools').hidden=!mine()||phase!=='performing';document.body.classList.toggle('is-drawing',drawing&&mine()&&phase==='performing');
     const renderKey=JSON.stringify([state.revision-state.drawing.revision,phase,state.turn_id,secretOpen,hasSeen,recovery,busy,state.players.map(p=>p.online)]);
     if(force||lastRender!==renderKey){
       lastRender=renderKey;
-      const titles={lobby:['Один телефон на команду','Собираемся играть',host?'Подключитесь справа и передавайте телефон внутри команды.':'Ждём старта на общем экране. Передавайте этот телефон ведущему вашей команды.'],handoff:['Передайте телефон',`Ход команды «${playerName(state.presenter)}»`,'Следующий ведущий берёт телефон своей команды.'],choose_difficulty:['Сложность','Выберите колоду','Легко: +3, средне: +4, сложно: +5.'],choose_task:['Старт','Выберите задание','На старте можно выбрать любой способ на карточке.'],prepare:['Подготовка','Готовы?','Откройте карточку на телефоне и начните минуту.'],performing:['Угадывает своя команда',method?.label||'Выполнение','На телефоне ведущего видно задание. Нажмите «Угадано!» до конца минуты.'],board:[state.expired?'Время вышло':'Ход завершён',state.last_transaction&&Object.keys(state.last_transaction.advances).length?'Угадано!':'Без продвижения',state.last_transaction?previewText(state.last_transaction):''],finished:['Финиш!',`Победила команда ${state.winners.map(sideName).join(', ')}`,'Сыграем ещё?']};
+      const titles={lobby:['Один телефон на команду','Собираемся играть',host?'Подключитесь справа и передавайте телефон внутри команды.':'Ждём старта на общем экране. Передавайте этот телефон ведущему вашей команды.'],handoff:['Передайте телефон',`Ход команды «${playerName(state.presenter)}»`,'Следующий ведущий берёт телефон своей команды.'],choose_difficulty:['Сложность','Выберите колоду','Легко: +3, средне: +4, сложно: +5.'],choose_task:['Выбор задания','Выберите задание',method?`Клетка «${method.label}»: выберите одно из двух заданий.`:'На старте доступны все шесть заданий карточки.'],prepare:['Подготовка','Готовы?','Откройте карточку на телефоне и начните минуту.'],performing:['Угадывает своя команда',method?.label||'Выполнение','На телефоне ведущего видно задание. Нажмите «Угадано!» до конца минуты.'],board:[state.expired?'Время вышло':'Ход завершён',state.last_transaction&&Object.keys(state.last_transaction.advances).length?'Угадано!':'Без продвижения',state.last_transaction?previewText(state.last_transaction):''],finished:['Финиш!',`Победила команда ${state.winners.map(sideName).join(', ')}`,'Сыграем ещё?']};
       const t=titles[phase];text('phase-label',t[0]);text('turn-title',t[1]);text('turn-message',t[2]);
-      text('accuracy',state.settings?`Точность ответа: ${state.settings.precision}`:'Сначала договоритесь о точности ответов.');
-      $('method-badge').hidden=!method;text('method-badge',method?`${method.icon} ${method.label} · ${state.open_round?'открытый раунд':`+${state.difficulty}`}`:'');
+      $('method-badge').hidden=!method;text('method-badge',method?`${method.icon} ${method.label}${Number.isInteger(state.difficulty)?` · +${state.difficulty}`:''}`:'');
       $('recovery').hidden=!recovery;
       $('turn-panel').hidden=host&&phase==='lobby';
-      if(phase==='lobby')$('history-details').hidden=true;else $('history-details').hidden=false;
       if(host&&phase==='lobby')renderSetup();
-      renderSecret();renderControls();renderBoard();renderRoster();renderHistory();
+      renderSecret();renderControls();renderBoard();renderRoster();
       $('invite').hidden=!host||phase!=='lobby';if(host&&phase==='lobby'){if(!$('qr').getAttribute('src'))$('qr').src=`${base}/qr.svg`;text('invite-code',code);$('invite-link').textContent=state.join_url.replace(/^https?:\/\//,'');$('invite-link').href=state.join_url;}
     }
     renderSketch();updateClock();
@@ -147,14 +155,11 @@
     if(state.phase!=='lobby'&&state.sides.length)state.sides.forEach((side,i)=>{const group=el('div',undefined,'activity-side');group.style.setProperty('--side-color',side.color);group.append(el('strong',`${i+1}${side.symbol} ${side.name}${state.positions[i]!==undefined?` · ${state.positions[i]===49?'Финиш':state.positions[i]}`:''}`),el('p',`${side.size} игроков · 1 телефон`));$('players').append(group);});
     else state.players.forEach((player,i)=>{const row=el('div',undefined,'activity-connected-team');row.append(el('span',`${i+1}. ${player.name}`),el('small',player.online?'На связи':'Подключается…'));if(host&&state.phase==='lobby'){const remove=button('×','remove',{target:i});remove.setAttribute('aria-label',`Убрать команду ${player.name}`);row.append(remove);}$('players').append(row);});
   }
-  function renderHistory(){
-    $('history').replaceChildren();state.history.forEach(event=>{const li=el('li',`Ход ${event.number}. ${playerName(event.presenter)} · ${event.task}`);li.append(el('small',`${event.open?'Открытый раунд · ':''}${event.outcome==='success'?'Угадали':event.outcome==='violation'?'Нарушение':'Не угадали'}. ${previewText(event.transaction)}`));$('history').append(li);});
-  }
   function updateClock(){if(!state)return;const deadline=state.phase==='performing'?state.deadline:null;$('timer').hidden=!deadline;if(deadline){const n=seconds(deadline);text('timer',`${Math.floor(n/60)}:${String(n%60).padStart(2,'0')}`);for(const b of document.querySelectorAll('[data-guessed]'))b.disabled=!canGuess();if(!n&&state.phase==='performing'&&beepTurn!==state.turn_id){beepTurn=state.turn_id;beep();poll(true);}}}
   setInterval(updateClock,200);
 
-  function strokePath(stroke){const points=stroke.points;if(!points.length)return;ctx.strokeStyle=stroke.tool==='eraser'?'#fff':'#26344a';ctx.fillStyle=ctx.strokeStyle;ctx.lineWidth=stroke.width;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(points[0][0]*1000,points[0][1]*620);for(const point of points.slice(1))ctx.lineTo(point[0]*1000,point[1]*620);if(points.length===1){ctx.arc(points[0][0]*1000,points[0][1]*620,stroke.width/2,0,Math.PI*2);ctx.fill();}else ctx.stroke();}
-  function renderSketch(){if(!state)return;ctx.fillStyle='#fff';ctx.fillRect(0,0,1000,620);for(const stroke of state.drawing.strokes)strokePath(stroke);for(const [id,stroke] of optimistic){const remote=state.drawing.strokes.find(s=>s.id===id);if(stroke.complete&&remote&&remote.seq>=stroke.seq-1&&!inkQueue.some(op=>op.stroke_id===id)){optimistic.delete(id);continue;}strokePath(stroke);}}
+  function strokePath(stroke){const points=stroke.points;if(!points.length)return;ctx.strokeStyle=stroke.tool==='eraser'?'#fff':'#26344a';ctx.fillStyle=ctx.strokeStyle;ctx.lineWidth=stroke.width;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(points[0][0]*canvas.width,points[0][1]*canvas.height);for(const point of points.slice(1))ctx.lineTo(point[0]*canvas.width,point[1]*canvas.height);if(points.length===1){ctx.arc(points[0][0]*canvas.width,points[0][1]*canvas.height,stroke.width/2,0,Math.PI*2);ctx.fill();}else ctx.stroke();}
+  function renderSketch(){if(!state)return;ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);for(const stroke of state.drawing.strokes)strokePath(stroke);for(const [id,stroke] of optimistic){const remote=state.drawing.strokes.find(s=>s.id===id);if(stroke.complete&&remote&&remote.seq>=stroke.seq-1&&!inkQueue.some(op=>op.stroke_id===id)){optimistic.delete(id);continue;}strokePath(stroke);}}
   function point(event){const rect=canvas.getBoundingClientRect();return [Math.max(0,Math.min(1,(event.clientX-rect.left)/rect.width)),Math.max(0,Math.min(1,(event.clientY-rect.top)/rect.height))];}
   function canDraw(){return state&&mine()&&state.phase==='performing'&&category()?.method==='draw'&&!recovery;}
   function enqueue(op){inkQueue.push({action:'draw',revision:state.revision,match:state.match,turn_id:state.turn_id,op_id:uid(),...op});processInk();}
