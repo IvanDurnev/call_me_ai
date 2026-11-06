@@ -7,15 +7,16 @@
 .games-screen-button > span:first-child { font-size: 24px; line-height: 1; }
 .games-eyebrow { margin: 0 0 16px; font-size: 11px; font-weight: 750; letter-spacing: .13em; text-transform: uppercase; color: #65617a; }
 .games-library { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; width: 100%; max-width: 940px; margin: 0 auto; }
-.games-library .game-card { flex: 0 1 300px; width: 300px; max-width: 100%; }
-.games-library .game-info { padding: 12px 14px; }
+.games-library .game-card { flex: 0 1 300px; width: 300px; max-width: 100%; aspect-ratio: auto; grid-template-rows: auto 1fr; }
+.games-library .game-art { aspect-ratio: 20 / 9; }
+.games-library .game-info { display: flex; flex-direction: column; padding: 12px 14px 20px; }
 .games-library .game-title-row { gap: 8px; }
 .games-library .game-title-row h2 { font-size: 24px; }
 .games-library .activity-card .game-title-row h2 { font-size: 17px; }
 .games-library .game-status { padding: 4px 7px; font-size: 8px; }
 .games-library .game-description { margin-top: 4px; font-size: 11px; }
 .games-library .game-facts { gap: 8px; margin: 6px 0 8px; font-size: 10px; }
-.games-library .game-actions { gap: 10px; }
+.games-library .game-actions { gap: 10px; margin-top: auto; }
 .games-library .game-launch, .games-library .game-rules-button { min-height: 40px; padding: 10px; font-size: 12px; }
 .games-library .game-join-link { margin-top: 8px; font-size: 10px; }
 .game-card { display: grid; grid-template-rows: 45% 55%; aspect-ratio: 1; min-width: 0; overflow: hidden; border: 1px solid rgba(255,255,255,.8); border-radius: 24px; background: rgba(255,255,255,.88); box-shadow: 0 16px 48px rgba(46,53,87,.08); backdrop-filter: blur(20px); }
