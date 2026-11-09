@@ -21,7 +21,7 @@
   const uid=()=>Array.from(crypto.getRandomValues(new Uint32Array(3)),v=>v.toString(16)).join('');
   const seconds=deadline=>Math.max(0,Math.ceil(deadline-Date.now()/1000-serverOffset));
 
-  function unlockAudio(){if(!sound)return;try{const Audio=window.AudioContext||window.webkitAudioContext;if(Audio){audio ||= new Audio();audio.resume().catch(()=>{});}}catch{}}
+  function unlockAudio(){try{const Audio=window.AudioContext||window.webkitAudioContext;if(Audio){audio ||= new Audio();audio.resume().catch(()=>{});}}catch{}}
   function beep(){if(!audio||audio.state!=='running')return;try{const oscillator=audio.createOscillator(),gain=audio.createGain();oscillator.frequency.value=660;gain.gain.setValueAtTime(.0001,audio.currentTime);gain.gain.exponentialRampToValueAtTime(.12,audio.currentTime+.02);gain.gain.exponentialRampToValueAtTime(.0001,audio.currentTime+.45);oscillator.connect(gain);gain.connect(audio.destination);oscillator.start();oscillator.stop(audio.currentTime+.5);}catch{}}
   async function api(path,data){const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),8000);try{const response=await fetch(path,{method:data?'POST':'GET',cache:'no-store',signal:controller.signal,headers:{'Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{})},...(data?{body:JSON.stringify(data)}:{})});const result=await response.json();if(!response.ok)throw new Error(result.error||'Не удалось выполнить запрос.');return result;}finally{clearTimeout(timeout);}}
   function button(label,action,extra={},primary=false){const e=el('button',label,primary?'durak-primary':'durak-secondary');e.type='button';e.disabled=busy;e.addEventListener('click',()=>send(action,extra));return e;}
