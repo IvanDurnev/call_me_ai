@@ -70,3 +70,5 @@ body[data-mode="host"].is-table-drawing #ink-status:empty { display: none; }
 .activity-page .activity-start-turn { width: min(100%, 280px); min-height: 72px; justify-self: center; font-size: 28px; font-weight: 800; letter-spacing: .02em; }
 .activity-start-hint { margin: 0; text-align: center; font-weight: 650; color: var(--text); }
 body[data-mode="player"] #board-panel { display: none; }
+.activity-setup-team-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.activity-setup-team-list li { padding: 10px 12px; border-radius: 10px; background: #f1f2f5; font-weight: 650; }

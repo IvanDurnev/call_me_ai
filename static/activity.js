@@ -31,21 +31,22 @@
 
   function select(name,options,value){const e=el('select');e.name=name;for(const [v,label] of options){const option=el('option',label);option.value=v;e.append(option);}e.value=String(value);return e;}
   function label(caption,input){const e=el('label',caption);e.append(input);return e;}
-  function readSetup(){if(!setupDraft)return;const f=$('setup-form');setupDraft.sizes=state.players.map((_,i)=>Number(f.elements.namedItem(`size-${i}`)?.value||2));setupDraft.starting_side=Number(f.elements.namedItem('starting')?.value||0);}
+  function readSetup(){if(!setupDraft)return;const f=$('setup-form');setupDraft.starting_side=Number(f.elements.namedItem('starting')?.value||0);}
   function renderSetup(){
     const roster=state.players.map(p=>p.name).join('\n');
     if(setupRoster===roster&&$('setup-form').children.length)return;
-    setupRoster=roster;setupDraft={sizes:state.settings?.sizes||state.players.map(()=>2),starting_side:state.settings?.starting_side||0};
+    setupRoster=roster;setupDraft={starting_side:state.settings?.starting_side||0};
     const f=$('setup-form');f.replaceChildren();
-    f.append(el('p','От 4 игроков, 2–4 команды. В каждой команде минимум двое и один телефон. После хода передайте его следующему ведущему.','activity-setup-note'));
-    const sizes=el('div',undefined,'activity-team-sizes');
-    state.players.forEach((p,i)=>{const n=el('input');n.type='number';n.name=`size-${i}`;n.min=2;n.max=99;n.required=true;n.value=setupDraft.sizes[i]||2;sizes.append(label(`Игроков: ${p.name}`,n));});f.append(sizes);
+    f.append(el('p','Команды подключаются по одному телефону. После хода передавайте телефон следующему ведущему.','activity-setup-note'));
+    const teams=el('ul',undefined,'activity-setup-team-list');
+    state.players.forEach(p=>teams.append(el('li',p.name)));
+    f.append(teams);
     f.append(label('Первая команда',select('starting',state.players.map((p,i)=>[i,p.name]),setupDraft.starting_side)));
     const start=el('button','Начать игру','durak-primary');start.type='submit';start.disabled=busy||state.players.length<2;f.append(start);
     if(state.players.length<2)f.append(el('p','Подключите минимум два телефона: по одному на команду.','activity-setup-note'));
   }
   $('setup-form').addEventListener('input',readSetup);
-  $('setup-form').addEventListener('submit',event=>{event.preventDefault();readSetup();send('launch',{settings:{mode:'teams',...setupDraft}});});
+  $('setup-form').addEventListener('submit',event=>{event.preventDefault();readSetup();send('launch',{settings:{mode:'teams',starting_side:setupDraft.starting_side}});});
 
   function svg(tag,attrs,content){const e=document.createElementNS(svgNS,tag);for(const [key,value] of Object.entries(attrs))e.setAttribute(key,value);if(content!==undefined)e.textContent=content;return e;}
   function boardLayout(){const columns=matchMedia('(max-width:900px)').matches?5:10;return {columns,width:columns*100,height:Math.ceil(50/columns)*104};}
