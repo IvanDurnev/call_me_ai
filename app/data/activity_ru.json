@@ -2229,7 +2229,7 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-01-drawA",
-          "text": "Механический замок",
+          "text": "Старинный замок",
           "isOpenRound": false
         },
         "explainA": {
@@ -2244,7 +2244,7 @@
         },
         "drawB": {
           "id": "ru-5-01-drawB",
-          "text": "Механический город",
+          "text": "Городской парк",
           "isOpenRound": false
         },
         "explainB": {
@@ -2266,7 +2266,7 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-02-drawA",
-          "text": "Механический корабль",
+          "text": "Парусный корабль",
           "isOpenRound": false
         },
         "explainA": {
@@ -2281,7 +2281,7 @@
         },
         "drawB": {
           "id": "ru-5-02-drawB",
-          "text": "Механический дракон",
+          "text": "Пещера дракона",
           "isOpenRound": false
         },
         "explainB": {
@@ -2303,7 +2303,7 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-03-drawA",
-          "text": "Механический лес",
+          "text": "Дремучий лес",
           "isOpenRound": false
         },
         "explainA": {
@@ -2318,7 +2318,7 @@
         },
         "drawB": {
           "id": "ru-5-03-drawB",
-          "text": "Механический остров",
+          "text": "Карта сокровищ",
           "isOpenRound": false
         },
         "explainB": {
@@ -2340,7 +2340,7 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-04-drawA",
-          "text": "Механический мост",
+          "text": "Подвесной мост",
           "isOpenRound": false
         },
         "explainA": {
@@ -2355,7 +2355,7 @@
         },
         "drawB": {
           "id": "ru-5-04-drawB",
-          "text": "Механический сад",
+          "text": "Садовый фонтан",
           "isOpenRound": false
         },
         "explainB": {
@@ -2377,7 +2377,7 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-05-drawA",
-          "text": "Механический дворец",
+          "text": "Подводный дворец",
           "isOpenRound": false
         },
         "explainA": {
@@ -2392,7 +2392,7 @@
         },
         "drawB": {
           "id": "ru-5-05-drawB",
-          "text": "Механический поезд",
+          "text": "Космический корабль",
           "isOpenRound": false
         },
         "explainB": {
@@ -2414,7 +2414,7 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-06-drawA",
-          "text": "Механический автобус",
+          "text": "Аэростат",
           "isOpenRound": false
         },
         "explainA": {
@@ -2429,7 +2429,7 @@
         },
         "drawB": {
           "id": "ru-5-06-drawB",
-          "text": "Механический робот",
+          "text": "Робот-пылесос",
           "isOpenRound": false
         },
         "explainB": {
@@ -2451,7 +2451,7 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-07-drawA",
-          "text": "Механический фонтан",
+          "text": "Золотая рыбка",
           "isOpenRound": false
         },
         "explainA": {
@@ -2466,7 +2466,7 @@
         },
         "drawB": {
           "id": "ru-5-07-drawB",
-          "text": "Механический театр",
+          "text": "Кукольный театр",
           "isOpenRound": false
         },
         "explainB": {
@@ -2488,7 +2488,7 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-08-drawA",
-          "text": "Механический слон",
+          "text": "Цирковой слон",
           "isOpenRound": false
         },
         "explainA": {
@@ -2503,7 +2503,7 @@
         },
         "drawB": {
           "id": "ru-5-08-drawB",
-          "text": "Механический дом",
+          "text": "Лесная избушка",
           "isOpenRound": false
         },
         "explainB": {
@@ -2525,7 +2525,7 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-09-drawA",
-          "text": "Механический самолёт",
+          "text": "Самолёт",
           "isOpenRound": false
         },
         "explainA": {
@@ -2540,7 +2540,7 @@
         },
         "drawB": {
           "id": "ru-5-09-drawB",
-          "text": "Механический кит",
+          "text": "Синий кит",
           "isOpenRound": false
         },
         "explainB": {
@@ -2562,7 +2562,7 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-10-drawA",
-          "text": "Механический туннель",
+          "text": "Подземный тоннель",
           "isOpenRound": false
         },
         "explainA": {
@@ -2577,7 +2577,7 @@
         },
         "drawB": {
           "id": "ru-5-10-drawB",
-          "text": "Механический велосипед",
+          "text": "Детский велосипед",
           "isOpenRound": false
         },
         "explainB": {
@@ -2599,7 +2599,7 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-11-drawA",
-          "text": "Механический парк",
+          "text": "Колесо обозрения",
           "isOpenRound": false
         },
         "explainA": {
@@ -2614,7 +2614,7 @@
         },
         "drawB": {
           "id": "ru-5-11-drawB",
-          "text": "Механический кран",
+          "text": "Подъёмный кран",
           "isOpenRound": false
         },
         "explainB": {
@@ -2636,7 +2636,7 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-12-drawA",
-          "text": "Механический лифт",
+          "text": "Космическая ракета",
           "isOpenRound": false
         },
         "explainA": {
@@ -2651,7 +2651,7 @@
         },
         "drawB": {
           "id": "ru-5-12-drawB",
-          "text": "Механический космонавт",
+          "text": "Марсоход",
           "isOpenRound": false
         },
         "explainB": {
@@ -2673,7 +2673,7 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-13-drawA",
-          "text": "Механический динозавр",
+          "text": "Тираннозавр",
           "isOpenRound": false
         },
         "explainA": {
@@ -2688,7 +2688,7 @@
         },
         "drawB": {
           "id": "ru-5-13-drawB",
-          "text": "Механический самовар",
+          "text": "Русский самовар",
           "isOpenRound": false
         },
         "explainB": {
@@ -2710,7 +2710,7 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-14-drawA",
-          "text": "Механический вулкан",
+          "text": "Извергающийся вулкан",
           "isOpenRound": false
         },
         "explainA": {
@@ -2725,7 +2725,7 @@
         },
         "drawB": {
           "id": "ru-5-14-drawB",
-          "text": "Механический лабиринт",
+          "text": "Каменный лабиринт",
           "isOpenRound": false
         },
         "explainB": {
@@ -2747,7 +2747,7 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-15-drawA",
-          "text": "Механический спутник",
+          "text": "Искусственный спутник",
           "isOpenRound": false
         },
         "explainA": {
@@ -2762,7 +2762,7 @@
         },
         "drawB": {
           "id": "ru-5-15-drawB",
-          "text": "Механический телескоп",
+          "text": "Орбитальный телескоп",
           "isOpenRound": false
         },
         "explainB": {
@@ -2784,7 +2784,7 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-16-drawA",
-          "text": "Зеркальный замок",
+          "text": "Рыцарский замок",
           "isOpenRound": false
         },
         "explainA": {
@@ -2799,7 +2799,7 @@
         },
         "drawB": {
           "id": "ru-5-16-drawB",
-          "text": "Зеркальный город",
+          "text": "Ночной город",
           "isOpenRound": false
         },
         "explainB": {
@@ -2821,7 +2821,7 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-17-drawA",
-          "text": "Зеркальный корабль",
+          "text": "Круизный лайнер",
           "isOpenRound": false
         },
         "explainA": {
@@ -2836,7 +2836,7 @@
         },
         "drawB": {
           "id": "ru-5-17-drawB",
-          "text": "Зеркальный дракон",
+          "text": "Огнедышащий дракон",
           "isOpenRound": false
         },
         "explainB": {
@@ -2858,7 +2858,7 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-18-drawA",
-          "text": "Зеркальный лес",
+          "text": "Сосновый лес",
           "isOpenRound": false
         },
         "explainA": {
@@ -2873,7 +2873,7 @@
         },
         "drawB": {
           "id": "ru-5-18-drawB",
-          "text": "Зеркальный остров",
+          "text": "Тропический остров",
           "isOpenRound": false
         },
         "explainB": {
@@ -2895,7 +2895,7 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-19-drawA",
-          "text": "Зеркальный мост",
+          "text": "Каменный мост",
           "isOpenRound": false
         },
         "explainA": {
@@ -2910,7 +2910,7 @@
         },
         "drawB": {
           "id": "ru-5-19-drawB",
-          "text": "Зеркальный сад",
+          "text": "Японский сад",
           "isOpenRound": false
         },
         "explainB": {
@@ -2932,7 +2932,7 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-20-drawA",
-          "text": "Зеркальный дворец",
+          "text": "Королевский дворец",
           "isOpenRound": false
         },
         "explainA": {
@@ -2947,7 +2947,7 @@
         },
         "drawB": {
           "id": "ru-5-20-drawB",
-          "text": "Зеркальный поезд",
+          "text": "Скоростной поезд",
           "isOpenRound": false
         },
         "explainB": {
@@ -2969,7 +2969,7 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-21-drawA",
-          "text": "Зеркальный автобус",
+          "text": "Школьный автобус",
           "isOpenRound": false
         },
         "explainA": {
@@ -2984,7 +2984,7 @@
         },
         "drawB": {
           "id": "ru-5-21-drawB",
-          "text": "Зеркальный робот",
+          "text": "Игрушечный робот",
           "isOpenRound": false
         },
         "explainB": {
@@ -3006,7 +3006,7 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-22-drawA",
-          "text": "Зеркальный фонтан",
+          "text": "Городской фонтан",
           "isOpenRound": false
         },
         "explainA": {
@@ -3021,7 +3021,7 @@
         },
         "drawB": {
           "id": "ru-5-22-drawB",
-          "text": "Зеркальный театр",
+          "text": "Театр теней",
           "isOpenRound": false
         },
         "explainB": {
@@ -3043,7 +3043,7 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-23-drawA",
-          "text": "Зеркальный слон",
+          "text": "Африканский слон",
           "isOpenRound": false
         },
         "explainA": {
@@ -3058,7 +3058,7 @@
         },
         "drawB": {
           "id": "ru-5-23-drawB",
-          "text": "Зеркальный дом",
+          "text": "Сказочный дом",
           "isOpenRound": false
         },
         "explainB": {
@@ -3080,7 +3080,7 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-24-drawA",
-          "text": "Зеркальный самолёт",
+          "text": "Пассажирский самолёт",
           "isOpenRound": false
         },
         "explainA": {
@@ -3095,7 +3095,7 @@
         },
         "drawB": {
           "id": "ru-5-24-drawB",
-          "text": "Зеркальный кит",
+          "text": "Косатка",
           "isOpenRound": false
         },
         "explainB": {
@@ -3117,7 +3117,7 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-25-drawA",
-          "text": "Зеркальный туннель",
+          "text": "Железнодорожный тоннель",
           "isOpenRound": false
         },
         "explainA": {
@@ -3132,7 +3132,7 @@
         },
         "drawB": {
           "id": "ru-5-25-drawB",
-          "text": "Зеркальный велосипед",
+          "text": "Гоночный велосипед",
           "isOpenRound": false
         },
         "explainB": {
@@ -3154,7 +3154,7 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-26-drawA",
-          "text": "Зеркальный парк",
+          "text": "Парк аттракционов",
           "isOpenRound": false
         },
         "explainA": {
@@ -3169,7 +3169,7 @@
         },
         "drawB": {
           "id": "ru-5-26-drawB",
-          "text": "Зеркальный кран",
+          "text": "Башенный кран",
           "isOpenRound": false
         },
         "explainB": {
@@ -3191,7 +3191,7 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-27-drawA",
-          "text": "Зеркальный лифт",
+          "text": "Стеклянный лифт",
           "isOpenRound": false
         },
         "explainA": {
@@ -3206,7 +3206,7 @@
         },
         "drawB": {
           "id": "ru-5-27-drawB",
-          "text": "Зеркальный космонавт",
+          "text": "Космический выход",
           "isOpenRound": false
         },
         "explainB": {
@@ -3228,7 +3228,7 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-28-drawA",
-          "text": "Зеркальный динозавр",
+          "text": "Стегозавр",
           "isOpenRound": false
         },
         "explainA": {
@@ -3243,7 +3243,7 @@
         },
         "drawB": {
           "id": "ru-5-28-drawB",
-          "text": "Зеркальный самовар",
+          "text": "Чайный сервиз",
           "isOpenRound": false
         },
         "explainB": {
@@ -3265,7 +3265,7 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-29-drawA",
-          "text": "Зеркальный вулкан",
+          "text": "Вулканический остров",
           "isOpenRound": false
         },
         "explainA": {
@@ -3280,7 +3280,7 @@
         },
         "drawB": {
           "id": "ru-5-29-drawB",
-          "text": "Зеркальный лабиринт",
+          "text": "Книжный лабиринт",
           "isOpenRound": false
         },
         "explainB": {
@@ -3302,7 +3302,7 @@
       "tasks": {
         "drawA": {
           "id": "ru-5-30-drawA",
-          "text": "Зеркальный спутник",
+          "text": "Космический спутник",
           "isOpenRound": false
         },
         "explainA": {
@@ -3317,7 +3317,7 @@
         },
         "drawB": {
           "id": "ru-5-30-drawB",
-          "text": "Зеркальный телескоп",
+          "text": "Звёздная обсерватория",
           "isOpenRound": false
         },
         "explainB": {

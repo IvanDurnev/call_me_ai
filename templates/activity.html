@@ -6,8 +6,8 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='call.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='games.css', v='10') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='durak.css', v='3') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='activity.css', v='7') }}">
-  <script src="{{ url_for('static', filename='activity.js', v='8') }}" defer></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='activity.css', v='8') }}">
+  <script src="{{ url_for('static', filename='activity.js', v='9') }}" defer></script>
 </head>
 <body class="landing-page games-page durak-page activity-page" data-mode="{{ mode }}" data-code="{{ code }}">
   <div class="landing-bg" aria-hidden="true"></div><div class="landing-overlay" aria-hidden="true"></div>
@@ -27,7 +27,7 @@
         <aside class="activity-sidebar">
           <section id="turn-panel" class="durak-panel activity-turn" aria-labelledby="turn-title"><p id="phase-label" class="games-eyebrow"></p><h2 id="turn-title"></h2><p id="turn-message" role="status"></p><div id="method-badge" class="activity-method" hidden></div><div id="timer" class="activity-timer" role="timer" hidden></div>
             <section id="recovery" class="activity-neutral" hidden><h3>Игра восстановлена</h3><p>Задание скрыто. Продолжайте только на телефоне ведущего; таймер не останавливался.</p><button id="continue-recovery" class="durak-primary" type="button">Продолжить ход</button></section>
-            <section id="secret-panel" class="activity-secret" hidden aria-labelledby="secret-title"><h3 id="secret-title">Только ведущему</h3><button id="reveal-secret" class="durak-secondary" type="button">Показать только мне</button><div id="secret-content" hidden></div><div id="secret-drawing-slot" hidden></div><div id="secret-actions"></div><button id="hide-secret" class="durak-secondary" type="button" hidden>Скрыть задание</button></section>
+            <section id="secret-panel" class="activity-secret" hidden aria-labelledby="secret-title"><h3 id="secret-title">Только ведущему</h3><button id="reveal-secret" class="durak-secondary" type="button">Карточка откроется только на этом телефоне</button><div id="secret-content" hidden></div><div id="secret-drawing-slot" hidden></div><div id="secret-actions"></div><button id="hide-secret" class="durak-secondary" type="button" hidden>Скрыть задание</button></section>
             <div id="controls" class="activity-controls"></div><div id="preview" class="activity-preview" hidden></div>
           </section>
           <section id="invite" class="durak-panel invite-panel activity-connect" hidden aria-labelledby="invite-title"><p class="games-eyebrow">Один телефон — одна команда</p><h2 id="invite-title">Подключите команды</h2><img id="qr" width="240" height="240" alt="QR-код подключения к игре Покажи и объясни"><div class="invite-code"><small>Код комнаты</small><strong id="invite-code"></strong></div><a id="invite-link" class="invite-link"></a><details id="roster-details" class="activity-roster" open><summary>Подключённые команды</summary><div id="players"></div></details></section>
