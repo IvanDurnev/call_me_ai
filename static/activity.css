@@ -70,5 +70,9 @@ body[data-mode="host"].is-table-drawing #ink-status:empty { display: none; }
 .activity-page .activity-start-turn { width: min(100%, 280px); min-height: 72px; justify-self: center; font-size: 28px; font-weight: 800; letter-spacing: .02em; }
 .activity-start-hint { margin: 0; text-align: center; font-weight: 650; color: var(--text); }
 body[data-mode="player"] #board-panel { display: none; }
-.activity-setup-team-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
-.activity-setup-team-list li { padding: 10px 12px; border-radius: 10px; background: #f1f2f5; font-weight: 650; }
+.activity-setup-team-list { display: grid; grid-template-columns: repeat(auto-fill,minmax(92px,112px)); justify-content: start; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.activity-team-tile { aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; min-width: 0; padding: 8px; border: 1px solid #e4ded2; border-radius: 16px; background: linear-gradient(145deg,#fffdf8,#f3eee4); box-shadow: 0 5px 14px #26304b12; }
+.activity-team-icon { display: grid; place-items: center; width: 46px; aspect-ratio: 1; border-radius: 14px; background: #e5d7bd; color: #354064; font-size: 17px; font-weight: 850; box-shadow: inset 0 1px #ffffffb8; }
+.activity-team-tile:nth-child(2n) .activity-team-icon { background: #dce8dd; color: #3f7659; }
+.activity-team-tile:nth-child(3n) .activity-team-icon { background: #f2ded5; color: #a7614d; }
+.activity-team-name { max-width: 100%; overflow: hidden; text-align: center; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 700; }

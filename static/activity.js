@@ -39,7 +39,7 @@
     const f=$('setup-form');f.replaceChildren();
     f.append(el('p','Команды подключаются по одному телефону. После хода передавайте телефон следующему ведущему.','activity-setup-note'));
     const teams=el('ul',undefined,'activity-setup-team-list');
-    state.players.forEach(p=>teams.append(el('li',p.name)));
+    state.players.forEach((p,i)=>{const item=el('li',undefined,'activity-team-tile');item.append(el('span',String(i+1).padStart(2,'0'),'activity-team-icon'),el('span',p.name,'activity-team-name'));teams.append(item);});
     f.append(teams);
     f.append(label('Первая команда',select('starting',state.players.map((p,i)=>[i,p.name]),setupDraft.starting_side)));
     const start=el('button','Начать игру','durak-primary');start.type='submit';start.disabled=busy||state.players.length<2;f.append(start);
