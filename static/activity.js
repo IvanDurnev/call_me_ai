@@ -77,14 +77,13 @@
   function renderSecret(){
     const available=!recovery&&(state.secret_task||state.card_options),performing=state.phase==='performing';
     const visible=!!state.card_options||secretOpen||performing;
-    $('secret-panel').hidden=!available;$('secret-content').hidden=!visible;$('reveal-secret').hidden=visible;$('hide-secret').hidden=!visible||performing;
-    $('reveal-secret').disabled=busy;$('hide-secret').disabled=busy;$('secret-content').replaceChildren();$('secret-actions').replaceChildren();text('secret-title','Карточка ведущего');
+    $('secret-panel').hidden=!available;$('secret-content').hidden=!visible;$('secret-content').replaceChildren();$('secret-actions').replaceChildren();
+    const instruction=category()?.method;text('secret-title',instruction==='draw'?'Нарисуйте':instruction==='mime'?'Покажите':'Объясните');
     if(!available||!visible)return;
     if(state.card_options){for(const c of state.categories){const task=state.card_options[c.key];if(!task)continue;const b=button('','task',{category:c.key});b.className='task-choice';b.append(el('small',`${c.icon} ${c.label}`),el('span',task.text));$('secret-content').append(b);}}
     else if(state.secret_task){
       $('secret-content').append(el('strong',state.secret_task.text));
       if(performing){const guessed=button('Угадано!','guessed',{},true);guessed.dataset.guessed='true';guessed.disabled=!canGuess();$('secret-actions').append(guessed);}
-      else $('secret-content').append(el('p','Слово останется на телефоне во время выполнения. Не показывайте экран угадывающим.'));
     }
   }
 
@@ -108,7 +107,7 @@
     if(mine()){
       if(phase==='handoff')c.append(button('Показать карточку','take_turn',{},true));
       if(phase==='choose_difficulty')for(const [difficulty,name] of [[3,'Легко'],[4,'Средне'],[5,'Сложно']])c.append(button(`${name} · +${difficulty}`,'difficulty',{difficulty},true));
-      if(phase==='prepare'){const start=button('Начать','perform',{},true);start.classList.add('activity-start-turn');start.disabled=busy;c.append(start);}
+      if(phase==='prepare'){c.append(el('p','Нажмите «Начать», когда команда будет готова.','activity-start-hint'));const start=button('Начать','perform',{},true);start.classList.add('activity-start-turn');start.disabled=busy;c.append(start);}
       if(['prepare','performing'].includes(phase))c.append(button('Сдаюсь','give_up'));
     }
     $('preview').hidden=true;
@@ -141,7 +140,7 @@
     if(force||lastRender!==renderKey){
       lastRender=renderKey;
       const titles={lobby:['Один телефон на команду','Собираемся играть',host?'Подключитесь справа и передавайте телефон внутри команды.':'Ждём старта на общем экране. Передавайте этот телефон ведущему вашей команды.'],handoff:['Передайте телефон',`Ход команды «${playerName(state.presenter)}»`,`${lastResultText()}Нажмите «Показать карточку», чтобы выбрать задание.`],choose_difficulty:['Сложность','Выберите колоду','Легко: +3, средне: +4, сложно: +5.'],choose_task:['Карточка ведущего',method?`Выберите, что будете ${method.method==='draw'?'рисовать':method.method==='mime'?'показывать':'объяснять'}.`:'Выберите, что будете делать: рисовать, показывать или объяснять.'],prepare:['Подготовка','Задание выбрано','Нажмите «Начать», когда команда готова.'],performing:['Угадывает своя команда',method?.label||'Выполнение','На телефоне ведущего видно задание. Нажмите «Угадано!» до конца минуты.'],board:[state.expired?'Время вышло':'Ход завершён',state.last_transaction&&Object.keys(state.last_transaction.advances).length?'Угадано!':'Без продвижения',state.last_transaction?previewText(state.last_transaction):''],finished:['Финиш!',`Победила команда ${state.winners.map(sideName).join(', ')}`,'Сыграем ещё?']};
-      const t=titles[phase];text('phase-label',t[0]);text('turn-title',t[1]);text('turn-message',t[2]);
+      const t=titles[phase];text('phase-label',phase==='prepare'?'':t[0]);text('turn-title',t[1]);text('turn-message',phase==='prepare'?'':t[2]);
       $('method-badge').hidden=!method;text('method-badge',method?`${method.icon} ${method.label}${Number.isInteger(state.difficulty)?` · +${state.difficulty}`:''}`:'');
       $('recovery').hidden=!recovery;
       $('turn-panel').hidden=host&&phase==='lobby';
@@ -184,7 +183,7 @@
     }catch(error){text('connection','Переподключаемся…');$('connection').className='connection-lost';feedback(error.name==='AbortError'?'Нет ответа от сервера. Восстанавливаем связь…':error.message);if(error.message.includes('повреждено')||error.message.includes('несовместимо')){$('corrupt-panel').hidden=false;$('room').hidden=true;}if(error.message==='Подключитесь к комнате заново.'){token=null;localStorage.removeItem(storageKey);$('room').hidden=true;if(!host)$('join-panel').hidden=false;}}
     finally{polling=false;if(token)timer=setTimeout(poll,state?.phase==='performing'&&category()?.method==='draw'?250:900);}}
   $('join-form').addEventListener('submit',async event=>{event.preventDefault();unlockAudio();feedback();$('join-submit').disabled=true;try{const result=await api(`${base}/join`,{name:$('player-name').value.trim()});localStorage.setItem(storageKey,result.token);token=result.token;await poll(true);}catch(error){feedback(error.name==='AbortError'?'Нет связи с сервером.':error.message);}finally{$('join-submit').disabled=false;}});
-  $('reveal-secret').addEventListener('click',()=>{secretOpen=true;hasSeen=true;render(true);});$('hide-secret').addEventListener('click',()=>{secretOpen=false;render(true);});
+
   $('continue-recovery').addEventListener('click',()=>{recovery=false;render(true);});
   $('confirm-cancel').addEventListener('click',()=>$('confirm-dialog').close());$('confirm-accept').addEventListener('click',()=>{$('confirm-dialog').close();const callback=confirmCallback;confirmCallback=null;callback?.();});
   $('help-button').addEventListener('click',()=>$('help-dialog').showModal());$('sound-button').addEventListener('click',()=>{sound=!sound;$('sound-button').setAttribute('aria-pressed',String(sound));text('sound-button',sound?'Звук включён':'Звук выключен');if(sound)unlockAudio();});
