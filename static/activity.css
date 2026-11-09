@@ -1,5 +1,6 @@
 .activity-shell { position: relative; z-index: 1; width: min(1560px,calc(100% - 48px)); margin: auto; padding-bottom: 24px; }
 .activity-shell > .durak-header h1 { font-size: 26px; }.activity-header-actions { display: flex; flex-wrap: wrap; gap: 8px; }.activity-header-actions button { font-size: 12px; }
+.activity-title-group { display: flex; align-items: center; gap: 12px; margin-right: auto; }.activity-title-group button { flex: none; font-size: 12px; }
 .activity-layout { display: grid; grid-template-columns: minmax(0,1fr) 340px; gap: 20px; align-items: start; }.activity-main { min-width: 0; padding: 22px; }.activity-sidebar { display: grid; gap: 16px; min-width: 0; }.activity-sidebar .durak-panel { padding: 22px; }.activity-turn h2 { font-size: 27px; overflow-wrap: anywhere; }.activity-turn > p { font-size: 14px; line-height: 1.6; color: #626b80; }
 .activity-method { display: flex; align-items: center; gap: 8px; padding: 12px; background: #f2eee5; border-radius: 12px; font-weight: 700; font-size: 15px; margin: 14px 0; }.activity-timer { font-size: 66px; line-height: 1.1; font-weight: 750; letter-spacing: -.04em; font-variant-numeric: tabular-nums; color: #92713e; margin: 20px 0; }
 .activity-controls { display: grid; gap: 10px; margin-top: 18px; }.activity-controls button { width: 100%; }.activity-controls p { font-size: 13px; line-height: 1.6; color: #637087; }.activity-controls select,.activity-controls input { width: 100%; min-width: 0; padding: 12px; margin-top: 8px; border: 1px solid #bfc6d3; border-radius: 10px; font: inherit; color: var(--text); background: white; }.activity-controls label { font-size: 13px; margin-top: 6px; }
@@ -63,4 +64,4 @@ body[data-mode="host"].is-table-drawing #sketch { flex: 1; min-height: 0; width:
 body[data-mode="host"].is-table-drawing #ink-status:empty { display: none; }
 .activity-page .activity-start-turn { width: min(100%, 280px); min-height: 72px; justify-self: center; font-size: 28px; font-weight: 800; letter-spacing: .02em; }
 .activity-start-hint { margin: 0; text-align: center; font-weight: 650; color: var(--text); }
-body[data-mode="player"] #board-details { display: none; }
+body[data-mode="player"] #board-panel { display: none; }

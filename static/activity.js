@@ -6,7 +6,7 @@
   let state=null,busy=false,polling=false,timer,forceRender=false,lastRender='',first=true;
   let secretOpen=false,hasSeen=false,recovery=false,turnKey='',setupDraft=null,setupRoster='';
   let serverOffset=0,confirmCallback=null,layoutKey='',lastPositions=null,previousPhase='';
-  let audio=null,sound=true,beepTurn=null;
+  let audio=null,beepTurn=null;
   const tokenNodes=new Map(),svgNS='http://www.w3.org/2000/svg';
   const canvas=$('sketch'),ctx=canvas.getContext('2d');
   let tool='pen',width=7,pointer=null,activeStroke=null,inkBusy=false;
@@ -22,7 +22,7 @@
   const seconds=deadline=>Math.max(0,Math.ceil(deadline-Date.now()/1000-serverOffset));
 
   function unlockAudio(){if(!sound)return;try{const Audio=window.AudioContext||window.webkitAudioContext;if(Audio){audio ||= new Audio();audio.resume().catch(()=>{});}}catch{}}
-  function beep(){if(!sound||!audio||audio.state!=='running')return;try{const oscillator=audio.createOscillator(),gain=audio.createGain();oscillator.frequency.value=660;gain.gain.setValueAtTime(.0001,audio.currentTime);gain.gain.exponentialRampToValueAtTime(.12,audio.currentTime+.02);gain.gain.exponentialRampToValueAtTime(.0001,audio.currentTime+.45);oscillator.connect(gain);gain.connect(audio.destination);oscillator.start();oscillator.stop(audio.currentTime+.5);}catch{}}
+  function beep(){if(!audio||audio.state!=='running')return;try{const oscillator=audio.createOscillator(),gain=audio.createGain();oscillator.frequency.value=660;gain.gain.setValueAtTime(.0001,audio.currentTime);gain.gain.exponentialRampToValueAtTime(.12,audio.currentTime+.02);gain.gain.exponentialRampToValueAtTime(.0001,audio.currentTime+.45);oscillator.connect(gain);gain.connect(audio.destination);oscillator.start();oscillator.stop(audio.currentTime+.5);}catch{}}
   async function api(path,data){const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),8000);try{const response=await fetch(path,{method:data?'POST':'GET',cache:'no-store',signal:controller.signal,headers:{'Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{})},...(data?{body:JSON.stringify(data)}:{})});const result=await response.json();if(!response.ok)throw new Error(result.error||'Не удалось выполнить запрос.');return result;}finally{clearTimeout(timeout);}}
   function button(label,action,extra={},primary=false){const e=el('button',label,primary?'durak-primary':'durak-secondary');e.type='button';e.disabled=busy;e.addEventListener('click',()=>send(action,extra));return e;}
   function customButton(label,callback){const e=el('button',label,'durak-secondary');e.type='button';e.disabled=busy;e.addEventListener('click',callback);return e;}
@@ -186,7 +186,7 @@
 
   $('continue-recovery').addEventListener('click',()=>{recovery=false;render(true);});
   $('confirm-cancel').addEventListener('click',()=>$('confirm-dialog').close());$('confirm-accept').addEventListener('click',()=>{$('confirm-dialog').close();const callback=confirmCallback;confirmCallback=null;callback?.();});
-  $('help-button').addEventListener('click',()=>$('help-dialog').showModal());$('sound-button').addEventListener('click',()=>{sound=!sound;$('sound-button').setAttribute('aria-pressed',String(sound));text('sound-button',sound?'Звук включён':'Звук выключен');if(sound)unlockAudio();});
+  $('help-button').addEventListener('click',()=>$('help-dialog').showModal());
   if(document.fullscreenEnabled&&host){$('fullscreen').hidden=false;$('fullscreen').addEventListener('click',async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();}catch{feedback('Включите полный экран через меню браузера.');}});}
   window.addEventListener('online',()=>{processInk();poll(true);});window.addEventListener('resize',()=>{layoutKey='';if(state)renderBoard();});
   document.addEventListener('visibilitychange',()=>{if(document.hidden){secretOpen=false;if(state)renderSecret();flushStroke();}else poll(true);});

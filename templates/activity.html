@@ -6,13 +6,13 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='call.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='games.css', v='10') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='durak.css', v='3') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='activity.css', v='10') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='activity.css', v='11') }}">
   <script src="{{ url_for('static', filename='activity.js', v='10') }}" defer></script>
 </head>
 <body class="landing-page games-page durak-page activity-page" data-mode="{{ mode }}" data-code="{{ code }}">
   <div class="landing-bg" aria-hidden="true"></div><div class="landing-overlay" aria-hidden="true"></div>
   <main class="activity-shell">
-    <header class="durak-header"><a href="{{ url_for('main.games') }}">← Игротека</a><h1>Покажи и объясни</h1><div class="activity-header-actions"><button id="help-button" type="button">Правила</button><button id="sound-button" type="button" aria-pressed="true">Звук включён</button><button id="fullscreen" type="button" hidden>⛶ На весь экран</button></div></header>
+    <header class="durak-header"><a href="{{ url_for('main.games') }}">← Игротека</a><div class="activity-title-group"><h1>Покажи и объясни</h1><button id="help-button" type="button">Правила</button></div><div class="activity-header-actions"><button id="fullscreen" type="button" hidden>⛶ На весь экран</button></div></header>
     <p id="feedback" class="durak-feedback" role="status" aria-live="polite"></p>
     <section id="corrupt-panel" class="durak-panel" hidden><h2>Не удалось восстановить игру</h2><p>Сохранение оставлено без изменений. Можно создать новую комнату.</p><a href="{{ url_for('main.games') }}">В игротеку →</a></section>
     <section id="join-panel" class="durak-panel join-panel" hidden><p class="games-eyebrow">Рисуем, объясняем, показываем</p><h2>Присоединиться к игре</h2><p>Введите название команды. Нужен только один телефон на команду; передавайте его друг другу.</p><form id="join-form"><label for="player-name">Название команды</label><input id="player-name" name="name" required maxlength="24" autocomplete="off"><button id="join-submit" class="durak-primary" type="submit">Присоединиться →</button></form></section>
