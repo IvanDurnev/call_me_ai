@@ -76,3 +76,15 @@ body[data-mode="player"] #board-panel { display: none; }
 .activity-team-tile:nth-child(2n) .activity-team-icon { background: #dce8dd; color: #3f7659; }
 .activity-team-tile:nth-child(3n) .activity-team-icon { background: #f2ded5; color: #a7614d; }
 .activity-team-name { max-width: 100%; overflow: hidden; text-align: center; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 700; }
+body[data-mode="host"]:not(.is-lobby) .activity-shell { width: calc(100% - 24px); max-width: none; padding-bottom: 8px; }
+body[data-mode="host"]:not(.is-lobby) .activity-layout { grid-template-columns: minmax(0,1fr); gap: 8px; }
+body[data-mode="host"]:not(.is-lobby) .activity-main { padding: 8px 10px; }
+body[data-mode="host"]:not(.is-lobby) .activity-sidebar { display: block; }
+body[data-mode="host"]:not(.is-lobby) .activity-turn { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 2px 14px; align-items: center; padding: 8px 14px; }
+body[data-mode="host"]:not(.is-lobby) .activity-turn > .games-eyebrow { grid-column: 1; margin: 0; font-size: 10px; }
+body[data-mode="host"]:not(.is-lobby) .activity-turn h2 { grid-column: 1; margin: 0; font-size: 19px; }
+body[data-mode="host"]:not(.is-lobby) .activity-turn > #turn-message { grid-column: 1; margin: 0; font-size: 12px; line-height: 1.35; }
+body[data-mode="host"]:not(.is-lobby) .activity-turn > #method-badge { grid-column: 1; margin: 2px 0 0; padding: 5px 8px; font-size: 11px; }
+body[data-mode="host"]:not(.is-lobby) .activity-turn > #timer { grid-column: 1; margin: 0; font-size: 28px; }
+body[data-mode="host"]:not(.is-lobby) .activity-turn > #controls { grid-column: 2; grid-row: 1 / span 5; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin: 0; }
+body[data-mode="host"]:not(.is-lobby) .activity-turn > #controls button { width: auto; min-height: 36px; padding: 7px 12px; font-size: 12px; }
