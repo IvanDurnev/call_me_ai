@@ -127,6 +127,7 @@
     $('join-panel').hidden=true;$('room').hidden=false;
     text('room-code',`Комната ${code} · ${state.players.length}/4 команд`);
     const phase=state.phase;document.body.classList.toggle('is-lobby',phase==='lobby');if(['lobby','handoff','board','finished'].includes(phase))recovery=false;
+    (host&&phase!=='lobby'?$('host-turn-slot'):$('activity-sidebar')).append($('turn-panel'));
     if(phase==='prepare'){secretOpen=true;hasSeen=true;}
     const method=category(),view=drawingView(),drawing=!!view;
     document.body.classList.toggle('is-table-drawing',view==='table');
