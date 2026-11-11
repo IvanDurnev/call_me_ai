@@ -49,8 +49,20 @@
   $('setup-form').addEventListener('submit',event=>{event.preventDefault();readSetup();send('launch',{settings:{mode:'teams',starting_side:setupDraft.starting_side}});});
 
   function svg(tag,attrs,content){const e=document.createElementNS(svgNS,tag);for(const [key,value] of Object.entries(attrs))e.setAttribute(key,value);if(content!==undefined)e.textContent=content;return e;}
-  function boardLayout(){const columns=matchMedia('(max-width:900px)').matches?5:10;return {columns,width:columns*100,height:Math.ceil(50/columns)*104};}
+  function boardLayout(){const columns=matchMedia('(max-width:900px) and (orientation: portrait)').matches?5:10;return {columns,width:columns*100,height:Math.ceil(50/columns)*104};}
   function cellPoint(index,layout){const row=Math.floor(index/layout.columns),column=row%2?layout.columns-1-index%layout.columns:index%layout.columns;return {x:column*100+50,y:row*104+52};}
+  function fitHostBoard(){
+    if(!host || !state || state.phase==='lobby' || !$('board-details').open) return;
+    const board=$('board');
+    const bounds=board.getBoundingClientRect();
+    const footerHeight=$('board-panel').getBoundingClientRect().bottom-bounds.bottom;
+    const viewportHeight=window.visualViewport?.height || window.innerHeight;
+    const availableHeight=Math.max(0,viewportHeight-bounds.top-window.scrollY-footerHeight-12);
+    const {width,height}=boardLayout();
+    const fittedWidth=Math.floor(availableHeight*width/height)+'px';
+    if(board.style.width!==fittedWidth) board.style.width=fittedWidth;
+  }
+
   function renderBoard(){
     const layout=boardLayout(),key=`${layout.columns}`;
     if(layoutKey!==key){layoutKey=key;const field=$('board-svg');field.replaceChildren();field.setAttribute('viewBox',`0 0 ${layout.width} ${layout.height}`);
@@ -127,7 +139,7 @@
     $('join-panel').hidden=true;$('room').hidden=false;
     text('room-code',`Комната ${code} · ${state.players.length}/4 команд`);
     const phase=state.phase;document.body.classList.toggle('is-lobby',phase==='lobby');if(['lobby','handoff','board','finished'].includes(phase))recovery=false;
-    (host&&phase!=='lobby'?$('host-turn-slot'):$('activity-sidebar')).append($('turn-panel'));
+    if(host && $('turn-panel').parentElement!==$('host-turn-slot')) $('host-turn-slot').append($('turn-panel'));
     if(phase==='prepare'){secretOpen=true;hasSeen=true;}
     const method=category(),view=drawingView(),drawing=!!view;
     document.body.classList.toggle('is-table-drawing',view==='table');
@@ -147,7 +159,7 @@
       $('recovery').hidden=!recovery;
       $('turn-panel').hidden=host&&phase==='lobby';
       if(host&&phase==='lobby')renderSetup();
-      renderSecret();renderControls();renderBoard();renderRoster();
+      renderSecret();renderControls();renderBoard();renderRoster();fitHostBoard();
       $('invite').hidden=!host||phase!=='lobby';if(host&&phase==='lobby'){if(!$('qr').getAttribute('src'))$('qr').src=`${base}/qr.svg`;text('invite-code',code);$('invite-link').textContent=state.join_url.replace(/^https?:\/\//,'');$('invite-link').href=state.join_url;}
     }
     renderSketch();updateClock();
@@ -190,7 +202,17 @@
   $('confirm-cancel').addEventListener('click',()=>$('confirm-dialog').close());$('confirm-accept').addEventListener('click',()=>{$('confirm-dialog').close();const callback=confirmCallback;confirmCallback=null;callback?.();});
   $('help-button').addEventListener('click',()=>$('help-dialog').showModal());
   if(document.fullscreenEnabled&&host){$('fullscreen').hidden=false;$('fullscreen').addEventListener('click',async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();}catch{feedback('Включите полный экран через меню браузера.');}});}
-  window.addEventListener('online',()=>{processInk();poll(true);});window.addEventListener('resize',()=>{layoutKey='';if(state)renderBoard();});
+  window.addEventListener('online',()=>{processInk();poll(true);});window.addEventListener('resize',()=>{layoutKey='';if(state){renderBoard();fitHostBoard();}});
+  if(host){
+    $('board-details').addEventListener('toggle',fitHostBoard);
+    window.visualViewport?.addEventListener('resize',fitHostBoard);
+    if(typeof ResizeObserver!=='undefined'){
+      const fitObserver=new ResizeObserver(fitHostBoard);
+      for(const selector of ['.durak-header','.room-topline','#feedback','#board-legend','#host-turn-slot']){
+        fitObserver.observe(document.querySelector(selector));
+      }
+    }
+  }
   document.addEventListener('visibilitychange',()=>{if(document.hidden){secretOpen=false;if(state)renderSecret();flushStroke();}else poll(true);});
   if(token){$('room').hidden=false;poll(true);}else if(!host)$('join-panel').hidden=false;else feedback('Создайте комнату в игротеке на этом устройстве.');
 })();

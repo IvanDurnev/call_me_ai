@@ -59,10 +59,12 @@ body[data-mode="player"].is-drawing .activity-layout { display: block; }
 body[data-mode="player"].is-drawing .activity-sidebar { max-width: 560px; margin: 0 auto; }
 body[data-mode="player"].is-drawing #board-panel { display: none; }
 
+.activity-board-stage { position: relative; }
+body[data-mode="host"] #board { max-width: 100%; margin: 0 auto; }
+
 /* Television drawing layer covers the entire board for the active attempt. */
-body[data-mode="host"].is-table-drawing .activity-main { position: relative; min-height: max(400px,calc(100svh - 180px)); }
-body[data-mode="host"].is-table-drawing #board-details { visibility: hidden; }
-body[data-mode="host"].is-table-drawing #table-drawing-slot { position: absolute; inset: 0 0 120px; z-index: 5; padding: 20px; border-radius: inherit; background: #fffdf8; }
+body[data-mode="host"].is-table-drawing #board { visibility: hidden; }
+body[data-mode="host"].is-table-drawing #table-drawing-slot { position: absolute; inset: 0; z-index: 5; padding: 12px; border-radius: inherit; background: #fffdf8; }
 body[data-mode="host"].is-table-drawing #sketch-panel { display: flex; flex-direction: column; height: 100%; min-height: 0; }
 body[data-mode="host"].is-table-drawing .activity-sketch-heading { flex: none; margin: 0 0 12px; }
 body[data-mode="host"].is-table-drawing #sketch { flex: 1; min-height: 0; width: 100%; height: 100%; max-width: 100%; object-fit: contain; border: 0; border-radius: 0; background: #fff; }
@@ -76,11 +78,10 @@ body[data-mode="player"] #board-panel { display: none; }
 .activity-team-tile:nth-child(2n) .activity-team-icon { background: #dce8dd; color: #3f7659; }
 .activity-team-tile:nth-child(3n) .activity-team-icon { background: #f2ded5; color: #a7614d; }
 .activity-team-name { max-width: 100%; overflow: hidden; text-align: center; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 700; }
-body[data-mode="host"]:not(.is-lobby) .activity-shell { width: calc(100% - 24px); max-width: none; padding-bottom: 8px; }
+body[data-mode="host"]:not(.is-lobby) .activity-shell { width: calc(100% - clamp(28px, 5vw, 100px)); max-width: none; padding-bottom: 8px; }
 body[data-mode="host"]:not(.is-lobby) .activity-layout { grid-template-columns: minmax(0,1fr); gap: 8px; }
 body[data-mode="host"]:not(.is-lobby) .activity-main { padding: 8px 10px; }
-body[data-mode="host"]:not(.is-lobby) .activity-sidebar { display: block; }
-body[data-mode="host"]:not(.is-lobby) #board { width: min(100%,calc(192.3svh - 535px)); margin-inline: auto; }
+body[data-mode="host"]:not(.is-lobby) .activity-sidebar { display: none; }
 body[data-mode="host"]:not(.is-lobby) #host-turn-slot { margin-top: 4px; }
 body[data-mode="host"]:not(.is-lobby) #host-turn-slot .activity-turn { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 2px 14px; align-items: center; padding: 8px 14px; }
 body[data-mode="host"]:not(.is-lobby) #host-turn-slot .activity-turn > .games-eyebrow { grid-column: 1; margin: 0; font-size: 10px; }
@@ -90,5 +91,3 @@ body[data-mode="host"]:not(.is-lobby) #host-turn-slot .activity-turn > #method-b
 body[data-mode="host"]:not(.is-lobby) #host-turn-slot .activity-turn > #timer { grid-column: 1; margin: 0; font-size: 28px; }
 body[data-mode="host"]:not(.is-lobby) #host-turn-slot .activity-turn > #controls { grid-column: 2; grid-row: 1 / span 5; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin: 0; }
 body[data-mode="host"]:not(.is-lobby) #host-turn-slot .activity-turn > #controls button { width: auto; min-height: 36px; padding: 7px 12px; font-size: 12px; }
-
-@media(max-width:900px) { body[data-mode="host"]:not(.is-lobby) #board { width: min(100%,calc(48svh - 125px)); } }
