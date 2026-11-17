@@ -5,13 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Игры для всей семьи — Звонок другу</title>
     <meta name="description" content="Семейная игротека: общий экран на телевизоре, личные карты на телефонах. Собирайте семью и друзей за игрой.">
-    <link rel="stylesheet" href="{{ url_for('static', filename='call.css', v='20260410mobilefix') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='games-base.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='games.css', v='15') }}">
     <script src="{{ url_for('static', filename='games.js', v='3') }}" defer></script>
   </head>
-  <body class="landing-page games-page">
-    <div class="landing-bg" aria-hidden="true"></div>
-    <div class="landing-overlay" aria-hidden="true"></div>
+  <body class="games-page">
+    <div class="games-bg" aria-hidden="true"></div>
+    <div class="games-overlay" aria-hidden="true"></div>
 
     <button class="games-screen-button" type="button" id="fullscreen-button" hidden>
       <span aria-hidden="true">⛶</span> <span id="fullscreen-label">На весь экран</span>

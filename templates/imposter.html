@@ -4,14 +4,14 @@
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="referrer" content="same-origin">
   <title>Импостер — семейная игротека</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='call.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='games-base.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='games.css', v='7') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='durak.css', v='3') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='imposter.css', v='1') }}">
   <script src="{{ url_for('static', filename='imposter.js', v='1') }}" defer></script>
 </head>
-<body class="landing-page games-page durak-page imposter-page" data-mode="{{ mode }}" data-code="{{ code }}">
-  <div class="landing-bg" aria-hidden="true"></div><div class="landing-overlay" aria-hidden="true"></div>
+<body class="games-page durak-page imposter-page" data-mode="{{ mode }}" data-code="{{ code }}">
+  <div class="games-bg" aria-hidden="true"></div><div class="games-overlay" aria-hidden="true"></div>
   <main class="durak-shell">
     <header class="durak-header"><a href="{{ url_for('main.games') }}">← Игротека</a><h1>Импостер</h1><button type="button" id="fullscreen" hidden>⛶ На весь экран</button></header>
     <p class="durak-feedback" id="feedback" role="status" aria-live="polite"></p>

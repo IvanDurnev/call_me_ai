@@ -5,13 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="referrer" content="same-origin">
   <title>Дурак — Звонок другу</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='call.css', v='20260410mobilefix') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='games-base.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='games.css', v='2') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='durak.css', v='3') }}">
   <script src="{{ url_for('static', filename='durak.js', v='7') }}" defer></script>
 </head>
-<body class="landing-page games-page durak-page" data-mode="{{ mode }}" data-code="{{ code }}">
-  <div class="landing-bg" aria-hidden="true"></div><div class="landing-overlay" aria-hidden="true"></div>
+<body class="games-page durak-page" data-mode="{{ mode }}" data-code="{{ code }}">
+  <div class="games-bg" aria-hidden="true"></div><div class="games-overlay" aria-hidden="true"></div>
   <main class="durak-shell">
     <header class="durak-header">
       <a href="{{ url_for('main.games') }}">← Игротека</a>

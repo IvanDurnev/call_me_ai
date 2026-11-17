@@ -32,7 +32,7 @@ body {
 
 .landing-page {
   position: relative;
-  overflow: hidden;
+  overflow-x: clip;
   min-height: 100vh;
   padding: 24px;
   background: #d8dde8;
@@ -85,11 +85,9 @@ body {
 .landing-screen {
   position: relative;
   z-index: 1;
-  height: min(100vh - 48px, 900px);
 }
 
 .landing-stage {
-  height: 100%;
   display: grid;
   grid-template-columns: minmax(0, 1.05fr) minmax(340px, 0.95fr);
   gap: 24px;
@@ -2069,10 +2067,6 @@ body {
     grid-template-columns: 1fr;
   }
 
-  .landing-screen {
-    height: auto;
-  }
-
   .cards-grid-compact {
     grid-template-columns: 1fr;
   }
@@ -2164,10 +2158,6 @@ body {
 
   .web-chat-log .log-line {
     max-width: 78%;
-  }
-
-  .landing-page {
-    overflow: auto;
   }
 
   .landing-stage {

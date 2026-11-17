@@ -1,0 +1,35 @@
+* {
+  box-sizing: border-box;
+}
+
+.games-page {
+  --text: #2d3557;
+  position: relative;
+  margin: 0;
+  min-height: 100vh;
+  background: #d8dde8;
+  color: var(--text);
+  font-family: "Avenir Next", "Segoe UI", sans-serif;
+}
+
+.games-bg,
+.games-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+.games-bg {
+  background:
+    linear-gradient(rgba(255, 248, 238, 0.18), rgba(228, 237, 255, 0.18)),
+    url("/static/images/room.webp") center center / cover no-repeat;
+  transform: scale(1.06);
+  filter: blur(4px);
+}
+
+.games-overlay {
+  background:
+    radial-gradient(circle at top left, rgba(255, 212, 170, 0.34), transparent 28%),
+    radial-gradient(circle at right center, rgba(185, 230, 255, 0.25), transparent 26%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.28));
+}

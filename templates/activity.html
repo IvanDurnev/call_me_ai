@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="referrer" content="same-origin"><title>Покажи и объясни — семейная игротека</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='call.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='games-base.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='games.css', v='10') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='durak.css', v='3') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='activity.css', v='18') }}">
   <script src="{{ url_for('static', filename='activity.js', v='15') }}" defer></script>
 </head>
-<body class="landing-page games-page durak-page activity-page" data-mode="{{ mode }}" data-code="{{ code }}">
-  <div class="landing-bg" aria-hidden="true"></div><div class="landing-overlay" aria-hidden="true"></div>
+<body class="games-page durak-page activity-page" data-mode="{{ mode }}" data-code="{{ code }}">
+  <div class="games-bg" aria-hidden="true"></div><div class="games-overlay" aria-hidden="true"></div>
   <main class="activity-shell">
     <header class="durak-header"><a href="{{ url_for('main.games') }}">← Игротека</a><h1>Покажи и объясни</h1><div class="activity-header-actions"><button id="help-button" type="button">Правила</button><button id="fullscreen" type="button" hidden>⛶ На весь экран</button></div></header>
     <p id="feedback" class="durak-feedback" role="status" aria-live="polite"></p>
